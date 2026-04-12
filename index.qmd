@@ -22,8 +22,6 @@ draft-mode: visible
 
 Data by @hahm2024divided.
 
-{{< embed code/01_test.qmd#fig-test >}}
-
 ## Empirical Analysis {#sec-analysis}
 
 ## Conclusion {#sec-conclusion}
