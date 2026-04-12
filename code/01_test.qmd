@@ -27,9 +27,10 @@ start_time <- Sys.time()
 options(width = 80)
 # packages
 p_required <- c(
-  "tidyverse", # dplyr, ggplot2, tidyr
-  "here", # relative paths
+  "tidyverse", # dplyr, ggplot2, tidyr etc
+  "here", # to never worry about directories
   "ggpubr", # theme_pubr()
+  "knitr", # for kable()
   "sessioninfo" # session docs
 )
 packages <- rownames(installed.packages())
@@ -41,17 +42,89 @@ sapply(p_required, require, character.only = TRUE)
 rm(p_required, p_to_install, packages)
 ```
 
-# Code 1 {#sec-code-1}
+# Load Data
+
+Note to others: at this point, I have only recoded the religion attribute variables, the rest is yet to be done. Variables with `_raw` suffix contain original survey responses which vary across countries / languages, I plan to construct a respective harmonized variable for each `_raw` in the data, however I keep this in a seperate repo as it's just a super messy dataset. I will add appropriate documentation of the variable naming schemes etc. asap.
 
 ```{r}
-#| label: fig-test
-#| fig-cap: "A ggplot."
+#| label: load-data
 
-ggplot(mtcars, aes(x = hp, y = mpg)) +
-  geom_point() +
-  geom_smooth() +
-  theme_pubr()
+eu25games2019 <- read_rds(
+  here(
+    "data",
+    "01_raw",
+    "eu25games2019.rds"
+  )
+)
+```
 
+`eu25games2019` contains data in wide format, i.e., one row corresponds one survey response. So far I have not excluded incompletes or anything. This is just a quick starter for Tuesday's presentation.
+
+To analyze outcomes, the data need to be transformed to long (tidy) format, with one row equal to one observation, in this case one row should be one game played.
+
+```{r}
+#| label: game-outcomes-to-long
+
+# select relevant variables
+eu25_games_long <- eu25games2019 |>
+  # wave, country and respondent identifiers
+  select(
+    meta_wave,
+    meta_country,
+    meta_pid,
+    # dictator game vars
+    contains("cj_dict"),
+    # trust game vars
+    contains("cj_trust")
+  ) |>
+  # to long format
+  pivot_longer(
+    cols = -c(meta_wave, meta_country, meta_pid),
+    names_to = c("game_type", "round", ".value"),
+    names_pattern = "^(cj_dict|cj_trust)(\\d+)_(.+)$"
+  ) |>
+  # keep cj_ prefix for experimental vars
+  rename_with(
+    ~ paste0("cj_", .),
+    -c(meta_wave, meta_country, meta_pid, game_type, round)
+  ) |>
+  # filter observations with valid outcomes
+  filter(!is.na(cj_pl2))
+
+```
+
+# Preliminary Figure
+
+```{r}
+#| label: fig-tokens-to-muslim-profiles
+#| fig-cap: "Mean tokens allocated to profiles displayed as Muslim in the Dictator and Trust games. Heigth of bars correspond to means, segment show standard deviations."
+
+eu25_games_long |>
+  group_by(game_type, cj_rel) |>
+  summarise(
+    mean_toks = mean(cj_pl2),
+    sd_toks = sd(cj_pl2)
+  ) |>
+  filter(!is.na(cj_rel)) |>
+  ggplot() +
+  geom_col(
+    aes(
+      x = fct_reorder(cj_rel, mean_toks),
+      y = mean_toks
+    ),
+    color = "black",
+    fill = "white",
+    width = 0.5
+  ) +
+  geom_segment(
+    aes(
+      x = fct_reorder(cj_rel, mean_toks),
+      y = mean_toks - sd_toks,
+      yend = mean_toks + sd_toks
+    )
+  ) +
+  theme_pubr() +
+  facet_wrap(~game_type)
 ```
 
 
