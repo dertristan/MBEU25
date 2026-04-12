@@ -1,7 +1,5 @@
 # Penalized for Faith: Muslim Bias in Economic Behavioral Games Across 25 EU Countries
 
-**Authors:** 
-   - Tristan Muno
 **Course:** Causal Inference — Term Paper  
 **Status:** Work in progress
 
