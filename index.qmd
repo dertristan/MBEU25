@@ -24,6 +24,8 @@ Data by @hahm2024divided.
 
 ## Empirical Analysis {#sec-analysis}
 
+{{< embed code/01_test.qmd#fig-tokens-to-muslim-profiles >}}
+
 ## Conclusion {#sec-conclusion}
 
 \singlespacing
