@@ -1,0 +1,120 @@
+# Penalized for Faith: Muslim Bias in Economic Behavioral Games Across 25 EU Countries
+
+**Authors:** 
+   - Tristan Muno
+**Course:** Causal Inference — Term Paper  
+**Status:** Work in progress
+
+---
+
+## Research Summary
+
+This project reanalyzes data from [Hahm, Hilpert & König (2024)](#data-source), a large-scale conjoint survey experiment fielded across all 25 EU member states in 2019. In the original study, respondents participated in economic behavioral games — a **dictator/solidarity game** and a **trust game** — in which they allocated tokens to a fictitious co-player. Co-player profiles were constructed with randomized attributes (including religion, nationality, age, and others), allowing causal identification of attribute-specific biases via the conjoint design.
+
+We exploit the religion attribute to study **Muslim bias**: the causal effect of a co-player being presented as Muslim on the respondent's token allocation. Two main analytical directions are pursued:
+
+1. **Cross-national comparison** — estimating aggregate Muslim bias levels country by country and examining variation across EU member states.
+2. **Covariate analysis** — identifying which respondent-level characteristics (e.g., political attitudes, religiosity, contact with Muslims, socioeconomic status) most strongly predict higher levels of Muslim bias.
+
+The exact estimands, identification strategy, and modeling choices are to be finalized.
+
+### Data Source
+
+> Hahm, H., Hilpert, D., & König, T. (2024). Divided we unite: The nature of partyism and the role of coalition partnership in Europe. *American Political Science Review*, 118(1), 69–87. https://doi.org/10.1017/S0003055423000266
+
+---
+
+## Repository Structure
+
+```
+MBEU25/
+│
+├── index.qmd                    # Main manuscript (paper)
+├── presentation.qmd             # Revealjs presentation slides
+├── _quarto.yml                  # Quarto project config (authors, formats, bibliography)
+├── references.bib               # BibTeX bibliography
+├── theme.scss                   # Custom SCSS theme for the presentation
+├── robots.txt                   # Prevents search engine indexing of HTML output
+├── CLAUDE.md                    # Guidance for Claude Code AI assistant
+│
+├── code/
+│   ├── 00_template.qmd          # Template for new analysis notebooks
+│   ├── 01_test.qmd              # Example/test notebook
+│   └── helper_scripts/
+│       └── copy_figures.R       # Post-render: copies figures into _manuscript/
+│
+├── data/
+│   ├── 01_raw/                  # Raw, unmodified source data (never overwrite)
+│   └── 02_processed/            # Cleaned and analysis-ready datasets
+│
+├── images/
+│   ├── uma_palace.png           # University of Mannheim branding (slides)
+│   └── uma_ss.png               # University of Mannheim logo (slides)
+│
+└── literature/                  # PDF papers — gitignored, not tracked in Git
+```
+
+> **Generated folders** (`_freeze/`, `_manuscript/`, `.quarto/`, `site_libs/`) are created by Quarto at render time and are gitignored.
+
+---
+
+## Getting Started
+
+### Prerequisites
+
+- [Quarto](https://quarto.org/docs/get-started/) (≥ 1.4)
+- R with the following packages: `tidyverse`, `here`, `ggpubr`, `sessioninfo`
+
+### Render the project
+
+```bash
+# Full project (manuscript + all notebooks)
+quarto render
+
+# Main manuscript only
+quarto render index.qmd
+
+# Presentation only
+quarto render presentation.qmd
+
+# Single analysis notebook
+quarto render code/01_test.qmd
+
+# Live preview with hot reload
+quarto preview
+```
+
+Output formats are **HTML**, **PDF**, and **DOCX** for the manuscript; **Revealjs HTML** (self-contained) for the presentation.
+
+### Adding a new analysis notebook
+
+1. Copy `code/00_template.qmd` → `code/NN_name.qmd`
+2. Register it in `_quarto.yml`:
+   ```yaml
+   manuscript:
+     notebooks:
+       - notebook: code/NN_name.qmd
+         title: "Descriptive title"
+   ```
+3. Embed outputs in `index.qmd`:
+   ```
+   {{< embed code/NN_name.qmd#fig-label >}}
+   ```
+
+Quarto caches computed results in `_freeze/` (`freeze: auto`). A notebook only re-executes when its source changes. To force re-execution, delete the notebook's subfolder under `_freeze/code/`.
+
+---
+
+## Documentation
+
+| Topic | Link |
+|---|---|
+| Quarto manuscripts | https://quarto.org/docs/manuscripts/ |
+| Quarto output formats | https://quarto.org/docs/output-formats/all-formats.html |
+| Quarto Revealjs presentations | https://quarto.org/docs/presentations/revealjs/ |
+| Quarto execution & freeze | https://quarto.org/docs/projects/code-execution.html |
+| Quarto citations & bibliography | https://quarto.org/docs/authoring/citations.html |
+| Quarto authors & affiliations | https://quarto.org/docs/journals/authors.html |
+| APSR citation style | https://www.apsanet.org/PUBLICATIONS/Journals/APSR |
+| `tidyverse` | https://www.tidyverse.org/ |
+| `here` (relative paths in R) | https://here.r-lib.org/ |

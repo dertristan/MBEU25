@@ -1,8 +1,8 @@
 ---
 title: |
-  Muslim Bias in Europe
+  Penalized for Faith: Muslim Bias in Economic Behavioral Games Across 25 EU Countries
 subtitle: |
-  Evidence from Conjoint Experiments
+  Evidence from a Conjoint Survey Experiment
 abstract: |
   We reanalyize data
 execute:
