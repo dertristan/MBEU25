@@ -1,0 +1,77 @@
+---
+subtitle: |
+  Code Notebook Template
+date: last-modified
+date-format: MMMM D, YYYY
+format:
+  html:
+    toc: true
+    code-fold: true
+    code-tools: true
+execute:
+  echo: true
+  warning: true
+  eval: true
+  message: true
+---
+
+# Setup {#sec-setup}
+
+```{r}
+#| label: setup
+#| include: false
+
+# execution time
+start_time <- Sys.time()
+# console width
+options(width = 80)
+# packages
+p_required <- c(
+  "tidyverse",   # dplyr, ggplot2, tidyr
+  "here",        # relative paths
+  "sessioninfo"  # session docs
+)
+packages <- rownames(installed.packages())
+p_to_install <- p_required[!(p_required %in% packages)]
+if (length(p_to_install) > 0) {
+  install.packages(p_to_install)
+}
+sapply(p_required, require, character.only = TRUE)
+rm(p_required, p_to_install, packages)
+```
+
+# Code 1 {#sec-code-1}
+
+```{r}
+#| label: code-1
+
+# start your code here
+
+```
+
+
+# Session Info {#sec-session-info .appendix .unnumbered}
+
+```{r}
+#| label: session-info
+#| eval: true
+#| echo: true
+session_info()
+```
+
+# Execution Time {#sec-exec-time .appendix .unnumbered}
+
+```{r}
+#| label: exec-time
+#| eval: true
+#| echo: true
+#| include: true
+
+end_time <- Sys.time()
+exec_time <- end_time - start_time
+cat(paste(
+  "R code execution time:",
+  round(as.numeric(exec_time, units = "secs"), 2),
+  "seconds."
+))
+```

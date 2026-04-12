@@ -1,0 +1,84 @@
+---
+author: Tris 
+date: last-modified
+date-format: MMMM D, YYYY
+bibliography: references.bib
+biblio-style: apsr
+format:
+  revealjs:
+    embed-resources: true
+    theme: theme.scss
+    slideNumber: true
+    footer:  Tris   -- {{< meta date >}} --  Untitled Project 
+    logo:  ./images/uma_ss.png 
+preview-links: true
+---
+
+## Untitled Project
+
+### A great project
+
+![](./images/uma_palace.png){width="100%"} {{< meta author >}}<br> {{< meta date >}}
+
+# Introduction
+
+## Motivation
+
+- Bullet point 1
+- more details \@ [Quarto Revealjs Documentation](https://quarto.org/docs/presentations/revealjs/)
+
+------------------------------------------------------------------------
+
+## Relevance
+
+------------------------------------------------------------------------
+
+## Research Question
+
+# Theory
+
+## Prior Research
+
+------------------------------------------------------------------------
+
+## Theoretical Framework
+
+------------------------------------------------------------------------
+
+## Argument
+
+# Research Design
+
+------------------------------------------------------------------------
+
+## Data
+
+------------------------------------------------------------------------
+
+## Methods
+
+# Results
+
+------------------------------------------------------------------------
+
+## Results I
+
+------------------------------------------------------------------------
+
+## Results II
+
+# Conclusion
+
+------------------------------------------------------------------------
+
+## Summary
+
+------------------------------------------------------------------------
+
+## Implications
+
+# Thank you for your attention!
+
+------------------------------------------------------------------------
+
+## References

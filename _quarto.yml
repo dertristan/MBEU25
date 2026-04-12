@@ -1,0 +1,94 @@
+project:
+  type: manuscript
+  resources:
+    - robots.txt
+  post-render:
+    - code/helper_scripts/copy_figures.R
+
+manuscript:
+  notebooks: 
+    - notebook: code/01_test.qmd
+      title: "A test notebook"
+    
+
+execute: 
+  freeze: auto
+
+author:
+  - name: Tristan Muno
+    orcid: 0009-0002-3078-8436
+    email: tristan.muno@uni-mannheim.de
+    affiliations: 
+      - name: University of Mannheim
+        address: A 5, 6 – Raum A 351
+        city: Mannheim
+        state: BW
+        postal-code: 68159
+  # Documentation for Quarto Authors & Affiliations: https://quarto.org/docs/journals/authors.html
+  # - name: 
+  #   orcid: 
+  #   email: 
+  #   affiliations: 
+  #     - name: 
+  #       address:
+  #       city: 
+  #       state: 
+  #       postal-code: 
+  # - name: 
+  #   orcid: 
+  #   email: 
+  #   affiliations: 
+  #     - name: 
+  #       address:
+  #       city: 
+  #       state: 
+  #       postal-code: 
+
+bibliography: references.bib
+biblio-style: apsr
+link-citations: true
+number-sections: true
+date: last-modified
+date-format: MMMM D, YYYY
+
+format:
+  html:
+    other-links:
+      - text: "View project source"
+        icon: github
+        href: https://github.com/yourusername/your-repo
+      - text: "Report an issue"
+        icon: flag
+        href: https://github.com/yourusername/your-repo/issues
+    citeproc: false
+    filters:
+      - at: pre-quarto
+        path: _extensions/andrewheiss/wordcount/citeproc.lua
+      - at: pre-quarto
+        path: _extensions/andrewheiss/wordcount/wordcount.lua
+    toc: true
+    toc-depth: 3
+    include-in-header:
+      text:
+        <meta name="robots" content="noindex">
+  pdf:
+    code-links: false
+    toc: false
+    toc-depth: 3
+    include-in-header:
+      text: |
+        \usepackage{setspace}
+        \setlength{\parindent}{15pt}
+        \usepackage[font=footnotesize]{caption}
+    thanks: |
+      Do not share without consent.
+    papersize: a4
+    fontsize: 12pt
+    linestretch: 2
+    geometry:
+      - top = 2cm
+      - bottom = 2cm
+      - left = 2.5cm
+      - right = 2.5cm
+      - footskip = 20pt
+  docx: default

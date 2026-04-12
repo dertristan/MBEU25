@@ -1,0 +1,45 @@
+# --- IDE & System Files ---
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.httr-oauth
+.DS_Store
+Thumbs.db
+.RProj
+
+# --- Quarto Internal Folders ---
+# Quarto working directory and metadata
+.quarto/
+# The freeze folder stores computed results; usually ignored unless using Quarto Pub/GitHub Actions
+_freeze/
+# Local publishing credentials
+_publish.yml
+
+# --- Manuscript & Rendered Output ---
+# Ignore the entire manuscript output folder
+/_manuscript/
+# Ignore standard rendered formats (keep these if you want to track final versions in Git)
+*.pdf
+*.html
+*.docx
+*.pptx
+
+# --- Computational Artifacts ---
+# Jupyter Notebook checkpoints
+.ipynb_checkpoints/
+**/.ipynb_checkpoints/
+
+# Quarto/R-Markdown generated supporting files and cache
+*_files/
+*_cache/
+*code_files/
+
+# --- Project Specific ---
+# Often used for raw PDF papers; usually too large for Git
+literature
+/.quarto/
+**/*.quarto_ipynb
+
+site_libs
+notes.md

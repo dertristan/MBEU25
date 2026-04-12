@@ -1,0 +1,38 @@
+---
+title: |
+  Muslim Bias in Europe
+subtitle: |
+  Evidence from Conjoint Experiments
+abstract: |
+  We reanalyize data
+execute:
+  echo: false
+  warning: false
+  eval: true
+  include: true
+draft: true
+draft-mode: visible
+---
+
+## Introduction {#sec-introduction}
+
+## Theory {#sec-theory}
+
+## Research Design {#sec-design}
+
+Data by @hahm2024divided.
+
+{{< embed code/01_test.qmd#fig-test >}}
+
+## Empirical Analysis {#sec-analysis}
+
+## Conclusion {#sec-conclusion}
+
+\singlespacing
+
+## References
+
+::: {#refs}
+:::
+
+## Appendix {.appendix}
