@@ -30,14 +30,22 @@ $$ {#eq-1}
 
 ## Motivation
 
-- Bullet point 1
-- more details \@ [Quarto Revealjs Documentation](https://quarto.org/docs/presentations/revealjs/)
+-   Bullet point 1
+-   more details \@ [Quarto Revealjs Documentation](https://quarto.org/docs/presentations/revealjs/)
 
 ------------------------------------------------------------------------
 
 ## Relevance
 
-------------------------------------------------------------------------
+Possible structure of slides:
+
+-   Figure 2 from @hahm2024divided
+-   Second largest effect, however only 4 possible categories: “Catholic,” “Protestant,” “Muslim,” and “No Religion”, which are recoded as "in-group" or "out-group". Catholicism and Protestantism are branches of Christianity, so the effect for the religious out-group is most likely underestimated
+-   Plot of average number of tokens allocated to different religious groups
+-   To move from comparing effects between in-group and out-group (or to better understand this effect) we can use AMCE (short explanation about how it compares with a ref category). Problem of choosing a meaningful ref category in this case.
+-   What we are planning to do: compare the effects with different choices of ref category, conditional marginal means and differences between conditional marginal means (?) and we can possibly check conditional out-group effect (at least Muslims or not) and see if it changes results for partisanship (not sure if this is possible or necessary).
+
+And then we can just say that there are multiple possibilities of how to proceed (those ideas about comparative politics direction or individual level direction), but this is a necessary starting step to understand religious out-group bias. btw those effects in Greece and Bulgaria and huge uncertainty there are probably caused by the absence of an Orthodox category in the experiment (so most cases will be out-group).
 
 ## Research Question
 
