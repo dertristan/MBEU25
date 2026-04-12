@@ -25,20 +25,20 @@ author:
         state: BW
         postal-code: 68159
   # Documentation for Quarto Authors & Affiliations: https://quarto.org/docs/journals/authors.html
-  # - name: 
+  - name: Vera Okisheva
   #   orcid: 
   #   email: 
-  #   affiliations: 
-  #     - name: 
+    affiliations: 
+      - name: University of Mannheim
   #       address:
   #       city: 
   #       state: 
   #       postal-code: 
-  # - name: 
+  - name: Raphael Klöckner
   #   orcid: 
   #   email: 
-  #   affiliations: 
-  #     - name: 
+    affiliations: 
+      - name: University of Mannheim
   #       address:
   #       city: 
   #       state: 
