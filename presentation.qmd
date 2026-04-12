@@ -22,6 +22,12 @@ preview-links: true
 
 # Introduction
 
+$$
+\frac{1}{2}
+$$ {#eq-1}
+
+@eq-1 shows a fraction
+
 ## Motivation
 
 - Bullet point 1

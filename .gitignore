@@ -39,3 +39,5 @@ site_libs/
 notes.md
 # Claude Code memory & config
 .claude/
+
+/.quarto/
