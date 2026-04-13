@@ -28,9 +28,8 @@ preview-links: true
 - Paper compares behavioral bias across social divides — partisanship vs. other identities (e.g. religion, class, nationality)
 - Central idea:
   - Individuals categorize others into partisan in-groups and out-groups
-  → leading to in-group favoritism and out-group discrimination
-- In short, the paper expects:
-  partisanship to be the dominant divide, stronger than other social identities
+  → in-group favoritism and out-group discrimination
+- Authors assume partisanship to be the dominant divide; stronger than other social identities
 - We build on this by focusing on one dimension: the role of religion
 
 
