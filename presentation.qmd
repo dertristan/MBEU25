@@ -34,18 +34,20 @@ preview-links: true
 
 # Part II: Findings from Hahm et al. (2024)
 
-#### The Problem of Binary Coding
+## {.smaller}
+
+**The Problem of Binary Coding**
+
 -   @hahm2024divided operationalize religious distance as a binary: **In-group** vs. **Out-group** across 4 categories (Catholic, Protestant, Muslim, and No Religion). This assumes out-group homogeneity.
 -   In a European context, the social distance between a Catholic and a Protestant is significantly smaller than the distance between a Christian and a Muslim.
 
 <br>
 
-#### Why it Matters
+**Why it Matters**
+
 -   **Dilution:** Low bias between Christian denominations 'dilutes' the average effect of the religious     out-group.
 -   **Underestimation:** The paper might underestimate the true power of religious divide by masking the acute hostility toward specific out-groups.
 -   Is this religious effect driven primarily by bias against the **Muslim** group?
-:::
-
 
 
 ## Effects of Identity Attributes on Allocations to Player 2
@@ -72,81 +74,14 @@ Average Marginal Component Effects (AMCE) present effects relative to a baseline
 
 - Leverage cross-national data and analyse Conditional Average Treatment Effect of Muslim Attribute in Games on Token Allocation, focusing on cross-national variation
 
-::: {.notes}
-**Motivation:** When we pool all 25 countries, we estimate an average Muslim attribute effect that masks substantial cross-national variation.
-Estimating country-specific AMCEs allows us to map the geography of anti-Muslim bias in economic games.
-
-**Research question:** Does the Muslim attribute penalty vary systematically across European countries, and which country-level factors predict this variation?
-
-**Implementation:** Estimate subgroup AMCEs conditioning on country, using `cregg::amce()` with `by = ~ meta_country`.
-Plot country-specific estimates with 95% confidence intervals, sorted by point estimate — this produces a forest plot of 25 country-level effects.
-
-**Key expectations:** Eastern European countries and those with historically small Muslim minority populations may show stronger penalties due to lower intergroup familiarity.
-Countries with large Muslim communities — e.g. France, Germany, the Netherlands — may show weaker penalties, consistent with intergroup contact theory.
-Greece and Bulgaria are likely outliers: the absence of an Orthodox Christian category in the experiment means that most respondents there face a religious out-group profile regardless of the randomly assigned religion, inflating uncertainty and potentially biasing estimates.
-
-**Extending the analysis:** Beyond plotting country-level estimates, we can explain cross-national variation using a second-stage regression.
-Candidate country-level predictors include:
-- Share of Muslim population (Pew Research data)
-- Attitudes towards immigration (Eurobarometer / ESS)
-- Average level of religiosity (church attendance)
-- GDP per capita, unemployment rate
-
-**Expected finding:** A negative relationship between Muslim population share and the Muslim attribute penalty would support a contact theory interpretation — familiarity reduces bias.
-
-**Note on Greece and Bulgaria:** As Hahm et al. note, the absence of an Orthodox category causes identification problems.
-We should report estimates for these countries separately and flag this as a structural limitation of the experimental design rather than a data quality issue.
-:::
-
 ## Path 2: Individual-Level Covariate Analysis
 
 - What individual level (observed) covariates predict stronger Muslim bias?
 - Apply methods learned in this course for honest inference and subgroup analysis in conjoint experiments
 
-::: {.notes}
-**Motivation:** Even within a country, individuals differ in how much they penalise Muslim profiles.
-Understanding who is most susceptible to anti-Muslim bias has both theoretical value — testing social psychological mechanisms — and policy relevance for identifying target populations for interventions.
-
-**Research question:** Which individual-level characteristics moderate the effect of the Muslim attribute on token allocations?
-
-**Candidate moderators:**
-- *Religiosity:* More religious respondents may show stronger in-group favouritism, as they are more likely to use religion as a social categorisation cue.
-- *Political ideology / authoritarianism:* Right-wing and authoritarian respondents may show stronger Muslim penalties, consistent with social dominance orientation theory.
-- *Intergroup contact:* Respondents with personal contact with Muslims (friends, colleagues, neighbours) may show weaker penalties, consistent with contact theory.
-- *Education:* Higher-educated respondents may show weaker bias due to reduced out-group anxiety and stronger internalised egalitarian norms.
-
-**Method:** Following the Week 5 assignment, we estimate conditional marginal means (CMMs) and differences in conditional marginal means (DCMMs) for the Muslim attribute, conditioning on levels of the moderating variable.
-
-**Implementation steps:**
-1. Discretise continuous moderators into meaningful categories — e.g. religiosity into low/medium/high tertiles; education into primary/secondary/tertiary.
-2. Estimate CMMs for the Muslim attribute at each moderator level using `cregg::mm()` with `by = ~ moderator_variable`.
-3. Compute DCMMs — differences between CMMs across moderator levels — to test whether the Muslim penalty is significantly larger in one subgroup than another.
-4. Plot CMMs side by side with 95% confidence intervals; plot DCMMs separately.
-
-**Caveat:** Subgroup analyses are underpowered and prone to multiple comparison problems.
-DCMMs should be treated as exploratory and reported transparently alongside the pooled AMCE estimate.
-Pre-registering the set of moderators before analysis would strengthen the inferential claims considerably.
-:::
-
-
 ## Preliminary Results: Mean Tokens by Religion
 
 {{< embed code/01_test.qmd#fig-tokens-to-muslim-profiles >}}
-
-::: {.notes}
-**What the figure shows:** Mean tokens allocated to Player 2 by the religion attribute, separately for the Dictator Game (left) and Trust Game (right).
-Bar height = group mean; values above bars show rounded means.
-Text annotations inside each bar report pairwise t-tests comparing that non-Muslim category to the Muslim category (t-statistic, p-value).
-
-**Key observations:**
-- Muslim profiles receive fewer tokens on average than most other religious categories in both games.
-- The Trust Game pattern closely mirrors the Dictator Game, suggesting that anti-Muslim bias affects both direct giving and strategic investment behaviour.
-- Pairwise t-tests provide initial evidence that the Muslim–non-Muslim gap is statistically non-trivial across categories, motivating a more rigorous AMCE analysis that conditions on all attributes simultaneously.
-
-**Caveat:** These are raw group means — the conjoint design assigns other attributes randomly alongside religion, so raw means can be misleading if other attributes happen to be distributed unequally across religious categories in this sample.
-The AMCE, estimated via regression controlling for all attributes, is the appropriate causal estimator.
-These means are shown only as a descriptive starting point.
-:::
 
 # Thank you for your attention!
 
