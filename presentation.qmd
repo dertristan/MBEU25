@@ -28,16 +28,8 @@ $$ {#eq-1}
 
 @eq-1 shows a fraction
 
-## Motivation
 
--   Bullet point 1
--   more details \@ [Quarto Revealjs Documentation](https://quarto.org/docs/presentations/revealjs/)
-
-------------------------------------------------------------------------
-
-## Relevance
-
-Possible structure of slides:
+## Possible structure of slides
 
 -   Figure 2 from @hahm2024divided
 -   Second largest effect, however only 4 possible categories: “Catholic,” “Protestant,” “Muslim,” and “No Religion”, which are recoded as "in-group" or "out-group". Catholicism and Protestantism are branches of Christianity, so the effect for the religious out-group is most likely underestimated
@@ -47,7 +39,45 @@ Possible structure of slides:
 
 And then we can just say that there are multiple possibilities of how to proceed (those ideas about comparative politics direction or individual level direction), but this is a necessary starting step to understand religious out-group bias. btw those effects in Greece and Bulgaria and huge uncertainty there are probably caused by the absence of an Orthodox category in the experiment (so most cases will be out-group).
 
+## Motivation
+
+Figure 2 from @hahm2024divided
+
+## 
+::: {style="font-size: 0.75em; margin-top: 40px;"}
+#### The Problem of Binary Coding
+-   @hahm2024divided operationalize religious distance as a binary: **In-group** vs. **Out-group** across 4 categories (Catholic, Protestant, Muslim, and No Religion). This assumes out-group homogeneity.
+-   In a European context, the social distance between a Catholic and a Protestant is significantly smaller than the distance between a Christian and a Muslim.
+
+<br>
+
+#### Why it Matters
+-   **Dilution:** Low bias between Christian denominations 'dilutes' the average effect of the religious     out-group.
+-   **Underestimation:** The paper might underestimate the true power of religious divide by masking the acute hostility toward specific out-groups.
+-   Is this religious effect driven primarily by bias against the **Muslim** group?
+:::
+
+##
+
+Plot of average number of tokens allocated to different religious groups
+
+## Methodological Trap
+
+::: {style="font-size: 0.75em; margin-top: 20px;"}
+Average Marginal Component Effects (AMCE) present effects relative to a baseline, which can be misleading when analyzing subgroup preferences.
+
+<br>
+
+#### The Reference Category Problem
+-   @hahm2024divided use of a binary 'In-group/Out-group' allows them to avoid this
+-   No meaningful reference category in this case (see @leeper2020measuring)
+-   'Muslim' might be an In-group for a Muslim respondent but an Out-group for a Catholic. A single AMCE coefficient for 'Muslim' would average these opposing directions, washing out the effect.
+:::
+
+------------------------------------------------------------------------
+
 ## Research Question
+
 
 # Theory
 
