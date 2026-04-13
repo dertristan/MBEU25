@@ -1,5 +1,5 @@
 ---
-author: Tris 
+author: "Vera Okisheva, Raphael Klöckner and Tristan Muno"
 date: last-modified
 date-format: MMMM D, YYYY
 bibliography: references.bib
@@ -9,90 +9,122 @@ format:
     embed-resources: true
     theme: theme.scss
     slideNumber: true
-    footer:  Tris   -- {{< meta date >}} --  Untitled Project 
-    logo:  ./images/uma_ss.png 
+    footer:  TBCI   -- {{< meta date >}} --  The Muslim Penalty
+    logo:  ./images/uma_ss.png
 preview-links: true
 ---
 
-## Untitled Project
+## The Muslim Penalty
 
-### A great project
+### Experimental Evidence from 25 European Countries
 
 ![](./images/uma_palace.png){width="100%"} {{< meta author >}}<br> {{< meta date >}}
 
-# Introduction
+# Part I: Study Design
 
-$$
-\frac{1}{2}
-$$ {#eq-1}
+## Profile Example
 
-@eq-1 shows a fraction
+![Player 2 Profile Example.<br>*Note:* Reproduced from @hahm2024divided, Figure 1.](https://static.cambridge.org/binary/version/id/urn:cambridge.org:id:binary:20240123150926403-0273:S0003055423000266:S0003055423000266_fig1.png)
 
-## Motivation
+---
 
--   Bullet point 1
--   more details \@ [Quarto Revealjs Documentation](https://quarto.org/docs/presentations/revealjs/)
+## Randomisation of Religion Attribute 
 
-------------------------------------------------------------------------
+{{< embed code/01_test.qmd#fig-randomization >}}
 
-## Relevance
+# Part II: Findings from Hahm et al. (2024)
 
-Possible structure of slides:
 
--   Figure 2 from @hahm2024divided
--   Second largest effect, however only 4 possible categories: “Catholic,” “Protestant,” “Muslim,” and “No Religion”, which are recoded as "in-group" or "out-group". Catholicism and Protestantism are branches of Christianity, so the effect for the religious out-group is most likely underestimated
--   Plot of average number of tokens allocated to different religious groups
--   To move from comparing effects between in-group and out-group (or to better understand this effect) we can use AMCE (short explanation about how it compares with a ref category). Problem of choosing a meaningful ref category in this case.
--   What we are planning to do: compare the effects with different choices of ref category, conditional marginal means and differences between conditional marginal means (?) and we can possibly check conditional out-group effect (at least Muslims or not) and see if it changes results for partisanship (not sure if this is possible or necessary).
+## Effects of Identity Attributes on Allocations to Player 2
 
-And then we can just say that there are multiple possibilities of how to proceed (those ideas about comparative politics direction or individual level direction), but this is a necessary starting step to understand religious out-group bias. btw those effects in Greece and Bulgaria and huge uncertainty there are probably caused by the absence of an Orthodox category in the experiment (so most cases will be out-group).
+![Effects of Identity Attributes on Allocations to Player 2.<br> *Note:* Reproduced from @hahm2024divided, Figure 2.](https://static.cambridge.org/binary/version/id/urn:cambridge.org:id:binary:20240123150926403-0273:S0003055423000266:S0003055423000266_fig2.png)
 
-## Research Question
+## Subgroup Pitfalls
 
-# Theory
+# Part III: Proposed Extensions
 
-## Prior Research
+## Path 1: Comparative Analysis
 
-------------------------------------------------------------------------
+- Leverage cross-national data and analyse Conditional Average Treatment Effect of Muslim Attribute in Games on Token Allocation, focusing on cross-national variation
 
-## Theoretical Framework
+::: {.notes}
+**Motivation:** When we pool all 25 countries, we estimate an average Muslim attribute effect that masks substantial cross-national variation.
+Estimating country-specific AMCEs allows us to map the geography of anti-Muslim bias in economic games.
 
-------------------------------------------------------------------------
+**Research question:** Does the Muslim attribute penalty vary systematically across European countries, and which country-level factors predict this variation?
 
-## Argument
+**Implementation:** Estimate subgroup AMCEs conditioning on country, using `cregg::amce()` with `by = ~ meta_country`.
+Plot country-specific estimates with 95% confidence intervals, sorted by point estimate — this produces a forest plot of 25 country-level effects.
 
-# Research Design
+**Key expectations:** Eastern European countries and those with historically small Muslim minority populations may show stronger penalties due to lower intergroup familiarity.
+Countries with large Muslim communities — e.g. France, Germany, the Netherlands — may show weaker penalties, consistent with intergroup contact theory.
+Greece and Bulgaria are likely outliers: the absence of an Orthodox Christian category in the experiment means that most respondents there face a religious out-group profile regardless of the randomly assigned religion, inflating uncertainty and potentially biasing estimates.
 
-------------------------------------------------------------------------
+**Extending the analysis:** Beyond plotting country-level estimates, we can explain cross-national variation using a second-stage regression.
+Candidate country-level predictors include:
+- Share of Muslim population (Pew Research data)
+- Attitudes towards immigration (Eurobarometer / ESS)
+- Average level of religiosity (church attendance)
+- GDP per capita, unemployment rate
 
-## Data
+**Expected finding:** A negative relationship between Muslim population share and the Muslim attribute penalty would support a contact theory interpretation — familiarity reduces bias.
 
-------------------------------------------------------------------------
+**Note on Greece and Bulgaria:** As Hahm et al. note, the absence of an Orthodox category causes identification problems.
+We should report estimates for these countries separately and flag this as a structural limitation of the experimental design rather than a data quality issue.
+:::
 
-## Methods
+## Path 2: Individual-Level Covariate Analysis
 
-# Results
+- What individual level (observed) covariates predict stronger Muslim bias?
+- Apply methods learned in this course for honest inference and subgroup analysis in conjoint experiments
 
-------------------------------------------------------------------------
+::: {.notes}
+**Motivation:** Even within a country, individuals differ in how much they penalise Muslim profiles.
+Understanding who is most susceptible to anti-Muslim bias has both theoretical value — testing social psychological mechanisms — and policy relevance for identifying target populations for interventions.
 
-## Results I
+**Research question:** Which individual-level characteristics moderate the effect of the Muslim attribute on token allocations?
 
-------------------------------------------------------------------------
+**Candidate moderators:**
+- *Religiosity:* More religious respondents may show stronger in-group favouritism, as they are more likely to use religion as a social categorisation cue.
+- *Political ideology / authoritarianism:* Right-wing and authoritarian respondents may show stronger Muslim penalties, consistent with social dominance orientation theory.
+- *Intergroup contact:* Respondents with personal contact with Muslims (friends, colleagues, neighbours) may show weaker penalties, consistent with contact theory.
+- *Education:* Higher-educated respondents may show weaker bias due to reduced out-group anxiety and stronger internalised egalitarian norms.
 
-## Results II
+**Method:** Following the Week 5 assignment, we estimate conditional marginal means (CMMs) and differences in conditional marginal means (DCMMs) for the Muslim attribute, conditioning on levels of the moderating variable.
 
-# Conclusion
+**Implementation steps:**
+1. Discretise continuous moderators into meaningful categories — e.g. religiosity into low/medium/high tertiles; education into primary/secondary/tertiary.
+2. Estimate CMMs for the Muslim attribute at each moderator level using `cregg::mm()` with `by = ~ moderator_variable`.
+3. Compute DCMMs — differences between CMMs across moderator levels — to test whether the Muslim penalty is significantly larger in one subgroup than another.
+4. Plot CMMs side by side with 95% confidence intervals; plot DCMMs separately.
 
-------------------------------------------------------------------------
+**Caveat:** Subgroup analyses are underpowered and prone to multiple comparison problems.
+DCMMs should be treated as exploratory and reported transparently alongside the pooled AMCE estimate.
+Pre-registering the set of moderators before analysis would strengthen the inferential claims considerably.
+:::
 
-## Summary
 
-------------------------------------------------------------------------
+## Preliminary Results: Mean Tokens by Religion
 
-## Implications
+{{< embed code/01_test.qmd#fig-tokens-to-muslim-profiles >}}
+
+::: {.notes}
+**What the figure shows:** Mean tokens allocated to Player 2 by the religion attribute, separately for the Dictator Game (left) and Trust Game (right).
+Bar height = group mean; values above bars show rounded means.
+Text annotations inside each bar report pairwise t-tests comparing that non-Muslim category to the Muslim category (t-statistic, p-value).
+
+**Key observations:**
+- Muslim profiles receive fewer tokens on average than most other religious categories in both games.
+- The Trust Game pattern closely mirrors the Dictator Game, suggesting that anti-Muslim bias affects both direct giving and strategic investment behaviour.
+- Pairwise t-tests provide initial evidence that the Muslim–non-Muslim gap is statistically non-trivial across categories, motivating a more rigorous AMCE analysis that conditions on all attributes simultaneously.
+
+**Caveat:** These are raw group means — the conjoint design assigns other attributes randomly alongside religion, so raw means can be misleading if other attributes happen to be distributed unequally across religious categories in this sample.
+The AMCE, estimated via regression controlling for all attributes, is the appropriate causal estimator.
+These means are shown only as a descriptive starting point.
+:::
 
 # Thank you for your attention!
 
-------------------------------------------------------------------------
+---
 
 ## References

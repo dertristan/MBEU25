@@ -30,6 +30,7 @@ p_required <- c(
   "tidyverse", # dplyr, ggplot2, tidyr etc
   "here", # to never worry about directories
   "ggpubr", # theme_pubr()
+  "janitor", # tabyl()
   "knitr", # for kable()
   "sessioninfo" # session docs
 )
@@ -93,35 +94,115 @@ eu25_games_long <- eu25games2019 |>
 
 ```
 
-# Preliminary Figure
+# Preliminary Tables and Figures
 
 ```{r}
-#| label: fig-tokens-to-muslim-profiles
-#| fig-cap: "Mean tokens allocated to profiles displayed as Muslim in the Dictator and Trust games. Heigth of bars correspond to means, segment show standard deviations."
+#| label: tbl-n-outcomes-per-country
+#| tbl-cap: "Number of valid game observations per country"
 
 eu25_games_long |>
-  group_by(game_type, cj_rel) |>
-  summarise(
-    mean_toks = mean(cj_pl2),
-    sd_toks = sd(cj_pl2)
-  ) |>
+  filter(!is.na(cj_pl2)) |>
+  tabyl(meta_country)
+```
+
+```{r}
+#| label: tbl-n-resp-per-country
+#| tbl-cap: "Number of unique respondents per country"
+
+eu25_games_long |>
+  filter(!is.na(cj_pl2)) |>
+  group_by(meta_country) |>
+  summarise(n_resp = n_distinct(meta_pid))
+```
+
+```{r}
+#| label: fig-randomization
+#| fig-cap: "Distribution of the religion attribute across all rounds, by game type"
+
+eu25_games_long |>
   filter(!is.na(cj_rel)) |>
-  ggplot() +
-  geom_col(
-    aes(
-      x = fct_reorder(cj_rel, mean_toks),
-      y = mean_toks
-    ),
+  ggplot(aes(x = cj_rel)) +
+  geom_bar(,
     color = "black",
     fill = "white",
     width = 0.5
   ) +
-  geom_segment(
-    aes(
-      x = fct_reorder(cj_rel, mean_toks),
-      y = mean_toks - sd_toks,
-      yend = mean_toks + sd_toks
-    )
+  theme_pubr() +
+  facet_wrap(~game_type)
+```
+
+```{r}
+#| label: fig-tokens-to-muslim-profiles
+#| fig-cap: "Mean tokens allocated to Player 2 by religion attribute, in the Dictator and Trust games. Bar height corresponds to group means; values above bars show rounded means. Text annotations inside bars report pairwise t-tests relative to the Muslim category (t-statistic, p-value)."
+#| dpi: 500
+
+# summary stats
+rel_summ <- eu25_games_long |>
+  group_by(game_type, cj_rel) |>
+  summarise(
+    mean_toks = mean(cj_pl2),
+    sd_toks = sd(cj_pl2),
+    .groups = "drop"
+  ) |>
+  filter(!is.na(cj_rel)) |>
+  mutate(cj_rel = fct_reorder(cj_rel, mean_toks))
+
+# detect Muslim category label from factor levels
+muslim_key <- levels(rel_summ$cj_rel)[
+  grepl("uslim", levels(rel_summ$cj_rel), ignore.case = TRUE)
+]
+
+# pairwise t-tests: each non-Muslim group vs Muslim
+rel_clean <- eu25_games_long |>
+  filter(!is.na(cj_rel), !is.na(cj_pl2))
+
+ttest_annot <- rel_clean |>
+  group_by(game_type) |>
+  group_modify(
+    ~ {
+      d <- .x
+      others <- setdiff(unique(d$cj_rel), muslim_key)
+      purrr::map_dfr(others, function(grp) {
+        tt <- t.test(
+          d$cj_pl2[d$cj_rel == muslim_key],
+          d$cj_pl2[d$cj_rel == grp]
+        )
+        tibble(
+          cj_rel = grp,
+          label = sprintf(
+            "vs. Muslim\nt = %.2f, p = %.3f",
+            tt$statistic,
+            tt$p.value
+          )
+        )
+      })
+    }
+  ) |>
+  ungroup() |>
+  left_join(
+    rel_summ |> select(game_type, cj_rel, mean_toks),
+    by = c("game_type", "cj_rel")
+  ) |>
+  mutate(cj_rel = factor(cj_rel, levels = levels(rel_summ$cj_rel)))
+
+ggplot(rel_summ, aes(x = cj_rel, y = mean_toks)) +
+  geom_col(colour = "black", fill = "white", width = 0.5) +
+  geom_text(
+    aes(label = round(mean_toks, 2)),
+    vjust = -0.5,
+    size = 3
+  ) +
+  geom_text(
+    data = ttest_annot,
+    aes(x = cj_rel, y = mean_toks * 0, label = label),
+    size = 2.5,
+    colour = "grey40",
+    lineheight = 0.9
+  ) +
+  labs(
+    title = "Mean Tokens by Religion of Player 2",
+    x = NULL,
+    y = "Mean tokens allocated"
   ) +
   theme_pubr() +
   facet_wrap(~game_type)
