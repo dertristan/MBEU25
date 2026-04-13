@@ -34,12 +34,37 @@ preview-links: true
 
 # Part II: Findings from Hahm et al. (2024)
 
+#### The Problem of Binary Coding
+-   @hahm2024divided operationalize religious distance as a binary: **In-group** vs. **Out-group** across 4 categories (Catholic, Protestant, Muslim, and No Religion). This assumes out-group homogeneity.
+-   In a European context, the social distance between a Catholic and a Protestant is significantly smaller than the distance between a Christian and a Muslim.
+
+<br>
+
+#### Why it Matters
+-   **Dilution:** Low bias between Christian denominations 'dilutes' the average effect of the religious     out-group.
+-   **Underestimation:** The paper might underestimate the true power of religious divide by masking the acute hostility toward specific out-groups.
+-   Is this religious effect driven primarily by bias against the **Muslim** group?
+:::
+
+
 
 ## Effects of Identity Attributes on Allocations to Player 2
 
 ![Effects of Identity Attributes on Allocations to Player 2.<br> *Note:* Reproduced from @hahm2024divided, Figure 2.](https://static.cambridge.org/binary/version/id/urn:cambridge.org:id:binary:20240123150926403-0273:S0003055423000266:S0003055423000266_fig2.png)
 
-## Subgroup Pitfalls
+
+## Methodological Trap
+
+::: {style="font-size: 0.75em; margin-top: 20px;"}
+Average Marginal Component Effects (AMCE) present effects relative to a baseline, which can be misleading when analyzing subgroup preferences.
+
+<br>
+
+#### The Reference Category Problem
+-   @hahm2024divided use of a binary 'In-group/Out-group' allows them to avoid this
+-   No meaningful reference category in this case (see @leeper2020measuring)
+-   'Muslim' might be an In-group for a Muslim respondent but an Out-group for a Catholic. A single AMCE coefficient for 'Muslim' would average these opposing directions, washing out the effect.
+:::
 
 # Part III: Proposed Extensions
 
