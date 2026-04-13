@@ -24,7 +24,7 @@ preview-links: true
 
 ## Research Context
 
-- Re-analysis of data from @hahm2024divided a large-scale study of affective polarization across 25 EU countries
+- Re-analysis of data from @hahm2024divided; a large-scale study of affective polarization across 25 EU countries
 - Paper compares behavioral bias across social divides — partisanship vs. other identities (e.g. religion, class, nationality)
 - Central idea:
   - Individuals categorize others into partisan in-groups and out-groups
@@ -42,9 +42,7 @@ preview-links: true
   - party affiliation, religion, nationality, class, age, gender
 - All attributes are randomly assigned (conjoint design)
 - Each respondent completes:
-  - 3 dictator games + 3 trust games
-  - each with a new randomized profile
-
+  - 3 dictator games and 3 trust games, each with a new randomized profile
 
 ## Experimental Design II
 
