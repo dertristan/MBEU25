@@ -22,6 +22,21 @@ preview-links: true
 
 # Part I: Study Design
 
+## Research Context
+
+- Re-analysis of data from @hahm2024divided a large-scale study of affective polarization across 25 EU countries
+
+- Paper compares behavioral bias across social divides — partisanship vs. other identities (e.g. religion, class, nationality)
+- Central idea:
+  - Individuals categorize others into partisan in-groups and out-groups
+  → leading to preferential treatment of co-partisans
+  → and discrimination against opposing partisans
+
+- In short, the paper expects:
+  partisanship to be the dominant divide, stronger than other social identities
+
+## 
+
 ## Profile Example
 
 ![Player 2 Profile Example.<br>*Note:* Reproduced from @hahm2024divided, Figure 1.](https://static.cambridge.org/binary/version/id/urn:cambridge.org:id:binary:20240123150926403-0273:S0003055423000266:S0003055423000266_fig1.png)
