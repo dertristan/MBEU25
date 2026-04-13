@@ -35,9 +35,19 @@ preview-links: true
 - In short, the paper expects:
   partisanship to be the dominant divide, stronger than other social identities
 
-## 
+## Experimental Design I
 
-## Profile Example
+- Respondents participate in an online survey experiment
+- In each round, they interact with a fictitious co-player (“Player 2”)
+- Player 2 is described by a profile with multiple attributes:
+  - party affiliation, religion, nationality, class, age, gender
+- All attributes are randomly assigned (conjoint design)
+- Each respondent completes:
+  - 3 dictator games + 3 trust games
+  - each with a new randomized profile
+
+
+## Experimental Design II
 
 ![Player 2 Profile Example.<br>*Note:* Reproduced from @hahm2024divided, Figure 1.](https://static.cambridge.org/binary/version/id/urn:cambridge.org:id:binary:20240123150926403-0273:S0003055423000266:S0003055423000266_fig1.png)
 
