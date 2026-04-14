@@ -117,7 +117,11 @@ eu25_games_long |>
 
 ```{r}
 #| label: fig-randomization
-#| fig-cap: "Distribution of the religion attribute across all rounds, by game type"
+#| fig-cap: "Number of observations (one row = one game played) per drawn religion attribute, separately for the dictator and trust game."
+#| fig-dpi: 300
+#| fig-width: 6
+#| fig-height: 3
+#| out-width: "60%"
 
 eu25_games_long |>
   filter(!is.na(cj_rel)) |>
@@ -127,14 +131,21 @@ eu25_games_long |>
     fill = "white",
     width = 0.5
   ) +
-  theme_pubr() +
+  labs(
+    title = "Randomization Check: Religion Attribute",
+    x = "Religion attribute",
+    y = "Number of observations"
+  ) +
+  theme_pubr(base_size = 8) +
   facet_wrap(~game_type)
 ```
 
 ```{r}
 #| label: fig-tokens-to-muslim-profiles
-#| fig-cap: "Mean tokens allocated to Player 2 by religion attribute, in the Dictator and Trust games. Bar height corresponds to group means; values above bars show rounded means. Text annotations inside bars report pairwise t-tests relative to the Muslim category (t-statistic, p-value)."
-#| dpi: 500
+#| fig-cap: "Mean tokens allocated to Player 2 by religion attribute, in the Dictator and Trust games. Bar height corresponds to group means."
+#| dpi: 300
+#| fig-height: 3
+#| fig-width: 6
 
 # summary stats
 rel_summ <- eu25_games_long |>
@@ -192,19 +203,19 @@ ggplot(rel_summ, aes(x = cj_rel, y = mean_toks)) +
     vjust = -0.5,
     size = 3
   ) +
-  geom_text(
-    data = ttest_annot,
-    aes(x = cj_rel, y = mean_toks * 0, label = label),
-    size = 2.5,
-    colour = "grey40",
-    lineheight = 0.9
-  ) +
+  # geom_text(
+  #   data = ttest_annot,
+  #   aes(x = cj_rel, y = mean_toks * 0, label = label),
+  #   size = 2.5,
+  #   colour = "grey40",
+  #   lineheight = 0.9
+  # ) +
   labs(
     title = "Mean Tokens by Religion of Player 2",
     x = NULL,
     y = "Mean tokens allocated"
   ) +
-  theme_pubr() +
+  theme_pubr(base_size = 8) +
   facet_wrap(~game_type)
 ```
 

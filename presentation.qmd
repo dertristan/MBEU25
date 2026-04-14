@@ -22,7 +22,7 @@ preview-links: true
 
 # Part I: Study Design
 
-## Research Context
+## Research Context {.smaller}
 
 - Re-analysis of data from @hahm2024divided; a large-scale study of affective polarization across 25 EU countries
 - Paper compares behavioral bias across social divides — partisanship vs. other identities (e.g. religion, class, nationality)
@@ -33,7 +33,7 @@ preview-links: true
 - We build on this by focusing on one dimension: the role of religion
 
 
-## Experimental Design I
+## Experimental Design I {.smaller}
 
 - Respondents participate in an online survey experiment
 - In each round, they interact with a fictitious co-player (“Player 2”)
@@ -53,7 +53,12 @@ preview-links: true
 
 {{< embed code/01_test.qmd#fig-randomization >}}
 
-# Part II: Findings from Hahm et al. (2024)
+# Part II: Findings from @hahm2024divided
+
+## Effects of Identity Attributes on Allocations to Player 2
+
+![Effects of Identity Attributes on Allocations to Player 2.<br> *Note:* Reproduced from @hahm2024divided, Figure 2.](https://static.cambridge.org/binary/version/id/urn:cambridge.org:id:binary:20240123150926403-0273:S0003055423000266:S0003055423000266_fig2.png)
+
 
 ## {.smaller}
 
@@ -70,26 +75,23 @@ preview-links: true
 -   **Underestimation:** The paper might underestimate the true power of religious divide by masking the acute hostility toward specific out-groups.
 -   Is this religious effect driven primarily by bias against the **Muslim** group?
 
+## Methodological Trap {.smaller}
 
-## Effects of Identity Attributes on Allocations to Player 2
-
-![Effects of Identity Attributes on Allocations to Player 2.<br> *Note:* Reproduced from @hahm2024divided, Figure 2.](https://static.cambridge.org/binary/version/id/urn:cambridge.org:id:binary:20240123150926403-0273:S0003055423000266:S0003055423000266_fig2.png)
-
-
-## Methodological Trap
-
-::: {style="font-size: 0.75em; margin-top: 20px;"}
 Average Marginal Component Effects (AMCE) present effects relative to a baseline, which can be misleading when analyzing subgroup preferences.
 
 <br>
 
 #### The Reference Category Problem
 -   @hahm2024divided use of a binary 'In-group/Out-group' allows them to avoid this
--   No meaningful reference category in this case (see @leeper2020measuring)
+-   No meaningful reference category in this case [see @leeper2020measuring]
 -   'Muslim' might be an In-group for a Muslim respondent but an Out-group for a Catholic. A single AMCE coefficient for 'Muslim' would average these opposing directions, washing out the effect.
-:::
+
 
 # Part III: Proposed Extensions
+
+## Exploratory Results{.smaller}
+
+{{< embed code/01_test.qmd#fig-tokens-to-muslim-profiles >}}
 
 ## Path 1: Comparative Analysis
 
@@ -100,9 +102,6 @@ Average Marginal Component Effects (AMCE) present effects relative to a baseline
 - What individual level (observed) covariates predict stronger Muslim bias?
 - Apply methods learned in this course for honest inference and subgroup analysis in conjoint experiments
 
-## Preliminary Results: Mean Tokens by Religion
-
-{{< embed code/01_test.qmd#fig-tokens-to-muslim-profiles >}}
 
 # Thank you for your attention!
 
