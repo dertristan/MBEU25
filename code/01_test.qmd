@@ -20,7 +20,6 @@ execute:
 ```{r}
 #| label: setup
 #| include: false
-
 # execution time
 start_time <- Sys.time()
 # console width
@@ -45,18 +44,24 @@ rm(p_required, p_to_install, packages)
 
 # Load Data
 
-Note to others: at this point, I have only recoded the religion attribute variables, the rest is yet to be done. Variables with `_raw` suffix contain original survey responses which vary across countries / languages, I plan to construct a respective harmonized variable for each `_raw` in the data, however I keep this in a seperate repo as it's just a super messy dataset. I will add appropriate documentation of the variable naming schemes etc. asap.
+Full dataset (and pre-processing pipeline) is available at [GitHub](https://github.com/LS-Konig/eu25games2019). We can directly fetch the data from there (by now also compressed, so only ca 30 MB). `read_rds()` can decompress the file directly.
 
 ```{r}
 #| label: load-data
+# URL of raw data
+raw_url <- "https://raw.githubusercontent.com/LS-Konig/eu25games2019/main/data/03_final/eu25games2019.rds?cache_bust=1"
 
-eu25games2019 <- read_rds(
-  here(
-    "data",
-    "01_raw",
-    "eu25games2019.rds"
-  )
-)
+# Create temporary file path
+tmp <- tempfile(fileext = ".rds")
+
+# Download binary file locally
+download.file(raw_url, tmp, mode = "wb")
+
+# Read data into R (takes a couple seconds as it decompresses the file)
+eu25games2019 <- read_rds(tmp)
+
+# Clean up variables
+rm(raw_url, tmp)
 ```
 
 `eu25games2019` contains data in wide format, i.e., one row corresponds one survey response. So far I have not excluded incompletes or anything. This is just a quick starter for Tuesday's presentation.
@@ -65,7 +70,6 @@ To analyze outcomes, the data need to be transformed to long (tidy) format, with
 
 ```{r}
 #| label: game-outcomes-to-long
-
 # select relevant variables
 eu25_games_long <- eu25games2019 |>
   # wave, country and respondent identifiers
@@ -91,7 +95,6 @@ eu25_games_long <- eu25games2019 |>
   ) |>
   # filter observations with valid outcomes
   filter(!is.na(cj_pl2))
-
 ```
 
 # Preliminary Tables and Figures
@@ -99,7 +102,6 @@ eu25_games_long <- eu25games2019 |>
 ```{r}
 #| label: tbl-n-outcomes-per-country
 #| tbl-cap: "Number of valid game observations per country"
-
 eu25_games_long |>
   filter(!is.na(cj_pl2)) |>
   tabyl(meta_country)
@@ -108,7 +110,6 @@ eu25_games_long |>
 ```{r}
 #| label: tbl-n-resp-per-country
 #| tbl-cap: "Number of unique respondents per country"
-
 eu25_games_long |>
   filter(!is.na(cj_pl2)) |>
   group_by(meta_country) |>
@@ -122,7 +123,6 @@ eu25_games_long |>
 #| fig-width: 6
 #| fig-height: 3
 #| out-width: "60%"
-
 eu25_games_long |>
   filter(!is.na(cj_rel)) |>
   ggplot(aes(x = cj_rel)) +
@@ -146,7 +146,6 @@ eu25_games_long |>
 #| dpi: 300
 #| fig-height: 3
 #| fig-width: 6
-
 # summary stats
 rel_summ <- eu25_games_long |>
   group_by(game_type, cj_rel) |>
@@ -236,7 +235,6 @@ session_info()
 #| eval: true
 #| echo: true
 #| include: true
-
 end_time <- Sys.time()
 exec_time <- end_time - start_time
 cat(paste(
