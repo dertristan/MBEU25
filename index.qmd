@@ -50,7 +50,31 @@ To circumvent the issues with selecting a reference category [see @leeper2020mea
 
 ### Causal Estimand
 
-Consequently, out outcome $Y_{ijc}$ is the amount of tokens allocated by respondents $i$ in round $j$.
+Consequently, our outcome $Y_{ric}$ is the amount of tokens allocated in round $r$ by respondent $i$ of country $c$.
+Our causal estimand is the average difference in token allocation to Muslim profiles vis-a-vis non-Muslim ones, formally:
+
+$$
+\text{ATE} = \mathbb{E}[Y(1) - Y(0)]
+$$ {#eq-ate}
+
+Due to randomization by design, this can be estimated as
+
+$$
+\text{SATE} = \mathbb{E}[Y | T = 1] - \mathbb{E}[Y | T = 0]
+$$ {#eq-sate}
+
+with our interest in treatment effect heterogeneity on covariates $X$ (game and respondent level), we derive the following conditional average treatment effect (CATE):
+
+$$
+\text{CATE}(x) =  \mathbb{E}[Y | T = 1, X = x] - \mathbb{E}[Y | T = 0, X = x]
+$$ {eq-cate}
+
+
+to-do: correct / check full potential outcomes notation derivation, I am right now a little confused about which and how to correctly formalize this
+
+### Estimation Strategy
+
+
 
 ## Empirical Analysis {#sec-analysis}
 
