@@ -26,7 +26,18 @@ Reanalyzing a large scale conjoint survey experiment fielded in 25 European Unio
 
 ## Research Design {#sec-design}
 
-Data by @hahm2024divided.
+Our data structure is inherently hierarchical.
+Each respondent played three rounds of a Dictator (or Solidarity) game and a Trust game, the latter introduced announced reciprocity in the instructions.
+In each round, respondents received a fictional co-player with randomized attributes age, gender, social class, nationality, partisan affiliation, EU stance and religion.
+Randomization occured in multiple instances: both the order in which attributes were displayed as well as the *feature* of each attribute were both random by design.
+
+To adress the issue of implausible co-player configurations and in light of their research questions, @hahm2024divided implemented four distinct treatment conditions throughout the behavioral games.
+In condition one, the conjoint co-player was displayed as a conational, with EU stance and partisan affiliation.
+Condition two included conationals with partisan affiliation but no EU stance.
+Condition three showed a different but EU nationality and the EU stance attribute, while the final condition four showed only some nationality with no partisan affiliation or EU stance.
+
+
+Consequently, out outcome $Y_{ij}$ is the amount of tokens allocated by respondents $i$ in round $j$.
 
 ## Empirical Analysis {#sec-analysis}
 
