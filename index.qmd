@@ -74,7 +74,11 @@ to-do: correct / check full potential outcomes notation derivation, I am right n
 
 ### Estimation Strategy
 
-
+Given the hierarchical data structure, causal forest [@wager2018estimation; @athey2019estimating] approaches are not optimal, as they assume iid observations and thus potentially return narrower standard errors than appropriate.
+We therefore implement Bayesian causal forests (BCT) with randomc intercepts for account for the nested structure in our data. 
+@hahn2020bayesian extend Bayesian additive regression trees [@chipman2010bart; @chipman2006bayesian] to BCF by separating modelling of prognostic and treatment effects, thereby reducing regularization-induced confounding [@prevot2025hierarchical]. 
+While themselves also requireing independent observations, recent implementations further extended BCF to allow for the inclusion of both random intercepts [@yeager2022synergistic] and random slopes [@yeager2019national], allowing to account for group-level structures in the underlying data.
+We adopt this approach for our study to identify treatment heterogeneity in a data-driven way, while accounting for the nested structure using random intercepts and utilizing the full posterior uncertainty quantification for our treatment effect estimates.
 
 ## Empirical Analysis {#sec-analysis}
 
