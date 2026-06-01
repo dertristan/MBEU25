@@ -30,6 +30,7 @@ Reanalyzing a large scale conjoint survey experiment fielded in 25 European Unio
 
 Our data structure is inherently hierarchical.
 Each respondent played three rounds of a Dictator (or Solidarity) game and a Trust game, the latter introduced announced reciprocity in the instructions.
+Additionally, given the cross-national structure, respondents are grouped into 25 countries.
 In each round, respondents received a fictional co-player with randomized attributes age, gender, social class, nationality, partisan affiliation, EU stance and religion.
 Randomization occured in multiple instances: both the order in which attributes were displayed as well as the *feature* of each attribute were both random by design.
 
@@ -49,7 +50,7 @@ To circumvent the issues with selecting a reference category [see @leeper2020mea
 
 ### Causal Estimand
 
-Consequently, out outcome $Y_{ij}$ is the amount of tokens allocated by respondents $i$ in round $j$.
+Consequently, out outcome $Y_{ijc}$ is the amount of tokens allocated by respondents $i$ in round $j$.
 
 ## Empirical Analysis {#sec-analysis}
 
