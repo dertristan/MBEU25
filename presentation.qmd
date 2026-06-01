@@ -51,7 +51,7 @@ preview-links: true
 
 ## Randomisation of Religion Attribute 
 
-{{< embed code/01_test.qmd#fig-randomization >}}
+{{< embed code/01_exploration4presentation#fig-randomization >}}
 
 # Part II: Findings from @hahm2024divided
 
@@ -91,7 +91,7 @@ Average Marginal Component Effects (AMCE) present effects relative to a baseline
 
 ## Exploratory Results{.smaller}
 
-{{< embed code/01_test.qmd#fig-tokens-to-muslim-profiles >}}
+{{< embed code/01_exploration4presentation#fig-tokens-to-muslim-profiles >}}
 
 ## Path 1: Comparative Analysis
 
