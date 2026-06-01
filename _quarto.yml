@@ -7,7 +7,7 @@ project:
 
 manuscript:
   notebooks: 
-    - notebook: code/01_test.qmd
+    - notebook: code/01_exploration4presentation.qmd
       title: "A test notebook"
     
 
