@@ -16,6 +16,12 @@ draft-mode: visible
 
 ## Introduction {#sec-introduction}
 
+Numerous studies have found a profound Muslim penalty across European societies.
+Yet, less is known about what drives variation in that frequently and robustly observed anti-Muslim bias.
+Reanalyzing a large scale conjoint survey experiment fielded in 25 European Union member states [@hahm2023divided; @hahm2024divided], we analyze variation in the experimentally identified Muslim penalty to explore 1) what and how other conjoint features and 2) how individual level covariates affect the estimated Muslim bias.
+
+
+
 ## Theory {#sec-theory}
 
 ## Research Design {#sec-design}
