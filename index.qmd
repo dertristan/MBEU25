@@ -67,7 +67,7 @@ with our interest in treatment effect heterogeneity on covariates $X$ (game and 
 
 $$
 \text{CATE}(x) =  \mathbb{E}[Y | T = 1, X = x] - \mathbb{E}[Y | T = 0, X = x]
-$$ {eq-cate}
+$$ {#eq-cate}
 
 
 to-do: correct / check full potential outcomes notation derivation, I am right now a little confused about which and how to correctly formalize this
