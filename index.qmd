@@ -26,6 +26,8 @@ Reanalyzing a large scale conjoint survey experiment fielded in 25 European Unio
 
 ## Research Design {#sec-design}
 
+### Data
+
 Our data structure is inherently hierarchical.
 Each respondent played three rounds of a Dictator (or Solidarity) game and a Trust game, the latter introduced announced reciprocity in the instructions.
 In each round, respondents received a fictional co-player with randomized attributes age, gender, social class, nationality, partisan affiliation, EU stance and religion.
@@ -36,12 +38,22 @@ In condition one, the conjoint co-player was displayed as a conational, with EU 
 Condition two included conationals with partisan affiliation but no EU stance.
 Condition three showed a different but EU nationality and the EU stance attribute, while the final condition four showed only some nationality with no partisan affiliation or EU stance.
 
+Importantly, the religion attribute, consisting the of four features *muslim*, *catholic*, *protestant* and *non-religious* was shown across all of the above mentioned conditions.
+This allows us to utilize the full (game) dataset for estimating the Muslim penalty.
+One caveat is constituted by the fact that there is not strict control condition for the religion attribute, i.e., in which there was *no* religion feature shown at all.
+We refrain from selecting *non-religious* as a substnative control condition as being non-religious itself might not constitute a neutral baseline as it might for instance be perceived differently in eastern European countries with post-communist legacies than elsewhere.
+To circumvent the issues with selecting a reference category [see @leeper2020measuring] and to simplify the causal terminology, we collapse the religion feature into a binary treatment indicator $T$ with $T=1$ if the profile was displayed as Muslim and $T=0$ otherwise.[^1]
+
+[^1]: This approach effectively averages the non-Muslim religion feature against the Muslim one. As we are primarily interested in drivers of Muslim bias, not certain facets of Muslim bias itself, we opt for this simpler approach.
+
+
+### Causal Estimand
 
 Consequently, out outcome $Y_{ij}$ is the amount of tokens allocated by respondents $i$ in round $j$.
 
 ## Empirical Analysis {#sec-analysis}
 
-{{< embed code/01_test.qmd#fig-tokens-to-muslim-profiles >}}
+{{< embed code/01_exploration4presentation.qmd#fig-tokens-to-muslim-profiles >}}
 
 ## Conclusion {#sec-conclusion}
 
