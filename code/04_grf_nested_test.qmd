@@ -14,7 +14,6 @@ execute:
   warning: true
   eval: true
   message: true
-  cache: true
 ---
 
 # Purpose {#sec-purpose}
@@ -97,7 +96,7 @@ The pieces are:
 - **The prognostic surface** (`mu_x`): what the outcome looks like *before* any treatment, as a function of the covariates (rising with `x1`, falling with `x2`). `grf` does not report this directly — it is partialled out via `Y.hat` — but it still drives the outcome and so must be generated.
 - **The true treatment effect** (`tau_x`): the quantity of interest, and the thing the causal forest estimates. It is deliberately *heterogeneous* — a step function that is `0.5` when `x3 <= 0` and `1.25` when `x3 > 0` — so we can check the forest recovers not just an average effect but the way it *varies*.
 - **The treatment** (`z`): a coin flip independent of everything else (propensity 0.5), exactly as a randomized conjoint attribute would be.
-- **The outcome** (`y`): the linear predictor sums the prognostic surface, the treatment effect applied only to treated units (`tau_x * z`), the country and respondent offsets, and noise. Only a continuous outcome is generated here (the binary path is exercised in the BCF notebook).
+- **The outcome** (`y`): the linear predictor sums the prognostic surface, the treatment effect applied only to treated units (`tau_x * z`), the country and respondent offsets, and noise. The outcome is continuous, matching the continuous path tested in the BCF notebook.
 
 ```{r}
 #| label: simulate
@@ -255,8 +254,18 @@ The three headline quantities are read off with dedicated functions rather than 
 
 ## Extract and verify {#sec-extract}
 
+::: callout-note
+## The planted truth we are checking against
+
+From @sec-simulate, the data-generating values the quantities below should reproduce:
+
+- **$\tau(x)$** — a step function: $0.5$ when $x_3 \le 0$, $1.25$ when $x_3 > 0$. Population average $0.875$; the realized sample average is $\approx 0.845$, which is what the cluster-robust ATE targets.
+- **Best linear projection** — because $x_1$–$x_4$ are independent standard normals, the population projection of this step $\tau$ onto them is $0$ on $x_1$, $x_2$, $x_4$ and $0.75\,\varphi(0) \approx 0.299$ on $x_3$ (the slope of the step against a standard normal). The BLP should isolate $x_3$ near that value.
+- **Nuisance** — `grf` does not report the prognostic surface $\mu(x)$ or the country/respondent variance components; those enter only as fixed effects and clusters and are partialled out, so there is no separate recovery check for them (unlike the BCF notebook).
+:::
+
 We pull the three headline quantities.
-The cluster-robust ATE should land near the planted average effect `mean(tau_x)`; the individual predictions should correlate with the true `τ(x)` and separate in the right direction across the `x3` moderator; the best linear projection onto the moderators should flag `x3` as the one with a clearly non-zero slope.
+The cluster-robust ATE should land near the planted average effect `mean(tau_x)`; the individual predictions should correlate with the true `τ(x)` and separate in the right direction across the `x3` moderator; the best linear projection onto the moderators should flag `x3` as the one with a clearly non-zero slope, near its analytic value above.
 
 ```{r}
 #| label: extract
@@ -329,6 +338,7 @@ recovery |>
   scale_colour_manual(values = c("x3 <= 0" = "#0072B2", "x3 > 0" = "#D55E00")) +
   labs(
     title = "True vs. recovered treatment effect (synthetic smoke test)",
+    subtitle = "Dashed line: 45° identity (perfect recovery)",
     x = "True effect",
     y = "Causal-forest estimate",
     colour = NULL
@@ -357,22 +367,38 @@ blp_summary <- blp |>
     upper = estimate + 1.96 * std_error
   )
 
+# analytic population projection of the planted step tau onto independent
+# N(0,1) moderators: zero except x3, whose slope is 0.75 * phi(0)
+blp_truth <- tibble(
+  term = paste0("x", 1:4),
+  truth = c(0, 0, 0.75 * dnorm(0), 0)
+)
+
 blp_summary
 ```
 
 The BLP coefficient frame plots as a standard coefficient figure — the same grammar used for the BCF posterior projection, which is what makes the two methods legible side by side in the manuscript.
 The chunk below is a template following project figure conventions; the manuscript figure will overlay BCF and CRF coefficients on shared axes.
+Orange crosses mark the analytic true projection coefficients from @sec-extract: the estimate isolates `x3` near its true `0.75 φ(0) ≈ 0.30`, with the other three moderators near zero.
 
 ```{r}
 #| label: fig-blp
-#| fig-cap: "Best linear projection of the causal forest onto the pre-specified moderators (synthetic data), with 95% confidence intervals. Template for the BCF/CRF comparison figure."
+#| fig-cap: "Best linear projection of the causal forest onto the pre-specified moderators (synthetic data), with 95% confidence intervals. Orange crosses mark the analytic true projection coefficients (zero except x3). Template for the BCF/CRF comparison figure."
 #| dpi: 500
 blp_summary |>
   filter(term != "(Intercept)") |>
+  left_join(blp_truth, by = "term") |>
   mutate(term = fct_reorder(term, estimate)) |>
-  ggplot(aes(x = estimate, y = term)) +
+  ggplot(aes(y = term)) +
   geom_vline(xintercept = 0, linetype = "dashed", colour = "grey60") +
-  geom_pointrange(aes(xmin = lower, xmax = upper)) +
+  geom_pointrange(aes(x = estimate, xmin = lower, xmax = upper)) +
+  geom_point(
+    aes(x = truth, colour = "Planted truth"),
+    shape = 4,
+    size = 3,
+    stroke = 1.2
+  ) +
+  scale_colour_manual(values = c("Planted truth" = "#D55E00"), name = NULL) +
   labs(
     title = "Causal-forest best linear projection",
     x = "Projection coefficient",
