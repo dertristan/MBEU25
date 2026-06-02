@@ -1,0 +1,16 @@
+Package: multibart
+Type: Package
+Title: A collection of BART models
+Version: 0.3
+Date: 2021-12-18
+Author: Jared Murray <jared.murray@mccombs.utexas.edu>
+Maintainer: Questions and comments to <jared.murray@mccombs.utexas.edu>
+Description: Implements a variety of models using BART priors
+License: GNU GPL v3.0
+Depends: Rcpp (>= 0.10.4), RcppArmadillo, Rcereal
+LinkingTo: Rcpp, RcppArmadillo, Rcereal
+NeedsCompilation: yes
+RoxygenNote: 7.1.2
+RcppModules: tree_samples
+Encoding: UTF-8
+Packaged: 2021-12-23 01:19:01 UTC; jared
