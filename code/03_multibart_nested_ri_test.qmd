@@ -61,18 +61,17 @@ We point `load_all()` at `code/multibart` so we are testing the freshly edited p
 ```{r}
 #| label: setup
 #| include: false
-
 # execution time
 start_time <- Sys.time()
 # console width
 options(width = 80)
 # packages
 p_required <- c(
-  "tidyverse",   # dplyr, ggplot2, tidyr
-  "here",        # relative paths
-  "ggpubr",      # theme_pubr
-  "pkgload",     # load local multibart source
-  "sessioninfo"  # session docs
+  "tidyverse", # dplyr, ggplot2, tidyr
+  "here", # relative paths
+  "ggpubr", # theme_pubr
+  "pkgload", # load local multibart source
+  "sessioninfo" # session docs
 )
 packages <- rownames(installed.packages())
 p_to_install <- p_required[!(p_required %in% packages)]
@@ -100,7 +99,6 @@ We keep the dimensions small so the dense `WtW` solve is trivial.
 
 ```{r}
 #| label: simulate
-
 set.seed(20260602)
 
 # dimensions
@@ -109,10 +107,11 @@ n_resp_per_country <- 25
 n_task <- 3
 
 # nested ids
-country_id <- factor(rep(seq_len(n_country),
-                         each = n_resp_per_country * n_task))
-resp_id <- factor(rep(seq_len(n_country * n_resp_per_country),
-                      each = n_task))
+country_id <- factor(rep(
+  seq_len(n_country),
+  each = n_resp_per_country * n_task
+))
+resp_id <- factor(rep(seq_len(n_country * n_resp_per_country), each = n_task))
 n <- length(resp_id)
 
 # planted variance components
@@ -132,7 +131,8 @@ tau_x <- 0.5 + 0.75 * (X[, 3] > 0)
 z <- rbinom(n, 1, 0.5)
 
 # linear predictor with nested random intercepts on mu only
-lin_pred <- mu_x + tau_x * z +
+lin_pred <- mu_x +
+  tau_x * z +
   b_country[as.integer(country_id)] +
   b_resp[as.integer(resp_id)]
 
@@ -146,11 +146,10 @@ Verification chunks like this are required after each data-prep step in this pro
 
 ```{r}
 #| label: check-sim
-
 # each respondent maps to exactly one country
-resp_country_map <- tapply(as.integer(country_id),
-                           resp_id,
-                           function(v) length(unique(v)))
+resp_country_map <- tapply(as.integer(country_id), resp_id, function(v) {
+  length(unique(v))
+})
 stopifnot(
   all(resp_country_map == 1),
   length(y_cont) == n,
@@ -167,7 +166,6 @@ We assert the shape we expect: `W` is `n × (C + R)`, and `Q`'s columns sum to t
 
 ```{r}
 #| label: build-re
-
 re <- nested_random_intercepts(country_id, resp_id)
 
 C <- re$n_level1
@@ -197,16 +195,15 @@ Two call-site details matter:
 
 ```{r}
 #| label: fit-cont
-
 fit_cont <- bcf_continuous_linear(
   y = y_cont,
   z = z,
   x_control = X,
   x_moderate = X,
-  zhat = rep(0.5, n),                # known propensity
+  zhat = rep(0.5, n), # known propensity
   randeff_design = re$randeff_design,
   randeff_variance_component_design = re$randeff_variance_component_design,
-  randeff_scales = c(1, 1),          # length K = 2
+  randeff_scales = c(1, 1), # length K = 2
   randeff_df = 3,
   nburn = 200,
   nsim = 200,
@@ -221,16 +218,15 @@ Here the recovered random-intercept scales live on the latent (probit-like) scal
 
 ```{r}
 #| label: fit-bin
-
 fit_bin <- bcf_binary(
   y = y_bin,
   z = z,
   x_control = X,
   x_moderate = X,
-  pihat = rep(0.5, n),               # known propensity
+  pihat = rep(0.5, n), # known propensity
   randeff_design = re$randeff_design,
   randeff_variance_component_design = re$randeff_variance_component_design,
-  randeff_scales = c(1, 1),          # length K = 2
+  randeff_scales = c(1, 1), # length K = 2
   randeff_df = 3,
   nburn = 200,
   nsim = 200,
@@ -245,7 +241,6 @@ We run it on both fits and assert the output shapes; for the continuous fit we a
 
 ```{r}
 #| label: extract
-
 post_cont <- get_nested_random_intercepts_posteriors(fit_cont, re)
 post_bin <- get_nested_random_intercepts_posteriors(fit_bin, re)
 
@@ -263,10 +258,20 @@ stopifnot(
 sd_country_hat <- mean(post_cont$level1_sd)
 sd_resp_hat <- mean(post_cont$level2_sd)
 
-cat("planted   sigma_country / sigma_resp:",
-    sigma_country, "/", sigma_resp, "\n")
-cat("recovered sigma_country / sigma_resp:",
-    round(sd_country_hat, 3), "/", round(sd_resp_hat, 3), "\n")
+cat(
+  "planted   sigma_country / sigma_resp:",
+  sigma_country,
+  "/",
+  sigma_resp,
+  "\n"
+)
+cat(
+  "recovered sigma_country / sigma_resp:",
+  round(sd_country_hat, 3),
+  "/",
+  round(sd_resp_hat, 3),
+  "\n"
+)
 
 # the two components should separate in the right direction
 stopifnot(sd_country_hat > sd_resp_hat)
@@ -282,7 +287,6 @@ The random-effects posteriors are `draws × group` matrices; we melt them to lon
 
 ```{r}
 #| label: tidy-re
-
 # country-level intercept posterior -> long tidy summary
 country_re_summary <- post_cont$level1_posterior |>
   as_tibble() |>
@@ -305,7 +309,6 @@ The chunk below is a template following the project figure conventions; it is no
 #| label: fig-country-re
 #| fig-cap: "Posterior country-level random intercepts (synthetic smoke-test data), with 90% credible intervals. Diagnostic only."
 #| dpi: 500
-
 country_re_summary |>
   mutate(country = fct_reorder(country, post_mean)) |>
   ggplot(aes(x = post_mean, y = country)) +
@@ -334,7 +337,6 @@ The intent: subset to a handful of countries, fit the nested model, and confirm 
 
 ```{r}
 #| label: load-subsample
-
 # TODO: replace with real 01_prep_hte output
 # dat <- readRDS(here::here("data", "hte_dictator.rds"))
 
@@ -346,7 +348,6 @@ The intent: subset to a handful of countries, fit the nested model, and confirm 
 
 ```{r}
 #| label: fit-subsample
-
 # re_sub <- nested_random_intercepts(sub$country_id, sub$respondent_id)
 #
 # fit_sub <- bcf_continuous_linear(   # or bcf_binary, per outcome coding
@@ -383,7 +384,6 @@ session_info()
 #| label: exec-time
 #| echo: true
 #| include: true
-
 end_time <- Sys.time()
 exec_time <- end_time - start_time
 cat(paste(
