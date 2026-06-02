@@ -9,12 +9,16 @@
 
 This project reanalyzes data from [Hahm, Hilpert & König (2024)](#data-source), a large-scale conjoint survey experiment fielded across all 25 EU member states in 2019. In the original study, respondents participated in economic behavioral games — a **dictator/solidarity game** and a **trust game** — in which they allocated tokens to a fictitious co-player. Co-player profiles were constructed with randomized attributes (including religion, nationality, age, and others), allowing causal identification of attribute-specific biases via the conjoint design.
 
-We exploit the religion attribute to study **Muslim bias**: the causal effect of a co-player being presented as Muslim on the respondent's token allocation. Two main analytical directions are pursued:
+We exploit the religion attribute to study **Muslim bias**: the causal effect of a co-player being presented as Muslim (vs. all other religions pooled) on the respondent's token allocation. Rather than a comparative cross-national study, the focus is on **treatment effect heterogeneity** — what drives variation in the well-documented Muslim penalty. Two families of moderators are examined:
 
-1. **Cross-national comparison** — estimating aggregate Muslim bias levels country by country and examining variation across EU member states.
-2. **Covariate analysis** — identifying which respondent-level characteristics (e.g., political attitudes, religiosity, contact with Muslims, socioeconomic status) most strongly predict higher levels of Muslim bias.
+1. **Profile-level heterogeneity** — which *other conjoint attributes* shown in the same co-player profile (e.g., occupation, nationality, partisan affiliation, EU stance) amplify or attenuate the Muslim effect.
+2. **Respondent-level heterogeneity** — which *respondent characteristics* (e.g., political attitudes, religiosity, contact with Muslims, socioeconomic status) are associated with stronger or weaker Muslim bias.
 
-The exact estimands, identification strategy, and modeling choices are to be finalized.
+Country-level structure is treated as a nuisance to account for, not interpreted substantively. The analysis is exploratory and descriptive throughout.
+
+### Empirical Strategy
+
+Heterogeneity is estimated with a dual strategy targeting the conditional average treatment effect (CATE) of the Muslim attribute. The primary method is **hierarchical Bayesian Causal Forests** with nested random intercepts (respondent within country) to account for the clustered data structure. As a frequentist robustness check, we additionally fit **causal random forests** (`grf`) with respondent-level clusters and country fixed effects. Separate models are estimated for each behavioral game (dictator and trust). See `index.qmd` for more details.
 
 ### Data Source
 
