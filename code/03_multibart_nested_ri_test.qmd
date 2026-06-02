@@ -50,8 +50,7 @@ If the dense fit proves prohibitive, the documented fallback (CLAUDE.md Open Que
 
 # Setup {#sec-setup}
 
-The setup chunk loads the usual project packages plus `pkgload`, which lets us load the **local source** copy of `multibart` (compiling its C++ as needed) without installing it.
-We point `load_all()` at `code/multibart` so we are testing the freshly edited package, not a stale installed one.
+The setup chunk loads the usual project packages the normal way, including `multibart`'s own dependencies (`Rcpp`, `RcppArmadillo`, `Rcereal`, `fastDummies`), so they are installed and attached before the local package is touched.
 
 ```{r}
 #| label: setup
@@ -66,12 +65,13 @@ p_required <- c(
   "here", # relative paths
   "ggpubr", # theme_pubr
   "patchwork", # multi-panel figure
-  "pkgload", # load local multibart source
   "sessioninfo", # session docs
 
-  # for multibart dependencies -------------------------------------------------
-  "Rcereal",
-  "fastDummies"
+  # multibart dependencies -----------------------------------------------------
+  "Rcpp", # multibart Depends + LinkingTo
+  "RcppArmadillo", # multibart Depends + LinkingTo
+  "Rcereal", # multibart Depends + LinkingTo
+  "fastDummies" # multibart helper dependency
 )
 packages <- rownames(installed.packages())
 p_to_install <- p_required[!(p_required %in% packages)]
@@ -80,10 +80,34 @@ if (length(p_to_install) > 0) {
 }
 sapply(p_required, require, character.only = TRUE)
 rm(p_required, p_to_install, packages)
-
-# local package
-pkgload::load_all(here::here("code", "multibart"))
 ```
+
+## Local multibart package {#sec-multibart}
+
+`multibart` lives only as source under `code/multibart`; it is not on CRAN.
+Loading it with `pkgload::load_all()` puts it in memory but not on `.libPaths()` — fine interactively, but it breaks under `quarto render`, where instantiating its Rcpp module (`tree_samples`) calls `library("multibart")` and fails because no *installed* copy exists.
+So we install the local source once (compiling its C++), then attach it with `library()` like any other package — robust for both interactive use and rendering.
+
+```{r}
+#| label: setup-multibart
+#| include: false
+# install local source on first use
+if (!requireNamespace("multibart", quietly = TRUE)) {
+  install.packages(
+    here::here("code", "multibart"),
+    repos = NULL,
+    type = "source"
+  )
+}
+# attach installed package
+library(multibart)
+```
+
+::: callout-note
+The chunk above only auto-installs when the package is *missing*, not when its source changes.
+After editing `multibart`'s C++ or R code, reinstall to pick it up:
+`install.packages(here::here("code", "multibart"), repos = NULL, type = "source")`.
+:::
 
 # Synthetic mechanism check {#sec-synthetic}
 
