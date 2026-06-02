@@ -172,3 +172,41 @@ get_random_intercepts_slopes_posteriors = function(bcf_fit, randeff_setup) {
               intercept_sd=intercept_sd,
               treatment_sd=treatment_sd))
 }
+
+#' Get posteriors for the random intercepts in a nested two-level model
+#'
+#' Companion extractor for \code{nested_random_intercepts}. The fitted random
+#' coefficients in \code{bcf_fit$random_effects} are ordered as the columns of
+#' the design W = [D_level1 | D_level2], so the first \code{n_level1} columns are
+#' the level-1 (e.g. country) intercepts and the next \code{n_level2} columns are
+#' the level-2 (e.g. respondent) intercepts. The two variance-component SDs are
+#' returned in the first two columns of \code{random_effects_sd}. This must not
+#' reuse \code{get_random_intercepts_slopes_posteriors}, whose hard-coded
+#' 1:ngroups / (ngroups+1):(2*ngroups) split assumes the two blocks are equal in
+#' width and would mislabel a nested fit.
+#'
+#' @param bcf_fit A fitted bcf object carrying random_effects and random_effects_sd
+#' @param randeff_setup The list returned by \code{nested_random_intercepts}
+#'
+#' @return
+#' @export
+#'
+#' @examples
+get_nested_random_intercepts_posteriors = function(bcf_fit, randeff_setup) {
+  n_level1 = randeff_setup$n_level1
+  n_level2 = randeff_setup$n_level2
+
+  level1_posterior = bcf_fit$random_effects[,1:n_level1]
+  colnames(level1_posterior) = colnames(randeff_setup$level1_dummies)
+
+  level2_posterior = bcf_fit$random_effects[,(n_level1+1):(n_level1+n_level2)]
+  colnames(level2_posterior) = colnames(randeff_setup$level2_dummies)
+
+  level1_sd = bcf_fit$random_effects_sd[,1]
+  level2_sd = bcf_fit$random_effects_sd[,2]
+
+  return(list(level1_posterior=level1_posterior,
+              level2_posterior=level2_posterior,
+              level1_sd=level1_sd,
+              level2_sd=level2_sd))
+}
