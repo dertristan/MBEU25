@@ -40,14 +40,20 @@ MBEU25/
 ├── CLAUDE.md                    # Guidance for Claude Code AI assistant
 │
 ├── code/
-│   ├── 00_template.qmd          # Template for new analysis notebooks
-│   ├── 01_test.qmd              # Example/test notebook
+│   ├── 00_template.qmd                   # Template for new analysis notebooks
+│   ├── 01_exploration4presentation.qmd  # Exploratory analysis for the slides
+│   ├── 02_data_prep.qmd                  # Data cleaning / prep for heterogeneity analysis
+│   ├── 03_multibart_nested_ri_test.qmd  # Hierarchical (nested RI) BCF mechanism test
+│   ├── 04_grf_nested_test.qmd           # grf causal-forest nested-structure test
+│   ├── multibart/                        # Local R package: hierarchical BCF with nested random intercepts
 │   └── helper_scripts/
-│       └── copy_figures.R       # Post-render: copies figures into _manuscript/
+│       ├── copy_figures.R                # Post-render: copies figures into _manuscript/
+│       └── glftrackeR.R                  # Helper utilities
 │
 ├── data/
 │   ├── 01_raw/                  # Raw, unmodified source data (never overwrite)
-│   └── 02_processed/            # Cleaned and analysis-ready datasets
+│   ├── 02_processed/            # Cleaned and analysis-ready datasets
+│   └── 03_final/               # Final analysis datasets
 │
 ├── images/
 │   ├── uma_palace.png           # University of Mannheim branding (slides)
@@ -57,6 +63,14 @@ MBEU25/
 ```
 
 > **Generated folders** (`_freeze/`, `_manuscript/`, `.quarto/`, `site_libs/`) are created by Quarto at render time and are gitignored.
+
+### The `multibart` package
+
+The local `code/multibart/` package implements **hierarchical Bayesian Causal Forests with nested random intercepts** (respondent within country), the primary method for this project. The code is adapted from the BCF implementation released with the following study:
+
+> Yeager, D. S., Bryan, C. J., Gross, J. J., Murray, J. S., Krettek Cobb, D., HF Santos, P., Gravelding, H., Johnson, M., & Jamieson, J. P. (2022). A synergistic mindsets intervention protects adolescents from stress. *Nature*, 607(7919), 512–520. https://doi.org/10.1038/s41586-022-04907-7
+
+**Adaptation for two-level nesting.** The original implementation supports single-level (site) random effects. The extension to two-level nesting (respondent within country) was made **entirely in R** — a `nested_random_intercepts()` constructor and a matching posterior extractor added to `R/groups.R` and exported in `NAMESPACE`. **No C++/`src` source was modified** for the nesting logic (the only commit touching `src/` is an unrelated `PI` declaration bugfix). See the package commit history for details.
 
 ---
 
