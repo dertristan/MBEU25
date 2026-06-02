@@ -14,6 +14,7 @@ execute:
   warning: true
   eval: true
   message: true
+  cache: true
 ---
 
 # Purpose {#sec-purpose}
@@ -397,6 +398,88 @@ p_tau_c <- recovery_cont |>
     title = "Continuous-outcome model: true vs. recovered effects",
     subtitle = "Dashed line: 45° identity (perfect recovery)"
   )
+```
+
+## Posterior projection onto moderators {#sec-projection}
+
+The recovery scatter shows that $\tau(x)$ is recovered observation by observation, but the manuscript needs a *legible linear summary* of how the treatment effect moves with each moderator — the quantity that sits next to `grf`'s `best_linear_projection` in the comparison table.
+This is the BCF counterpart, computed on the identical synthetic data and seed used by `04_grf_nested_test.qmd`, so the two sets of coefficients can be read one-to-one.
+
+The summary is a **posterior projection** (the lower-dimensional posterior summarization of Woody, Carvalho & Murray, named in the methods plan).
+Each posterior draw of $\tau(x)$ is a full per-observation surface; we project each draw onto the moderators by ordinary least squares, which yields a *posterior distribution over the projection coefficients* — one slope per moderator describing how $\tau$ moves with it, plus an intercept near the average effect.
+
+The two methods target the **same estimand** — the best linear projection of $\tau$ — with **different machinery**: BCF regresses the posterior $\tau$ draws directly, whereas `grf` projects a doubly-robust AIPW score.
+Agreement across that difference is the robustness story; disagreement is what the manuscript flags.
+
+::: callout-note
+## The planted truth we are checking against
+
+Because the data-generating process is identical to the `grf` test and $x_1$–$x_4$ are independent standard normals, the population projection of the planted step $\tau$ is $0$ on $x_1$, $x_2$, $x_4$ and $0.75\,\varphi(0) \approx 0.299$ on $x_3$ (the slope of the step against a standard normal).
+The projection should isolate $x_3$ near that value.
+We summarize with a **95% credible interval** — wider than the 90% interval used for the random-intercept caterpillar — to match `grf`'s $1.96\,\text{SE}$ band in `fig-blp`, so the two coefficient figures are read on the same footing.
+:::
+
+```{r}
+#| label: project-tau
+# design with intercept; X holds the four candidate moderators x1-x4
+Xd <- cbind(`(Intercept)` = 1, X)
+
+# posterior draws of tau(x): nsim x n
+tau_draws <- get_forest_fit(fit_cont$moderate_fit, X)
+
+# posterior projection: OLS of each tau draw onto the moderators,
+# vectorized over draws -> (p+1) x nsim coefficient matrix
+proj_draws <- solve(crossprod(Xd), crossprod(Xd, t(tau_draws)))
+
+# per-term posterior summary, 95% credible interval to match the grf BLP
+proj_summary <- proj_draws |>
+  t() |>
+  as_tibble() |>
+  pivot_longer(everything(), names_to = "term", values_to = "coef") |>
+  summarise(
+    estimate = mean(coef),
+    lower = quantile(coef, 0.025),
+    upper = quantile(coef, 0.975),
+    .by = term
+  )
+
+# analytic population projection (identical DGP to the grf test):
+# zero except x3, whose slope is 0.75 * phi(0)
+proj_truth <- tibble(
+  term = paste0("x", 1:4),
+  truth = c(0, 0, 0.75 * dnorm(0), 0)
+)
+
+proj_summary
+```
+
+The coefficient figure uses the same grammar as the `grf` BLP plot, which is what makes the two methods legible side by side in the manuscript.
+Orange crosses mark the analytic true projection coefficients: the posterior should isolate `x3` near its true `0.75 φ(0) ≈ 0.30`, with the other three moderators near zero.
+
+```{r}
+#| label: fig-projection-bcf
+#| fig-cap: "BCF posterior projection of the treatment-effect surface tau(x) onto the pre-specified moderators (synthetic data), with 95% credible intervals. Orange crosses mark the analytic true projection coefficients (zero except x3). Counterpart to the grf best linear projection; template for the BCF/CRF comparison figure."
+#| dpi: 500
+proj_summary |>
+  filter(term != "(Intercept)") |>
+  left_join(proj_truth, by = "term") |>
+  mutate(term = fct_reorder(term, estimate)) |>
+  ggplot(aes(y = term)) +
+  geom_vline(xintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_pointrange(aes(x = estimate, xmin = lower, xmax = upper)) +
+  geom_point(
+    aes(x = truth, colour = "Planted truth"),
+    shape = 4,
+    size = 3,
+    stroke = 1.2
+  ) +
+  scale_colour_manual(values = c("Planted truth" = "#D55E00"), name = NULL) +
+  labs(
+    title = "BCF posterior projection onto moderators",
+    x = "Projection coefficient",
+    y = "Moderator"
+  ) +
+  ggpubr::theme_pubr()
 ```
 
 # Processing the output downstream {#sec-downstream}
