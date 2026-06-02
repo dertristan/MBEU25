@@ -82,32 +82,21 @@ We reuse the **exact data-generating process** from the BCF notebook (same seed)
 
 ## Simulate two-level data {#sec-simulate}
 
-Respondents nested in countries, several conjoint tasks per respondent.
-Treatment `z` is randomized with a known propensity of 0.5, as in the conjoint design.
-Country and respondent intercepts are drawn from normals with distinct variances; for `grf` these are pure nuisance — country is handled by fixed effects, respondent by clustering.
-
-In plain language, the chunk below builds a fake dataset where we already know every answer, so we can check whether the causal forest rediscovers it.
-This is the **same** data-generating process and seed as the BCF notebook, so the two methods see identical data.
-The pieces are:
-
-- **The nesting structure** (`country_id`, `resp_id`): 8 countries, 25 respondents each, 3 tasks per respondent, for `n = 600` rows. Respondent ids are numbered globally (1…200), so each respondent belongs to exactly one country — that is what makes the structure *nested* rather than *crossed*.
-- **The group offsets** (`b_country`, `b_resp`): each country gets its own baseline shift and each respondent a smaller one, drawn from normals whose SDs are the planted variance components. Here they are pure nuisance — the things country fixed effects and respondent clustering are meant to absorb — not quantities `grf` reports.
-- **The covariates** (`X_mod`): four standard-normal columns `x1`–`x4`, the respondent/profile characteristics a real analysis would use to explain heterogeneity. (These become the *moderator* matrix; country dummies are appended later in @sec-build.)
-- **The prognostic surface** (`mu_x`): what the outcome looks like *before* any treatment, as a function of the covariates (rising with `x1`, falling with `x2`). `grf` does not report this directly — it is partialled out via `Y.hat` — but it still drives the outcome and so must be generated.
-- **The true treatment effect** (`tau_x`): the quantity of interest, and the thing the causal forest estimates. It is deliberately *heterogeneous* — a step function that is `0.5` when `x3 <= 0` and `1.25` when `x3 > 0` — so we can check the forest recovers not just an average effect but the way it *varies*.
-- **The treatment** (`z`): a coin flip independent of everything else (propensity 0.5), exactly as a randomized conjoint attribute would be.
-- **The outcome** (`y`): the linear predictor sums the prognostic surface, the treatment effect applied only to treated units (`tau_x * z`), the country and respondent offsets, and noise. The outcome is continuous, matching the continuous path tested in the BCF notebook.
+Respondents nested in countries, three conjoint tasks each, treatment randomized at the known conjoint propensity of 0.5.
+The country and respondent intercepts are pure nuisance for `grf` — country absorbed by fixed effects, respondent by clustering — so unlike the BCF test their variances are not quantities we recover.
+The treatment effect is a deliberate step in `x3`, so a correct fit recovers heterogeneity, not just an average.
+Per-quantity detail is in the chunk comments.
 
 ```{r}
 #| label: simulate
 set.seed(20260602)
 
-# dimensions
+# dimensions: 8 countries x 25 respondents x 3 tasks = 600 rows
 n_country <- 8
 n_resp_per_country <- 25
 n_task <- 3
 
-# nested ids
+# nested ids; respondent ids are globally unique, so each sits in one country
 country_id <- factor(rep(
   seq_len(n_country),
   each = n_resp_per_country * n_task
@@ -115,29 +104,32 @@ country_id <- factor(rep(
 resp_id <- factor(rep(seq_len(n_country * n_resp_per_country), each = n_task))
 n <- length(resp_id)
 
-# planted variance components (nuisance)
+# planted variance components, country spread >> respondent spread (nuisance)
 sigma_country <- 1.5
 sigma_resp <- 0.5
+# per-country and per-respondent baseline shifts: FE + clusters absorb these
 b_country <- rnorm(n_country, 0, sigma_country)
 b_resp <- rnorm(nlevels(resp_id), 0, sigma_resp)
 
-# covariates, prognostic function, heterogeneous tau
+# four standard-normal candidate moderators x1-x4 (country dummies added later)
 p <- 4
 X_mod <- matrix(rnorm(n * p), nrow = n)
 colnames(X_mod) <- paste0("x", seq_len(p))
+# prognostic (control) surface: linear in x1/x2, flat in x3/x4; partialled out
 mu_x <- 1.0 * X_mod[, 1] - 0.5 * X_mod[, 2]
+# heterogeneous treatment effect: step in x3, 0.5 -> 1.25 (sample avg ~0.845)
 tau_x <- 0.5 + 0.75 * (X_mod[, 3] > 0)
 
 # randomized treatment, known propensity 0.5
 z <- rbinom(n, 1, 0.5)
 
-# linear predictor with nested intercepts on the prognostic part only
+# linear predictor: prognostic + effect-on-treated + nested intercepts (mu only)
 lin_pred <- mu_x +
   tau_x * z +
   b_country[as.integer(country_id)] +
   b_resp[as.integer(resp_id)]
 
-# continuous outcome
+# continuous outcome: linear predictor + residual noise (SD 1)
 y <- lin_pred + rnorm(n, 0, 1)
 ```
 
