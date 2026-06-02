@@ -94,6 +94,55 @@ random_intercepts = function(groups, original_colnames=TRUE) {
   
 }
 
+#' Construct metadata for BCF with nested random intercepts (two grouping factors)
+#'
+#' Builds the random-effects design for an additive two-level nested
+#' random-intercept model, e.g. respondents nested within countries. Each
+#' grouping factor contributes its own block of intercept dummies and its own
+#' variance component, so the two levels shrink independently. Nesting (as
+#' opposed to crossing) is encoded entirely by the dummies: because level-2
+#' identifiers (e.g. respondent ids) are globally unique, each level-2 dummy
+#' belongs to exactly one level-1 group. This reuses the same q-by-2 variance
+#' component machinery as \code{random_intercepts_slopes}, with the two blocks
+#' being two grouping factors rather than intercept and slope.
+#'
+#' @param level1_groups A factor variable defining the outer groups (e.g. country)
+#' @param level2_groups A factor variable defining the inner groups (e.g. respondent)
+#' @param original_colnames If true, use the original factor levels as column names for the dummy matrices. Otherwise "Group" will be pre-pended to the column names
+#'
+#' @return
+#' @export
+#'
+#' @examples
+nested_random_intercepts = function(level1_groups, level2_groups, original_colnames=TRUE) {
+
+  level1_dummies = get_dummies(level1_groups, original_colnames=original_colnames)
+  level2_dummies = get_dummies(level2_groups, original_colnames=original_colnames)
+
+  n_level1 = ncol(level1_dummies)
+  n_level2 = ncol(level2_dummies)
+
+  random_des = cbind(level1_dummies, level2_dummies)
+
+  Q = matrix(0, nrow=ncol(random_des), ncol=2)
+  Q[1:n_level1, 1] = 1
+  Q[(n_level1+1):(n_level1+n_level2), 2] = 1
+
+  level1_ix = get_group_indices(level1_dummies)
+  level2_ix = get_group_indices(level2_dummies)
+
+  return(list(randeff_design = random_des,
+              randeff_variance_component_design = as.matrix(Q),
+              level1_dummies = level1_dummies,
+              level2_dummies = level2_dummies,
+              n_level1 = n_level1,
+              n_level2 = n_level2,
+              level1_ix = level1_ix,
+              level2_ix = level2_ix
+  ))
+
+}
+
 #' Get posteriors for random effects/parameters in a varying intercepts/slopes model
 #'
 #' @param bcf_fit 
