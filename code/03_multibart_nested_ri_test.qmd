@@ -70,6 +70,7 @@ p_required <- c(
   "tidyverse", # dplyr, ggplot2, tidyr
   "here", # relative paths
   "ggpubr", # theme_pubr
+  "patchwork", # multi-panel figure
   "pkgload", # load local multibart source
   "sessioninfo", # session docs
 
@@ -283,6 +284,60 @@ stopifnot(sd_country_hat > sd_resp_hat)
 
 If the planted and recovered scales are in the same ballpark and ordered correctly, the nested extension is working as intended.
 Exact recovery is not expected from a 200-iteration smoke test on a small sample.
+
+## True vs. recovered covariate effects {#sec-recovery}
+
+The variance-component check above confirms the random-effects machinery, but the substantive payload of BCF is the two covariate functions: the prognostic surface $\mu(x)$ and the treatment-effect surface $\tau(x)$.
+We pull per-observation posterior means of both straight from the fitted forests with `get_forest_fit()` — passing `Z = NULL` returns the leaf coefficients (here $\mu$ and $\tau$) rather than fitted values.
+Because the prognostic function is identified only up to the global intercept and the random intercepts, we compare $\mu(x)$ in centred form; $\tau(x)$ is identified directly and is compared on its natural scale.
+
+```{r}
+#| label: recover-effects
+tau_draws <- get_forest_fit(fit_cont$moderate_fit, X)
+mu_draws <- get_forest_fit(fit_cont$control_fit, X)
+
+recovery <- bind_rows(
+  tibble(
+    effect = "Treatment effect",
+    truth = tau_x,
+    estimate = colMeans(tau_draws)
+  ),
+  tibble(
+    effect = "Prognostic effect",
+    truth = mu_x - mean(mu_x),
+    estimate = colMeans(mu_draws) - mean(colMeans(mu_draws))
+  )
+)
+```
+
+The figure plots recovered against true effect for each surface, with a dashed 45° line marking perfect recovery.
+$\mu(x)$ should hug the line closely; $\tau(x)$ is a planted step function (two true values, low for `x3 <= 0` and high for `x3 > 0`), so its recovered cloud should sit higher at the larger true value — the expected partial-pooling shrinkage pulls the two clouds gently toward the centre.
+
+```{r}
+#| label: fig-recovery
+#| fig-cap: "True (data-generating) covariate effects vs. recovered posterior means on synthetic data: prognostic mu(x) (centred) and treatment effect tau(x). Dashed line is the 45° identity; points are individual observations. Smoke-test fit, small sample."
+#| dpi: 500
+recovery_panel <- function(dat, ttl) {
+  dat |>
+    ggplot(aes(x = truth, y = estimate)) +
+    geom_abline(slope = 1, intercept = 0, linetype = "dashed", colour = "grey50") +
+    geom_point(alpha = 0.3, colour = "#0072B2") +
+    labs(title = ttl, x = "True effect", y = "Posterior mean") +
+    ggpubr::theme_pubr()
+}
+
+p_mu <- recovery |>
+  filter(effect == "Prognostic effect") |>
+  recovery_panel("Prognostic surface mu(x)")
+p_tau <- recovery |>
+  filter(effect == "Treatment effect") |>
+  recovery_panel("Treatment effect tau(x)")
+
+(p_mu + p_tau) +
+  patchwork::plot_annotation(
+    title = "True vs. recovered covariate effects (synthetic smoke test)"
+  )
+```
 
 # Processing the output downstream {#sec-downstream}
 
