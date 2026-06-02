@@ -14,7 +14,6 @@ execute:
   warning: true
   eval: true
   message: true
-  cache: true
 ---
 
 # Purpose {#sec-purpose}
@@ -25,7 +24,7 @@ Its job is to test the nested-random-intercept extension added to the local `mul
 The goals, in priority order, are:
 
 1. **Verify the modified `multibart` works in principle.**
-   On *synthetic* two-level data with known variance components we confirm the new helper builds a valid random-effects design, that both fitting paths (`bcf_continuous_linear` and `bcf_binary`) accept it and run, and that the posterior extractor returns correctly-shaped, correctly-labelled output that recovers the planted structure.
+   On *synthetic* two-level data with known variance components we confirm the new helper builds a valid random-effects design, that the continuous fitting path (`bcf_continuous_linear`) accepts it and runs, and that the posterior extractor returns correctly-shaped, correctly-labelled output that recovers the planted structure.
 2. **See what the output looks like and how to process it downstream.**
    We fit on a small subsample of the real data (when it exists) and walk the posterior objects through to the tidy summaries and figures the manuscript will need.
 
@@ -130,7 +129,7 @@ The pieces are:
 - **The prognostic surface** (`mu_x`): what the outcome looks like *before* any treatment, as a function of the covariates. It is linear, `mu(x) = 1.0 * x1 - 0.5 * x2` — rising with `x1`, falling at half that rate with `x2`, and flat in `x3`/`x4`. In causal-forest language this is the "control" or confounding part — everything that drives the outcome but is not the treatment effect.
 - **The true treatment effect** (`tau_x`): the quantity of substantive interest, and the thing BCF exists to estimate. It is deliberately *heterogeneous* — a step function that is `0.5` when `x3 <= 0` and `1.25` when `x3 > 0` — so we can later check that the model recovers not just an average effect but the way the effect *varies* across people. With `x3` standard-normal, about half the sample sits in each step, so the true average effect is roughly `0.875`.
 - **The treatment** (`z`): a coin flip independent of everything else (propensity 0.5), exactly as a randomized conjoint attribute would be.
-- **The outcome** (`y_cont`, `y_bin`): the linear predictor adds together the prognostic surface, the treatment effect applied only to treated units (`tau_x * z`), the country and respondent offsets, and standard-normal noise (residual SD `1`). The continuous outcome is that sum directly; the binary outcome passes it through a probit link to produce 0/1 draws, mimicking the game-decision outcomes in the real data.
+- **The outcome** (`y_cont`): the linear predictor adds together the prognostic surface, the treatment effect applied only to treated units (`tau_x * z`), the country and respondent offsets, and standard-normal noise (residual SD `1`). The continuous outcome is that sum directly.
 
 In short, a correct fit should recover: a heterogeneous `tau(x)` that steps up from ~`0.5` to ~`1.25` across `x3 = 0` (average ~`0.875`), the linear `mu(x)` shape in `x1`/`x2`, and two clearly separated variance components with `sigma_country` (1.5) above `sigma_resp` (0.5).
 
@@ -173,9 +172,8 @@ lin_pred <- mu_x +
   b_country[as.integer(country_id)] +
   b_resp[as.integer(resp_id)]
 
-# continuous and binary outcomes
+# continuous outcome
 y_cont <- lin_pred + rnorm(n, 0, 1)
-y_bin <- rbinom(n, 1, pnorm(scale(lin_pred)[, 1]))
 ```
 
 A quick `stopifnot()` guards the nesting invariant — every respondent must sit in exactly one country — and the basic dimensions.
@@ -190,7 +188,6 @@ resp_country_map <- tapply(as.integer(country_id), resp_id, function(v) {
 stopifnot(
   all(resp_country_map == 1),
   length(y_cont) == n,
-  length(y_bin) == n,
   nrow(X) == n,
   all(sort(unique(z)) == c(0, 1))
 )
@@ -228,7 +225,7 @@ Every argument in the call below, in order:
 - **`z`** — the binary treatment (0/1) whose effect `tau(x)` we want.
 - **`x_control`** — the design matrix fed to the prognostic function `mu(x)` (the "control" part: covariates that explain the outcome absent treatment). Must be a numeric matrix.
 - **`x_moderate`** — the design matrix fed to the treatment-effect function `tau(x)`; these are the candidate *moderators* the forest may split on to let the effect vary. We pass the same `X` for both, letting the model search the full covariate set for heterogeneity.
-- **`zhat`** — the propensity `E(Z | X)`. Because treatment is randomized with known propensity 0.5, we pass the truth directly and skip any first-stage propensity model. (The binary path calls this argument `pihat`.)
+- **`zhat`** — the propensity `E(Z | X)`. Because treatment is randomized with known propensity 0.5, we pass the truth directly and skip any first-stage propensity model.
 - **`randeff_design`** — `W`, the `n x (C + R)` matrix of group dummies (country block then respondent block) built by `nested_random_intercepts()`. Each row places its observation in one country column and one respondent column.
 - **`randeff_variance_component_design`** — `Q`, the `(C + R) x K` matrix telling the sampler which variance component governs each column of `W`. With `K = 2`, column 1 flags the country dummies and column 2 the respondent dummies, so the two levels shrink independently.
 - **`randeff_scales`** — the prior scale for each of the `K` variance components; see the note below on why its *length* is what matters.
@@ -288,44 +285,9 @@ fit_cont <- bcf_continuous_linear(
 )
 ```
 
-## Fit — binary path {#sec-fit-bin}
-
-`bcf_binary()` is the path for a 0/1 outcome and carries the identical random-effects block, so the *same* `re` object works unchanged.
-Every argument means exactly what it does in the continuous call (@sec-fit-cont), with one rename: the known propensity is passed as **`pihat`** rather than `zhat`.
-Internally this path adds a probit data-augmentation step, so the model operates on a latent continuous scale underneath the binary outcome.
-Here the recovered random-intercept scales live on that latent (probit-like) scale, so they will not numerically match the continuous-outcome truth — for the binary path the test is simply that it **accepts the nested design, runs, and returns correctly-shaped output**.
-
-::: callout-note
-## What prints to the console while it runs
-
-The binary path emits two stderr warnings before fitting: `y appears to be discrete` (the wrapper noticing the 0/1 outcome) and `All values of pihat are equal. Pihat will not be included among covariates` (the binary path's name for the constant-propensity drop described in @sec-fit-cont).
-Both are expected.
-The setup and progress trace is then identical in form to the continuous path: `Using random effects.`, the two `design` blocks each with four covariate columns, `Beginning MCMC:`, and a `sigma/SD(Y)` line every 50 iterations.
-The one substantive difference is the *level* of `sigma/SD(Y)`: it settles in a higher band of about **0.80–0.88** here, versus ~0.47–0.57 for the continuous fit.
-That is exactly what the latent-scale view predicts — a binary outcome carries less information per observation, so a larger share of the latent variance stays in the residual.
-:::
-
-```{r}
-#| label: fit-bin
-fit_bin <- bcf_binary(
-  y = y_bin,
-  z = z,
-  x_control = X,
-  x_moderate = X,
-  pihat = rep(0.5, n), # known propensity
-  randeff_design = re$randeff_design,
-  randeff_variance_component_design = re$randeff_variance_component_design,
-  randeff_scales = c(1, 1), # length K = 2
-  randeff_df = 3,
-  nburn = 2000,
-  nsim = 2000,
-  update_interval = 50
-)
-```
-
 ## What the fitted object contains {#sec-fit-object}
 
-Both paths return a list of class `bcf_fit` with the same backbone.
+The fit returns a list of class `bcf_fit`.
 Knowing its slots is what makes the extraction and downstream steps below legible.
 Every posterior matrix has `nsim` rows (one per saved draw); columns are observations or groups as noted.
 
@@ -335,28 +297,24 @@ Every posterior matrix has `nsim` rows (one per saved draw); columns are observa
 - **`$random_effects_sd`** — `nsim x K` matrix (here `K = 2`): the variance-component SD draws, column 1 for the country level and column 2 for the respondent level. These are the planted `sigma_country` / `sigma_resp` we try to recover.
 - **`$control_fit`** — a list describing the fitted prognostic forest `mu(x)`: `tree_samples` (the live forest object), `str` (a serialized string of the same, which survives saving/reloading), and the `scale` / `shift` used to undo the internal standardization. Pass this to `get_forest_fit()` to read `mu(x)` back out.
 - **`$moderate_fit`** — the same structure for the treatment-effect forest `tau(x)`; its `shift` is 0 because `tau` is a difference.
-- **(binary path only)** `$mu_scale` and `$tau_scale` — length-`nsim` posterior draws of the global scale parameters for the two forests.
 
 Note that `tau(x)` and `mu(x)` are **not** stored as ready-made `nsim x n` matrices on this object (the relevant lines are commented out in the wrapper); they are recovered on demand from `$moderate_fit` / `$control_fit` with `get_forest_fit()`, which is exactly what @sec-recovery does.
 
 ## Extract and verify the posteriors {#sec-extract}
 
 `get_nested_random_intercepts_posteriors()` slices the fitted random coefficients into the country block (`1:C`) and respondent block (`(C+1):(C+R)`), labels each from the stored dummies, and pulls the two variance-component SD posteriors.
-We run it on both fits and assert the output shapes; for the continuous fit we also check that the recovered posterior-mean SDs **separate** in the right direction (country SD clearly larger than respondent SD), matching the planted truth.
+We run it on the fit and assert the output shapes; we also check that the recovered posterior-mean SDs **separate** in the right direction (country SD clearly larger than respondent SD), matching the planted truth.
 
 ```{r}
 #| label: extract
 post_cont <- get_nested_random_intercepts_posteriors(fit_cont, re)
-post_bin <- get_nested_random_intercepts_posteriors(fit_bin, re)
 
 # shape checks: C + R coefficients, two SD columns
 stopifnot(
   ncol(fit_cont$random_effects) == C + R,
   ncol(fit_cont$random_effects_sd) == 2,
   ncol(post_cont$level1_posterior) == C,
-  ncol(post_cont$level2_posterior) == R,
-  ncol(post_bin$level1_posterior) == C,
-  ncol(post_bin$level2_posterior) == R
+  ncol(post_cont$level2_posterior) == R
 )
 
 # posterior-mean variance components (continuous path)
@@ -394,10 +352,7 @@ The variance-component check above confirms the random-effects machinery, but th
 We pull per-observation posterior means of both straight from the fitted forests with `get_forest_fit()` — passing `Z = NULL` returns the leaf coefficients (here $\mu$ and $\tau$) rather than fitted values.
 Because the prognostic function is identified only up to the global intercept and the random intercepts, we compare $\mu(x)$ in centred form; $\tau(x)$ is identified directly and is compared on its natural scale.
 
-We do this for **both** fitted models, and present them as two separate figures, because they are read differently:
-
-- The **continuous-outcome model** (@fig-recovery-cont) is the genuine numerical recovery check. The recovered effects and the planted truth are on the same scale, so the 45° identity line means "perfect recovery" and the points should hug it.
-- The **binary-outcome model** (@fig-recovery-bin) recovers effects on the latent probit scale (see @sec-fit-bin), which is compressed relative to the continuous-scale truth. The 45° line therefore does **not** apply; what we look for instead is that recovered effects *rise* with the truth and that the two $\tau(x)$ groups separate in the right order. We mark a fitted linear trend rather than the identity.
+This is the genuine numerical recovery check (@fig-recovery-cont): recovered effects and the planted truth are on the same scale, so the 45° identity line means "perfect recovery" and the points should hug it.
 
 ::: callout-note
 ## The planted truth we are checking against
@@ -411,7 +366,7 @@ From @sec-simulate, the data-generating values the figures below should reproduc
 
 ```{r}
 #| label: recover-effects
-# per-observation posterior means of mu(x) and tau(x) from one fit
+# per-observation posterior means of mu(x) and tau(x); mu centred for identifiability
 extract_recovery <- function(fit) {
   tau_draws <- get_forest_fit(fit$moderate_fit, X)
   mu_draws <- get_forest_fit(fit$control_fit, X)
@@ -430,36 +385,23 @@ extract_recovery <- function(fit) {
 }
 
 recovery_cont <- extract_recovery(fit_cont)
-recovery_bin <- extract_recovery(fit_bin)
 ```
 
-Each figure plots recovered against true effect for the two surfaces.
-For the continuous model the dashed line is the 45° identity (perfect recovery); for the binary model it is a fitted linear trend, since the latent scale rules the identity out.
-$\tau(x)$ is a planted step function (two true values, low for `x3 <= 0` and high for `x3 > 0`), so its recovered cloud should sit higher at the larger true value — the expected partial-pooling shrinkage pulls the two clouds gently toward the centre.
+The figure plots recovered against true effect, with the dashed 45° identity as the perfect-recovery reference.
+$\tau(x)$ is a planted step function (low for `x3 <= 0`, high for `x3 > 0`), so its recovered cloud should sit higher at the larger true value — the expected partial-pooling shrinkage pulls the two clouds gently toward the centre.
 
 ```{r}
 #| label: recovery-panel
-# one scatter panel; reference layer is the identity line or a fitted trend
-recovery_panel <- function(dat, ttl, reference = c("identity", "trend")) {
-  reference <- match.arg(reference)
-  ref_layer <- if (reference == "identity") {
+# one scatter panel against the 45-degree identity reference
+recovery_panel <- function(dat, ttl) {
+  dat |>
+    ggplot(aes(x = truth, y = estimate)) +
     geom_abline(
       slope = 1,
       intercept = 0,
       linetype = "dashed",
       colour = "grey50"
-    )
-  } else {
-    geom_smooth(
-      method = "lm",
-      se = FALSE,
-      linetype = "dashed",
-      colour = "grey50"
-    )
-  }
-  dat |>
-    ggplot(aes(x = truth, y = estimate)) +
-    ref_layer +
+    ) +
     geom_point(alpha = 0.3, colour = "#0072B2") +
     labs(title = ttl, x = "True effect", y = "Posterior mean") +
     ggpubr::theme_pubr()
@@ -472,33 +414,15 @@ recovery_panel <- function(dat, ttl, reference = c("identity", "trend")) {
 #| dpi: 500
 p_mu_c <- recovery_cont |>
   filter(effect == "Prognostic effect") |>
-  recovery_panel("Prognostic surface mu(x)", reference = "identity")
+  recovery_panel("Prognostic surface mu(x)")
 p_tau_c <- recovery_cont |>
   filter(effect == "Treatment effect") |>
-  recovery_panel("Treatment effect tau(x)", reference = "identity")
+  recovery_panel("Treatment effect tau(x)")
 
 (p_mu_c + p_tau_c) +
   patchwork::plot_annotation(
     title = "Continuous-outcome model: true vs. recovered effects",
     subtitle = "Dashed line: 45° identity (perfect recovery)"
-  )
-```
-
-```{r}
-#| label: fig-recovery-bin
-#| fig-cap: "Binary-outcome model. Recovered effects are on the latent probit scale and so are compressed relative to the continuous-scale truth; the 45° identity does not apply, and the dashed line is a fitted linear trend. The check is that recovered effects rise with the truth and that the tau(x) clouds separate in the right order. Smoke-test fit, small sample."
-#| dpi: 500
-p_mu_b <- recovery_bin |>
-  filter(effect == "Prognostic effect") |>
-  recovery_panel("Prognostic surface mu(x)", reference = "trend")
-p_tau_b <- recovery_bin |>
-  filter(effect == "Treatment effect") |>
-  recovery_panel("Treatment effect tau(x)", reference = "trend")
-
-(p_mu_b + p_tau_b) +
-  patchwork::plot_annotation(
-    title = "Binary-outcome model: true vs. recovered effects (latent scale)",
-    subtitle = "Dashed line: fitted linear trend (identity does not apply on the latent scale)"
   )
 ```
 
@@ -564,7 +488,7 @@ The respondent block (`post_cont$level2_posterior`) is large (`R` columns) and i
 ::: callout-important
 The cells below are placeholders.
 They depend on the prepared analysis tibble from `01_prep_hte`, which does **not exist yet**.
-Once it does, point the read at the real file, choose the outcome (Dictator or Trust), and pick the fitting path that matches its coding.
+Once it does, point the read at the real file and choose the outcome (Dictator or Trust).
 :::
 
 The intent: subset to a handful of countries, fit the nested model, and confirm the *real* data flows through the same machinery — and, critically, gauge the dense `WtW` cost before attempting the full ~37.5k-respondent fit.
@@ -584,7 +508,7 @@ The intent: subset to a handful of countries, fit the nested model, and confirm 
 #| label: fit-subsample
 # re_sub <- nested_random_intercepts(sub$country_id, sub$respondent_id)
 #
-# fit_sub <- bcf_continuous_linear(   # or bcf_binary, per outcome coding
+# fit_sub <- bcf_continuous_linear(
 #   y = sub$y,
 #   z = sub$z,
 #   x_control = sub_X,                # numeric model matrix of moderators
