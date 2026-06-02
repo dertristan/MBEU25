@@ -907,7 +907,7 @@ double fit_i_basis(size_t& i, std::vector<tree>& t, xinfo& xi, dinfo& di, bool v
 double pn(double x, double m, double v)
 {
 	double dif = x-m;
-	return exp(-.5*dif*dif/v)/sqrt(2*PI*v);
+	return exp(-.5*dif*dif/v)/sqrt(2*datum::pi*v);
 }
 
 //--------------------------------------------------
