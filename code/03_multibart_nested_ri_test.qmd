@@ -71,7 +71,11 @@ p_required <- c(
   "here", # relative paths
   "ggpubr", # theme_pubr
   "pkgload", # load local multibart source
-  "sessioninfo" # session docs
+  "sessioninfo", # session docs
+
+  # for multibart dependencies -------------------------------------------------
+  "Rcereal",
+  "fastDummies"
 )
 packages <- rownames(installed.packages())
 p_to_install <- p_required[!(p_required %in% packages)]
@@ -205,8 +209,8 @@ fit_cont <- bcf_continuous_linear(
   randeff_variance_component_design = re$randeff_variance_component_design,
   randeff_scales = c(1, 1), # length K = 2
   randeff_df = 3,
-  nburn = 200,
-  nsim = 200,
+  nburn = 2000,
+  nsim = 2000,
   update_interval = 50
 )
 ```
@@ -228,8 +232,8 @@ fit_bin <- bcf_binary(
   randeff_variance_component_design = re$randeff_variance_component_design,
   randeff_scales = c(1, 1), # length K = 2
   randeff_df = 3,
-  nburn = 200,
-  nsim = 200,
+  nburn = 2000,
+  nsim = 2000,
   update_interval = 50
 )
 ```
