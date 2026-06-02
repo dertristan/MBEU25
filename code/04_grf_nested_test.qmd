@@ -1,0 +1,403 @@
+---
+subtitle: |
+  Nested Structure in `grf` Causal Forests — Mechanism Test
+date: last-modified
+date-format: MMMM D, YYYY
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    code-tools: true
+execute:
+  echo: true
+  warning: true
+  eval: false
+  message: true
+---
+
+# Purpose {#sec-purpose}
+
+This notebook is a **scaffold**, not a finished analysis.
+It is the `grf` counterpart to `03_multibart_nested_ri_test.qmd`: where that notebook tests the hierarchical-BCF primary method, this one tests the **Causal Random Forest robustness strategy** on the same synthetic data so the two are directly comparable.
+
+The goals, in priority order, are:
+
+1. **Verify the proposed `grf` strategy works in principle.**
+   On *synthetic* two-level data with known effects we confirm that `grf::causal_forest()` with country fixed effects in `X`, respondent-level `clusters`, and the known conjoint propensity recovers the planted average and heterogeneous treatment effects.
+2. **See what the output looks like and how to process it downstream.**
+   We walk the forest output through the headline quantities the manuscript needs — cluster-robust ATE, individual `τ̂(x)`, and the best linear projection onto the pre-specified moderators — and produce the same true-vs-recovered figure as the BCF test.
+
+::: callout-important
+`eval: false` is set at the document level on purpose.
+Nothing here is meant to run on render yet: the real data (`01_prep_hte` output) is not prepared.
+The synthetic mechanism check in @sec-synthetic is self-contained and can be run on its own by flipping the relevant chunk to `eval: true`; the subsample section in @sec-subsample additionally requires the prepared data.
+:::
+
+::: callout-note
+## How `grf` handles the nesting
+
+The data are observations nested in respondents nested in countries.
+The robustness strategy accounts for both levels without random effects:
+
+- **Country** enters as **fixed effects** — one-hot dummy columns appended to the covariate matrix `X`. `grf` requires a numeric `X`, so we encode the factor explicitly rather than passing it raw.
+- **Respondent** enters through `clusters = respondent_id`. This gives honest, cluster-aware subsampling (whole respondents are held out together) and cluster-robust variance for the ATE, absorbing the within-person dependence across the three conjoint tasks.
+
+This is the frequentist analogue of the BCF random-intercept specification: the same nuisance structure, addressed by FE + clustering instead of partial pooling.
+:::
+
+::: callout-note
+## Cost is not the concern here
+
+Unlike the dense `WtW` solve in the nested-RE BCF fit, `grf` scales comfortably to the full ~112,500 observations and ~37,500 respondent clusters.
+The synthetic check below is about **correctness of the strategy**, not feasibility; the small dimensions just keep the smoke test fast.
+:::
+
+# Setup {#sec-setup}
+
+```{r}
+#| label: setup
+#| include: false
+# execution time
+start_time <- Sys.time()
+# console width
+options(width = 80)
+# packages
+p_required <- c(
+  "tidyverse", # dplyr, ggplot2, tidyr
+  "here", # relative paths
+  "ggpubr", # theme_pubr
+  "patchwork", # multi-panel figure
+  "fastDummies", # country fixed-effect dummies
+  "grf", # causal_forest robustness method
+  "sessioninfo" # session docs
+)
+packages <- rownames(installed.packages())
+p_to_install <- p_required[!(p_required %in% packages)]
+if (length(p_to_install) > 0) {
+  install.packages(p_to_install)
+}
+sapply(p_required, require, character.only = TRUE)
+rm(p_required, p_to_install, packages)
+```
+
+# Synthetic mechanism check {#sec-synthetic}
+
+This is the primary test.
+We reuse the **exact data-generating process** from the BCF notebook (same seed), so the two methods are tested on identical data and their recovered effects can be compared one-to-one.
+
+## Simulate two-level data {#sec-simulate}
+
+Respondents nested in countries, several conjoint tasks per respondent.
+Treatment `z` is randomized with a known propensity of 0.5, as in the conjoint design.
+Country and respondent intercepts are drawn from normals with distinct variances; for `grf` these are pure nuisance — country is handled by fixed effects, respondent by clustering.
+
+```{r}
+#| label: simulate
+set.seed(20260602)
+
+# dimensions
+n_country <- 8
+n_resp_per_country <- 25
+n_task <- 3
+
+# nested ids
+country_id <- factor(rep(
+  seq_len(n_country),
+  each = n_resp_per_country * n_task
+))
+resp_id <- factor(rep(seq_len(n_country * n_resp_per_country), each = n_task))
+n <- length(resp_id)
+
+# planted variance components (nuisance)
+sigma_country <- 1.5
+sigma_resp <- 0.5
+b_country <- rnorm(n_country, 0, sigma_country)
+b_resp <- rnorm(nlevels(resp_id), 0, sigma_resp)
+
+# covariates, prognostic function, heterogeneous tau
+p <- 4
+X_mod <- matrix(rnorm(n * p), nrow = n)
+colnames(X_mod) <- paste0("x", seq_len(p))
+mu_x <- 1.0 * X_mod[, 1] - 0.5 * X_mod[, 2]
+tau_x <- 0.5 + 0.75 * (X_mod[, 3] > 0)
+
+# randomized treatment, known propensity 0.5
+z <- rbinom(n, 1, 0.5)
+
+# linear predictor with nested intercepts on the prognostic part only
+lin_pred <- mu_x +
+  tau_x * z +
+  b_country[as.integer(country_id)] +
+  b_resp[as.integer(resp_id)]
+
+# continuous outcome
+y <- lin_pred + rnorm(n, 0, 1)
+```
+
+A `stopifnot()` guards the nesting invariant — every respondent sits in exactly one country — and the basic dimensions.
+
+```{r}
+#| label: check-sim
+# each respondent maps to exactly one country
+resp_country_map <- tapply(as.integer(country_id), resp_id, function(v) {
+  length(unique(v))
+})
+stopifnot(
+  all(resp_country_map == 1),
+  length(y) == n,
+  nrow(X_mod) == n,
+  all(sort(unique(z)) == c(0, 1))
+)
+```
+
+## Build covariates and clustering {#sec-build}
+
+Two pieces encode the nesting.
+Country fixed effects become one-hot dummy columns (one dropped to avoid collinearity with the intercept `grf` fits internally) appended to the moderator matrix.
+Respondent ids become an integer cluster vector.
+We assert the assembled `X` has the expected width (`p` moderators + `C − 1` country dummies) and that the cluster vector is the right length.
+
+```{r}
+#| label: build
+# country fixed effects as dummy columns
+country_fe <- fastDummies::dummy_cols(
+  data.frame(country = country_id),
+  remove_first_dummy = TRUE,
+  remove_selected_columns = TRUE
+) |>
+  as.matrix()
+
+# moderators + country FE
+X <- cbind(X_mod, country_fe)
+
+# respondent-level clusters
+clusters <- as.integer(resp_id)
+
+stopifnot(
+  nrow(X) == n,
+  ncol(X) == p + (n_country - 1),
+  length(clusters) == n,
+  dplyr::n_distinct(clusters) == n_country * n_resp_per_country
+)
+```
+
+## Fit the causal forest {#sec-fit}
+
+`causal_forest()` takes the numeric `X`, outcome `y`, and treatment `z`.
+Two strategy choices matter:
+
+- **`W.hat = 0.5`** passes the known conjoint propensity directly, so no propensity is estimated (the analogue of passing known `zhat` to BCF).
+- **`clusters = clusters`** switches on respondent-level honest sampling and cluster-robust variance.
+
+`Y.hat` is left to `grf`'s internal regression forest on `X` (which includes the country FE), the standard partialling-out step.
+
+```{r}
+#| label: fit
+cf <- grf::causal_forest(
+  X = X,
+  Y = y,
+  W = z,
+  W.hat = 0.5, # known conjoint propensity
+  clusters = clusters, # respondent-level honest sampling + robust variance
+  num.trees = 2000,
+  seed = 20260602
+)
+```
+
+## Extract and verify {#sec-extract}
+
+We pull the three headline quantities.
+The cluster-robust ATE should land near the planted average effect `mean(tau_x)`; the individual predictions should correlate with the true `τ(x)` and separate in the right direction across the `x3` moderator; the best linear projection onto the moderators should flag `x3` as the one with a clearly non-zero slope.
+
+```{r}
+#| label: extract
+# cluster-robust average treatment effect
+ate <- grf::average_treatment_effect(cf, target.sample = "all")
+
+# individual treatment effects
+tau_hat <- predict(cf)$predictions
+
+# best linear projection onto the pre-specified moderators
+blp <- grf::best_linear_projection(cf, X_mod)
+
+cat("planted ATE:", round(mean(tau_x), 3), "\n")
+cat(
+  "recovered ATE:",
+  round(ate["estimate"], 3),
+  "(SE",
+  round(ate["std.err"], 3),
+  ")\n"
+)
+cat("cor(true tau, tau_hat):", round(cor(tau_x, tau_hat), 3), "\n")
+cat(
+  "tau_hat mean  x3<=0 / x3>0:",
+  round(mean(tau_hat[X_mod[, 3] <= 0]), 3),
+  "/",
+  round(mean(tau_hat[X_mod[, 3] > 0]), 3),
+  "\n"
+)
+
+# the two moderator groups should separate in the right direction
+stopifnot(
+  mean(tau_hat[X_mod[, 3] > 0]) > mean(tau_hat[X_mod[, 3] <= 0]),
+  length(tau_hat) == n
+)
+
+print(round(blp[, 1:2], 3))
+```
+
+If the recovered ATE is within a couple of standard errors of the planted average, `τ̂(x)` orders correctly across `x3`, and the BLP isolates `x3`, the strategy is working as intended.
+Exact recovery is not expected from a smoke-test forest on a small sample; partial pooling toward the grand mean (here, regularization toward the ATE) is expected.
+
+## True vs. recovered covariate effects {#sec-recovery}
+
+The analogue of the BCF notebook's recovery figure.
+`grf` targets `τ(x)` directly and does not return a separate prognostic surface, so the figure focuses on the treatment effect.
+We plot recovered against true `τ(x)` with a dashed 45° identity line, colouring points by the true moderator group: the planted step function takes two values (low for `x3 <= 0`, high for `x3 > 0`), so the two clouds should sit near their respective true values, shrunk gently toward the centre.
+
+```{r}
+#| label: recover-effects
+recovery <- tibble(
+  truth = tau_x,
+  estimate = tau_hat,
+  moderator = if_else(X_mod[, 3] > 0, "x3 > 0", "x3 <= 0")
+)
+```
+
+```{r}
+#| label: fig-recovery-grf
+#| fig-cap: "True (data-generating) treatment effect tau(x) vs. recovered causal-forest estimates on synthetic data, coloured by the true moderator group. Dashed line is the 45° identity; points are individual observations. Smoke-test fit, small sample."
+#| dpi: 500
+recovery |>
+  ggplot(aes(x = truth, y = estimate, colour = moderator)) +
+  geom_abline(
+    slope = 1,
+    intercept = 0,
+    linetype = "dashed",
+    colour = "grey50"
+  ) +
+  geom_point(alpha = 0.3) +
+  scale_colour_manual(values = c("x3 <= 0" = "#0072B2", "x3 > 0" = "#D55E00")) +
+  labs(
+    title = "True vs. recovered treatment effect (synthetic smoke test)",
+    x = "True effect",
+    y = "Causal-forest posterior mean",
+    colour = NULL
+  ) +
+  ggpubr::theme_pubr()
+```
+
+# Processing the output downstream {#sec-downstream}
+
+This section shows how the forest output becomes the tidy objects the manuscript consumes.
+The best linear projection is the headline summary for the BCF/CRF comparison table, so we tidy it into a coefficient frame.
+
+```{r}
+#| label: tidy-blp
+blp_summary <- blp |>
+  unclass() |>
+  as.data.frame() |>
+  tibble::rownames_to_column("term") |>
+  as_tibble() |>
+  rename(
+    estimate = Estimate,
+    std_error = `Std. Error`
+  ) |>
+  mutate(
+    lower = estimate - 1.96 * std_error,
+    upper = estimate + 1.96 * std_error
+  )
+
+blp_summary
+```
+
+The BLP coefficient frame plots as a standard coefficient figure — the same grammar used for the BCF posterior projection, which is what makes the two methods legible side by side in the manuscript.
+The chunk below is a template following project figure conventions; the manuscript figure will overlay BCF and CRF coefficients on shared axes.
+
+```{r}
+#| label: fig-blp
+#| fig-cap: "Best linear projection of the causal forest onto the pre-specified moderators (synthetic data), with 95% confidence intervals. Template for the BCF/CRF comparison figure."
+#| dpi: 500
+blp_summary |>
+  filter(term != "(Intercept)") |>
+  mutate(term = fct_reorder(term, estimate)) |>
+  ggplot(aes(x = estimate, y = term)) +
+  geom_vline(xintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_pointrange(aes(xmin = lower, xmax = upper)) +
+  labs(
+    title = "Causal-forest best linear projection",
+    x = "Projection coefficient",
+    y = "Moderator"
+  ) +
+  ggpubr::theme_pubr()
+```
+
+# Small-subsample fit on real data {#sec-subsample}
+
+::: callout-important
+The cells below are placeholders.
+They depend on the prepared analysis tibble from `01_prep_hte`, which does **not exist yet**.
+Once it does, point the read at the real file, choose the outcome (Dictator or Trust), and assemble the moderator matrix.
+:::
+
+The intent: subset to a handful of countries, fit the causal forest with the real moderators, and confirm the *real* data flows through the same machinery before scaling to the full sample.
+
+```{r}
+#| label: load-subsample
+# TODO: replace with real 01_prep_hte output
+# dat <- readRDS(here::here("data", "hte_dictator.rds"))
+
+# few-country subsample (grf scales fine; this just mirrors the BCF test)
+# few_countries <- levels(factor(dat$country_id))[1:3]
+# sub <- dat |> filter(country_id %in% few_countries) |>
+#   mutate(across(c(country_id, respondent_id), fct_drop))
+```
+
+```{r}
+#| label: fit-subsample
+# country FE dummies + respondent clusters from the real data
+# country_fe_sub <- fastDummies::dummy_cols(
+#   data.frame(country = sub$country_id),
+#   remove_first_dummy = TRUE, remove_selected_columns = TRUE
+# ) |> as.matrix()
+# X_sub <- cbind(sub_moderators, country_fe_sub)  # numeric moderator matrix + FE
+#
+# cf_sub <- grf::causal_forest(
+#   X = X_sub,
+#   Y = sub$y,
+#   W = sub$z,
+#   W.hat = 0.5,                       # known conjoint propensity
+#   clusters = as.integer(factor(sub$respondent_id)),
+#   num.trees = 2000
+# )
+#
+# ate_sub <- grf::average_treatment_effect(cf_sub, target.sample = "all")
+# blp_sub <- grf::best_linear_projection(cf_sub, sub_moderators)
+```
+
+Record the wall-clock time of this subsample fit, then scale to the full sample.
+Because `grf` clusters cheaply, the full-sample CRF is expected to be the *less* costly of the two methods; the BCF nested-RE fit is the binding constraint on the project window.
+
+# Session Info {#sec-session-info .appendix .unnumbered}
+
+```{r}
+#| label: session-info
+#| echo: true
+session_info()
+```
+
+# Execution Time {#sec-exec-time .appendix .unnumbered}
+
+```{r}
+#| label: exec-time
+#| echo: true
+#| include: true
+end_time <- Sys.time()
+exec_time <- end_time - start_time
+cat(paste(
+  "R code execution time:",
+  round(as.numeric(exec_time, units = "secs"), 2),
+  "seconds."
+))
+```
