@@ -115,34 +115,23 @@ We generate data from a known additive two-level model so that we control the tr
 
 ## Simulate two-level data {#sec-simulate}
 
-The design mirrors the real structure: respondents nested in countries, several conjoint tasks per respondent.
-Treatment `z` is randomized with a known propensity of 0.5 (as in the conjoint design), so no propensity model is needed.
-Country and respondent intercepts are drawn from normals with **distinct** variances (`sigma_country` clearly larger than `sigma_resp`); recovering that separation is the key thing we want to see.
-We keep the dimensions small so the dense `WtW` solve is trivial.
+The design mirrors the real structure: respondents nested in countries, several conjoint tasks each, with treatment randomized at a known propensity of 0.5 (the conjoint design) so no propensity model is needed.
+The two random-intercept variances are deliberately distinct (`sigma_country` well above `sigma_resp`) — recovering that separation is the key check — and the dimensions are small so the dense `WtW` solve is trivial.
+Per-quantity detail is in the chunk comments below.
 
-In plain language, the chunk below builds a fake dataset where we already know every answer, so we can check whether the model can rediscover it.
-The pieces are:
-
-- **The nesting structure** (`country_id`, `resp_id`): 8 countries, 25 respondents each, 3 tasks per respondent, for `n = 600` rows. Respondent ids are numbered globally (1…200), so each respondent belongs to exactly one country — that is what makes the structure *nested* rather than *crossed*.
-- **The group offsets** (`b_country`, `b_resp`): each country gets its own baseline shift and each respondent gets a smaller one, drawn from normals whose SDs are the planted "variance components" we later try to recover. These stand in for the real-world fact that some countries (and some people) are simply more generous on average, for reasons we are not modelling and treat as nuisance.
-- **The covariates** (`X`): four standard-normal columns `x1`–`x4`, the respondent/profile characteristics a real analysis would use to explain heterogeneity.
-- **The prognostic surface** (`mu_x`): what the outcome looks like *before* any treatment, as a function of the covariates. It is linear, `mu(x) = 1.0 * x1 - 0.5 * x2` — rising with `x1`, falling at half that rate with `x2`, and flat in `x3`/`x4`. In causal-forest language this is the "control" or confounding part — everything that drives the outcome but is not the treatment effect.
-- **The true treatment effect** (`tau_x`): the quantity of substantive interest, and the thing BCF exists to estimate. It is deliberately *heterogeneous* — a step function that is `0.5` when `x3 <= 0` and `1.25` when `x3 > 0` — so we can later check that the model recovers not just an average effect but the way the effect *varies* across people. With `x3` standard-normal, about half the sample sits in each step, so the true average effect is roughly `0.875`.
-- **The treatment** (`z`): a coin flip independent of everything else (propensity 0.5), exactly as a randomized conjoint attribute would be.
-- **The outcome** (`y_cont`): the linear predictor adds together the prognostic surface, the treatment effect applied only to treated units (`tau_x * z`), the country and respondent offsets, and standard-normal noise (residual SD `1`). The continuous outcome is that sum directly.
-
-In short, a correct fit should recover: a heterogeneous `tau(x)` that steps up from ~`0.5` to ~`1.25` across `x3 = 0` (average ~`0.875`), the linear `mu(x)` shape in `x1`/`x2`, and two clearly separated variance components with `sigma_country` (1.5) above `sigma_resp` (0.5).
+A correct fit should recover a heterogeneous `tau(x)` stepping from ~`0.5` to ~`1.25` across `x3 = 0` (average ~`0.875`), the linear `mu(x)` shape in `x1`/`x2`, and two clearly separated variance components with `sigma_country` (1.5) above `sigma_resp` (0.5).
 
 ```{r}
 #| label: simulate
 set.seed(20260602)
 
-# dimensions
+# dimensions: 8 countries x 25 respondents x 3 tasks = 600 rows
 n_country <- 8
 n_resp_per_country <- 25
 n_task <- 3
 
-# nested ids
+# nested ids; respondent ids are globally unique, so each sits in one country
+# (dummy coding that is nesting, not crossing)
 country_id <- factor(rep(
   seq_len(n_country),
   each = n_resp_per_country * n_task
@@ -150,34 +139,36 @@ country_id <- factor(rep(
 resp_id <- factor(rep(seq_len(n_country * n_resp_per_country), each = n_task))
 n <- length(resp_id)
 
-# planted variance components
+# planted variance components, country spread deliberately >> respondent spread
 sigma_country <- 1.5
 sigma_resp <- 0.5
+# group offsets: per-country and per-respondent baseline shifts (nuisance)
 b_country <- rnorm(n_country, 0, sigma_country)
 b_resp <- rnorm(nlevels(resp_id), 0, sigma_resp)
 
-# covariates, control function, heterogeneous tau
+# covariates: candidate moderators a real analysis would split on
 p <- 4
 X <- matrix(rnorm(n * p), nrow = n)
 colnames(X) <- paste0("x", seq_len(p))
+# prognostic (control) surface: linear, flat in x3/x4
 mu_x <- 1.0 * X[, 1] - 0.5 * X[, 2]
+# heterogeneous treatment effect: step in x3, 0.5 -> 1.25 (average ~0.875)
 tau_x <- 0.5 + 0.75 * (X[, 3] > 0)
 
 # randomized treatment, known propensity 0.5
 z <- rbinom(n, 1, 0.5)
 
-# linear predictor with nested random intercepts on mu only
+# linear predictor: prognostic + effect-on-treated + nested intercepts (mu only)
 lin_pred <- mu_x +
   tau_x * z +
   b_country[as.integer(country_id)] +
   b_resp[as.integer(resp_id)]
 
-# continuous outcome
+# continuous outcome: linear predictor + residual noise (SD 1)
 y_cont <- lin_pred + rnorm(n, 0, 1)
 ```
 
-A quick `stopifnot()` guards the nesting invariant — every respondent must sit in exactly one country — and the basic dimensions.
-Verification chunks like this are required after each data-prep step in this project.
+A `stopifnot()` guards the nesting invariant — every respondent must sit in exactly one country — and the basic dimensions.
 
 ```{r}
 #| label: check-sim
@@ -216,55 +207,39 @@ stopifnot(
 
 ## Fit — continuous path {#sec-fit-cont}
 
-`bcf_continuous_linear()` is the path for a continuous outcome.
-The nested design is passed straight through the unchanged wrapper to the sampler.
+`bcf_continuous_linear()` is the continuous-outcome path; the nested design passes straight through the unchanged wrapper to the sampler.
 
-Every argument in the call below, in order:
+Arguments, in call order:
 
-- **`y`** — the outcome vector (length `n`). The wrapper standardizes it internally (subtracts the mean, divides by SD) and back-transforms the posterior, so it is fine to pass on the raw scale.
-- **`z`** — the binary treatment (0/1) whose effect `tau(x)` we want.
-- **`x_control`** — the design matrix fed to the prognostic function `mu(x)` (the "control" part: covariates that explain the outcome absent treatment). Must be a numeric matrix.
-- **`x_moderate`** — the design matrix fed to the treatment-effect function `tau(x)`; these are the candidate *moderators* the forest may split on to let the effect vary. We pass the same `X` for both, letting the model search the full covariate set for heterogeneity.
-- **`zhat`** — the propensity `E(Z | X)`. Because treatment is randomized with known propensity 0.5, we pass the truth directly and skip any first-stage propensity model.
-- **`randeff_design`** — `W`, the `n x (C + R)` matrix of group dummies (country block then respondent block) built by `nested_random_intercepts()`. Each row places its observation in one country column and one respondent column.
-- **`randeff_variance_component_design`** — `Q`, the `(C + R) x K` matrix telling the sampler which variance component governs each column of `W`. With `K = 2`, column 1 flags the country dummies and column 2 the respondent dummies, so the two levels shrink independently.
-- **`randeff_scales`** — the prior scale for each of the `K` variance components; see the note below on why its *length* is what matters.
-- **`randeff_df`** — degrees of freedom for the half-t prior on each random-intercept SD. Smaller values are heavier-tailed (more permissive of large group variance); `3` is the package default.
-- **`nburn`** — burn-in iterations run and then discarded so the chain can reach its stationary distribution.
-- **`nsim`** — post-burn-in iterations actually saved as posterior draws (the row dimension of every posterior matrix in the output).
-- **`update_interval`** — how often (in iterations) the sampler prints a progress line; see the console note below.
+- **`y`** — outcome vector (length `n`); the wrapper standardizes internally and back-transforms, so the raw scale is fine.
+- **`z`** — binary treatment (0/1) whose effect `tau(x)` we want.
+- **`x_control`** — numeric design for the prognostic function `mu(x)` (covariates explaining the outcome absent treatment).
+- **`x_moderate`** — design for `tau(x)`: the candidate *moderators* the forest may split on. We pass the same `X` for both, searching the full set for heterogeneity.
+- **`zhat`** — propensity `E(Z | X)`. Randomized at known 0.5, so we pass the truth and skip first-stage estimation.
+- **`randeff_design`** — `W`, the `n x (C + R)` group-dummy matrix (country block then respondent block) from `nested_random_intercepts()`.
+- **`randeff_variance_component_design`** — `Q`, the `(C + R) x K` map from each `W` column to its variance component; with `K = 2`, country and respondent levels shrink independently.
+- **`randeff_scales`** — prior scale per variance component (must be length `K`; see below).
+- **`randeff_df`** — half-t degrees of freedom for each random-intercept SD (`3`, the package default; smaller = heavier-tailed).
+- **`nburn`, `nsim`** — burn-in (discarded) and saved draws; `nsim` is the row dimension of every posterior matrix.
+- **`update_interval`** — iterations between progress lines (see console note).
 
-Two call-site details deserve emphasis:
+Two call-site details matter:
 
-- **`randeff_scales` must be length `K = 2`.**
-  The sampler indexes `randeff_scales(ii)` for each variance component, so a scalar default would be out of bounds with two components.
-  We pass one scale per level.
-  (A pre-existing quirk means the scale value currently cancels in the prior, so only its *length* matters today; we still pass sensible values for clarity and forward-compatibility.)
-- **Short MCMC.** This is a smoke test, so `nburn`/`nsim` are small. Real fits use far longer chains.
+- **`randeff_scales` must be length `K = 2`** — the sampler indexes one scale per component, so a scalar would be out of bounds. (A pre-existing quirk cancels the value in the prior, so only the length matters today; we pass sensible values anyway.)
+- **Short MCMC** — this is a smoke test; real fits use far longer chains.
 
 ::: callout-note
-## What prints to the console while it runs
+## What healthy console output looks like
 
-Before the chain starts, the wrapper emits one stderr warning: `All values of zhat are equal. zhat will not be included among covariates`.
-This is expected and harmless — because treatment is randomized with a constant known propensity (0.5), `zhat` carries no information to split on, so the sampler simply drops it from the covariate set rather than wasting a useless column.
+The wrapper first warns `All values of zhat are equal. zhat will not be included among covariates` — expected: a constant known propensity carries no information to split on, so the sampler drops it.
 
-With `text_trace = TRUE` (set inside the wrapper), the sampler then narrates its setup.
-The first line is `Using random effects.` — if you do **not** see it, the random-effects block was not detected and the nested design did not reach the sampler.
-Next come `Reading in y` and `Setting up designs`, followed by one block per BART design.
-There are two: `design 0` then `design 1`, the prognostic surface `mu(x)` and the treatment-effect surface `tau(x)`.
-Each reports `group setting: 0` — the per-forest grouping flag, off here because the random intercepts ride the separate `W` block rather than the forest's own design — and `Instantiated covariate matrix 1 with 4 columns` / `... matrix 2 with 4 columns`, confirming our four covariates `x1`–`x4` reached each forest.
-Then `Setting up forests`, `Done.`, and `Beginning MCMC:`.
+With `text_trace = TRUE`, the sampler then narrates setup.
+The diagnostic line to look for is `Using random effects.`; without it, the nested design never reached the sampler.
+The two BART designs (`design 0` = `mu(x)`, `design 1` = `tau(x)`) should each report four covariate columns.
 
-Then, every `update_interval` iterations, it prints a single progress line:
-
-```
-iteration: 500 sigma/SD(Y): 0.542733
-```
-
-`iteration` counts through the full `nburn + nsim` run (here `0` to `3950`), so it is the live progress meter.
-`sigma/SD(Y)` is the current residual SD on the internally standardized-`y` scale (so `SD(Y) = 1` and the printed value *is* the ratio): values well below 1 mean the model is explaining a good share of the outcome variance.
-In this fit it drops from `1` at iteration 0 to roughly `0.5` within the first 50 iterations and then *wanders in a stable band of about 0.47–0.57* for the rest of the run — residual SD around half the outcome SD, i.e. the model captures most of the variance.
-That stability is what you want to see; a value still drifting downward at the end would signal the chain had not converged and `nburn` was too short.
+Every `update_interval` iterations it prints a progress line, e.g. `iteration: 500 sigma/SD(Y): 0.542733`.
+`sigma/SD(Y)` is the residual SD on the standardized-`y` scale; here it drops to ~`0.5` within 50 iterations and then holds in a stable `0.47–0.57` band — the model captures most of the variance and the chain has converged.
+A value still drifting downward at the end would mean `nburn` was too short.
 :::
 
 ```{r}
@@ -287,8 +262,7 @@ fit_cont <- bcf_continuous_linear(
 
 ## What the fitted object contains {#sec-fit-object}
 
-The fit returns a list of class `bcf_fit`.
-Knowing its slots is what makes the extraction and downstream steps below legible.
+The fit returns a list of class `bcf_fit`; its slots drive the extraction and downstream steps below.
 Every posterior matrix has `nsim` rows (one per saved draw); columns are observations or groups as noted.
 
 - **`$sigma`** — length-`nsim` vector: the residual SD posterior, back-transformed to the original outcome scale.
@@ -340,11 +314,10 @@ cat(
 stopifnot(sd_country_hat > sd_resp_hat)
 ```
 
-In the rendered fit the comparison reads `planted 1.5 / 0.5` against `recovered 1.034 / 0.378`.
-Both components are recovered in the right order (country clearly above respondent) and the right ballpark, and their ratio (≈2.7) is close to the true 3.0 — so the two levels are being shrunk separately, which is the property under test.
-Both are also biased *downward*, most visibly the country SD: with only `C = 8` level-1 groups there is little information to pin the between-country variance down, and the half-t prior pulls it toward zero.
-That is the expected behaviour of partial pooling at this scale, not a defect — exact recovery is not the goal of a smoke test with 2000 saved draws on `n = 600`, and no formal coverage is claimed here.
-If the planted and recovered scales are in the same ballpark and ordered correctly, the nested extension is working as intended.
+In the rendered fit the comparison reads `planted 1.5 / 0.5` against `recovered 1.072 / 0.384`: the right order (country above respondent), the right ballpark, and a ratio (≈2.8) close to the true 3.0, so the two levels are being shrunk separately — the property under test.
+Both are biased *downward*, most visibly the country SD: with only `C = 8` level-1 groups there is little information to pin the between-country variance down, and the half-t prior pulls it toward zero.
+That is expected partial pooling at this scale, not a defect — exact recovery is not the goal of a smoke test, and no formal coverage is claimed.
+Scales in the same ballpark and correctly ordered mean the nested extension works.
 
 ## True vs. recovered covariate effects {#sec-recovery}
 
@@ -428,8 +401,7 @@ p_tau_c <- recovery_cont |>
 
 # Processing the output downstream {#sec-downstream}
 
-This section shows the shape of what we get back and how to turn it into the tidy objects the manuscript figures consume.
-The random-effects posteriors are `draws × group` matrices; we melt them to long form and summarize per group.
+The random-effects posteriors are `draws × group` matrices; we melt them to long form and summarize per group — the tidy shape the manuscript figures consume.
 
 ```{r}
 #| label: tidy-re
@@ -453,8 +425,7 @@ country_re_summary <- post_cont$level1_posterior |>
 country_re_summary
 ```
 
-A caterpillar plot of the country intercepts is the kind of appendix-only clustering diagnostic the analysis plan calls for (country structure is a nuisance, shown only to justify the RE specification).
-The chunk below is a template following the project figure conventions; it is not rendered here.
+A caterpillar plot of the country intercepts is the appendix-only clustering diagnostic the analysis plan calls for: country structure is a nuisance, shown only to justify the RE specification.
 
 ```{r}
 #| label: fig-country-re
