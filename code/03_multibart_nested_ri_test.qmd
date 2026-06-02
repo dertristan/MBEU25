@@ -399,6 +399,16 @@ We do this for **both** fitted models, and present them as two separate figures,
 - The **continuous-outcome model** (@fig-recovery-cont) is the genuine numerical recovery check. The recovered effects and the planted truth are on the same scale, so the 45° identity line means "perfect recovery" and the points should hug it.
 - The **binary-outcome model** (@fig-recovery-bin) recovers effects on the latent probit scale (see @sec-fit-bin), which is compressed relative to the continuous-scale truth. The 45° line therefore does **not** apply; what we look for instead is that recovered effects *rise* with the truth and that the two $\tau(x)$ groups separate in the right order. We mark a fitted linear trend rather than the identity.
 
+::: callout-note
+## The planted truth we are checking against
+
+From @sec-simulate, the data-generating values the figures below should reproduce:
+
+- **$\tau(x)$** — a step function: $0.5$ when $x_3 \le 0$, $1.25$ when $x_3 > 0$ (average $\approx 0.875$).
+- **$\mu(x)$** — linear, $1.0\,x_1 - 0.5\,x_2$, compared in centred form.
+- **Variance components** — $\sigma_{\text{country}} = 1.5$, $\sigma_{\text{resp}} = 0.5$ (recovered and checked in @sec-extract).
+:::
+
 ```{r}
 #| label: recover-effects
 # per-observation posterior means of mu(x) and tau(x) from one fit
@@ -469,7 +479,8 @@ p_tau_c <- recovery_cont |>
 
 (p_mu_c + p_tau_c) +
   patchwork::plot_annotation(
-    title = "Continuous-outcome model: true vs. recovered effects"
+    title = "Continuous-outcome model: true vs. recovered effects",
+    subtitle = "Dashed line: 45° identity (perfect recovery)"
   )
 ```
 
@@ -486,7 +497,8 @@ p_tau_b <- recovery_bin |>
 
 (p_mu_b + p_tau_b) +
   patchwork::plot_annotation(
-    title = "Binary-outcome model: true vs. recovered effects (latent scale)"
+    title = "Binary-outcome model: true vs. recovered effects (latent scale)",
+    subtitle = "Dashed line: fitted linear trend (identity does not apply on the latent scale)"
   )
 ```
 
@@ -507,6 +519,11 @@ country_re_summary <- post_cont$level1_posterior |>
     lower = quantile(intercept, 0.05),
     upper = quantile(intercept, 0.95),
     .by = country
+  ) |>
+  # planted country intercepts: column k of level1_posterior is country k
+  left_join(
+    tibble(country = colnames(post_cont$level1_posterior), truth = b_country),
+    by = "country"
   )
 
 country_re_summary
@@ -517,13 +534,20 @@ The chunk below is a template following the project figure conventions; it is no
 
 ```{r}
 #| label: fig-country-re
-#| fig-cap: "Posterior country-level random intercepts (synthetic smoke-test data), with 90% credible intervals. Diagnostic only."
+#| fig-cap: "Posterior country-level random intercepts (synthetic smoke-test data), with 90% credible intervals. Orange crosses mark the planted true country intercepts. Diagnostic only."
 #| dpi: 500
 country_re_summary |>
   mutate(country = fct_reorder(country, post_mean)) |>
-  ggplot(aes(x = post_mean, y = country)) +
+  ggplot(aes(y = country)) +
   geom_vline(xintercept = 0, linetype = "dashed", colour = "grey60") +
-  geom_pointrange(aes(xmin = lower, xmax = upper)) +
+  geom_pointrange(aes(x = post_mean, xmin = lower, xmax = upper)) +
+  geom_point(
+    aes(x = truth, colour = "Planted truth"),
+    shape = 4,
+    size = 3,
+    stroke = 1.2
+  ) +
+  scale_colour_manual(values = c("Planted truth" = "#D55E00"), name = NULL) +
   labs(
     title = "Country-level random intercepts",
     x = "Posterior intercept",
