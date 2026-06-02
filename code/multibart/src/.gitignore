@@ -1,0 +1,4 @@
+# Compiled object files and shared libraries
+*.o
+*.so
+*.dll
