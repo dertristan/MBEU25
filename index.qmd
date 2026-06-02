@@ -80,6 +80,13 @@ We therefore implement Bayesian causal forests (BCT) with randomc intercepts for
 While themselves also requireing independent observations, recent implementations further extended BCF to allow for the inclusion of both random intercepts [@yeager2022synergistic] and random slopes [@yeager2019national], allowing to account for group-level structures in the underlying data.
 We adopt this approach for our study to identify treatment heterogeneity in a data-driven way, while accounting for the nested structure using random intercepts and utilizing the full posterior uncertainty quantification for our treatment effect estimates.
 
+We therefore pursue a dual strategy to increase robustness of our heterogeneity analysis.
+First, we extend the BCF with random intercepts by @yeager2022synergistic to nested random intercepts, to properly account for our hierarchical data structure with outcomes nested in respondents, which are themselves nested in countries.
+Second, we implement a frequentist causal forest [@athey2019generalized] with country fixed effects and respondent level clusters to enhance robustness across estimation procedures.
+In both cases, we estimate separate forests for each game.
+Consequently, we retreive four main models, BCF and CF for the dictator and trust game.
+ 
+
 ## Empirical Analysis {#sec-analysis}
 
 {{< embed code/01_exploration4presentation.qmd#fig-tokens-to-muslim-profiles >}}
