@@ -1,0 +1,394 @@
+---
+subtitle: |
+  Nested Random Intercepts in `multibart` — Mechanism Test
+date: last-modified
+date-format: MMMM D, YYYY
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    code-tools: true
+execute:
+  echo: true
+  warning: true
+  eval: false
+  message: true
+---
+
+# Purpose {#sec-purpose}
+
+This notebook is a **scaffold**, not a finished analysis.
+Its job is to test the nested-random-intercept extension added to the local `multibart` package (functions `nested_random_intercepts()` and `get_nested_random_intercepts_posteriors()` in `code/multibart/R/groups.R`).
+
+The goals, in priority order, are:
+
+1. **Verify the modified `multibart` works in principle.**
+   On *synthetic* two-level data with known variance components we confirm the new helper builds a valid random-effects design, that both fitting paths (`bcf_continuous_linear` and `bcf_binary`) accept it and run, and that the posterior extractor returns correctly-shaped, correctly-labelled output that recovers the planted structure.
+2. **See what the output looks like and how to process it downstream.**
+   We fit on a small subsample of the real data (when it exists) and walk the posterior objects through to the tidy summaries and figures the manuscript will need.
+
+::: callout-important
+`eval: false` is set at the document level on purpose.
+Nothing here is meant to run on render yet: the real data (`01_prep_hte` output) is not prepared, and the package change still needs a deliberate first run.
+The synthetic mechanism check in @sec-synthetic is self-contained and can be run on its own by flipping the relevant chunk to `eval: true`; the subsample section in @sec-subsample additionally requires the prepared data.
+:::
+
+::: callout-note
+## Why nesting fits the existing sampler
+
+The C++ MCMC sampler is already general over an arbitrary number of variance components `K` and an arbitrary random-effects design matrix `W` — it reads the dimensions off its inputs at runtime.
+A nested respondent-within-country intercept model is just `W = [D_country | D_resp]` with a block-structured `q × 2` component-assignment matrix `Q` giving each grouping factor its own variance component.
+Because respondent ids are globally unique, this dummy coding *is* nesting (each respondent dummy belongs to exactly one country).
+This is the same `q × 2` mechanism `random_intercepts_slopes()` already uses for intercept + slope; we only swap the two blocks for two grouping factors.
+:::
+
+::: callout-warning
+## The real risk is cost, not correctness
+
+`W` is `n × (C + R)`.
+At full scale that is roughly `112,500 × (25 + 37,500)`, and the sampler forms `WtW` (≈ 37.5k²) densely and solves a system of that order every iteration.
+The correctness story is solid; the open question is whether the **dense** sampler runs in acceptable time and memory.
+That is exactly why this notebook smoke-tests on synthetic data and then on a *few-country* subsample first.
+If the dense fit proves prohibitive, the documented fallback (CLAUDE.md Open Question #1) is country random intercepts only, with respondent dependence handled by cluster-bootstrapped uncertainty.
+:::
+
+# Setup {#sec-setup}
+
+The setup chunk loads the usual project packages plus `pkgload`, which lets us load the **local source** copy of `multibart` (compiling its C++ as needed) without installing it.
+We point `load_all()` at `code/multibart` so we are testing the freshly edited package, not a stale installed one.
+
+```{r}
+#| label: setup
+#| include: false
+
+# execution time
+start_time <- Sys.time()
+# console width
+options(width = 80)
+# packages
+p_required <- c(
+  "tidyverse",   # dplyr, ggplot2, tidyr
+  "here",        # relative paths
+  "ggpubr",      # theme_pubr
+  "pkgload",     # load local multibart source
+  "sessioninfo"  # session docs
+)
+packages <- rownames(installed.packages())
+p_to_install <- p_required[!(p_required %in% packages)]
+if (length(p_to_install) > 0) {
+  install.packages(p_to_install)
+}
+sapply(p_required, require, character.only = TRUE)
+rm(p_required, p_to_install, packages)
+
+# local package
+pkgload::load_all(here::here("code", "multibart"))
+```
+
+# Synthetic mechanism check {#sec-synthetic}
+
+This is the primary test.
+We generate data from a known additive two-level model so that we control the truth and can check the machinery end-to-end.
+
+## Simulate two-level data {#sec-simulate}
+
+The design mirrors the real structure: respondents nested in countries, several conjoint tasks per respondent.
+Treatment `z` is randomized with a known propensity of 0.5 (as in the conjoint design), so no propensity model is needed.
+Country and respondent intercepts are drawn from normals with **distinct** variances (`sigma_country` clearly larger than `sigma_resp`); recovering that separation is the key thing we want to see.
+We keep the dimensions small so the dense `WtW` solve is trivial.
+
+```{r}
+#| label: simulate
+
+set.seed(20260602)
+
+# dimensions
+n_country <- 8
+n_resp_per_country <- 25
+n_task <- 3
+
+# nested ids
+country_id <- factor(rep(seq_len(n_country),
+                         each = n_resp_per_country * n_task))
+resp_id <- factor(rep(seq_len(n_country * n_resp_per_country),
+                      each = n_task))
+n <- length(resp_id)
+
+# planted variance components
+sigma_country <- 1.5
+sigma_resp <- 0.5
+b_country <- rnorm(n_country, 0, sigma_country)
+b_resp <- rnorm(nlevels(resp_id), 0, sigma_resp)
+
+# covariates, control function, heterogeneous tau
+p <- 4
+X <- matrix(rnorm(n * p), nrow = n)
+colnames(X) <- paste0("x", seq_len(p))
+mu_x <- 1.0 * X[, 1] - 0.5 * X[, 2]
+tau_x <- 0.5 + 0.75 * (X[, 3] > 0)
+
+# randomized treatment, known propensity 0.5
+z <- rbinom(n, 1, 0.5)
+
+# linear predictor with nested random intercepts on mu only
+lin_pred <- mu_x + tau_x * z +
+  b_country[as.integer(country_id)] +
+  b_resp[as.integer(resp_id)]
+
+# continuous and binary outcomes
+y_cont <- lin_pred + rnorm(n, 0, 1)
+y_bin <- rbinom(n, 1, pnorm(scale(lin_pred)[, 1]))
+```
+
+A quick `stopifnot()` guards the nesting invariant — every respondent must sit in exactly one country — and the basic dimensions.
+Verification chunks like this are required after each data-prep step in this project.
+
+```{r}
+#| label: check-sim
+
+# each respondent maps to exactly one country
+resp_country_map <- tapply(as.integer(country_id),
+                           resp_id,
+                           function(v) length(unique(v)))
+stopifnot(
+  all(resp_country_map == 1),
+  length(y_cont) == n,
+  length(y_bin) == n,
+  nrow(X) == n,
+  all(sort(unique(z)) == c(0, 1))
+)
+```
+
+## Build the nested random-effects design {#sec-build-re}
+
+`nested_random_intercepts()` takes the two grouping factors (outer first, inner second) and returns the design `W`, the component-assignment matrix `Q`, the per-level dummies, and the block sizes used later by the extractor.
+We assert the shape we expect: `W` is `n × (C + R)`, and `Q`'s columns sum to the two block sizes (so component 1 owns the country dummies and component 2 the respondent dummies).
+
+```{r}
+#| label: build-re
+
+re <- nested_random_intercepts(country_id, resp_id)
+
+C <- re$n_level1
+R <- re$n_level2
+
+stopifnot(
+  nrow(re$randeff_design) == n,
+  ncol(re$randeff_design) == C + R,
+  ncol(re$randeff_variance_component_design) == 2,
+  all(colSums(re$randeff_variance_component_design) == c(C, R)),
+  all(rowSums(re$randeff_variance_component_design) == 1)
+)
+```
+
+## Fit — continuous path {#sec-fit-cont}
+
+`bcf_continuous_linear()` is the path for a continuous outcome.
+The nested design is passed straight through the unchanged wrapper to the sampler.
+
+Two call-site details matter:
+
+- **`randeff_scales` must be length `K = 2`.**
+  The sampler indexes `randeff_scales(ii)` for each variance component, so a scalar default would be out of bounds with two components.
+  We pass one scale per level.
+  (A pre-existing quirk means the scale value currently cancels in the prior, so only its *length* matters today; we still pass sensible values for clarity and forward-compatibility.)
+- **Short MCMC.** This is a smoke test, so `nburn`/`nsim` are small. Real fits use far longer chains.
+
+```{r}
+#| label: fit-cont
+
+fit_cont <- bcf_continuous_linear(
+  y = y_cont,
+  z = z,
+  x_control = X,
+  x_moderate = X,
+  zhat = rep(0.5, n),                # known propensity
+  randeff_design = re$randeff_design,
+  randeff_variance_component_design = re$randeff_variance_component_design,
+  randeff_scales = c(1, 1),          # length K = 2
+  randeff_df = 3,
+  nburn = 200,
+  nsim = 200,
+  update_interval = 50
+)
+```
+
+## Fit — binary path {#sec-fit-bin}
+
+`bcf_binary()` is the path for a 0/1 outcome and carries the identical random-effects block, so the *same* `re` object works unchanged.
+Here the recovered random-intercept scales live on the latent (probit-like) scale, so they will not numerically match the continuous-outcome truth — for the binary path the test is simply that it **accepts the nested design, runs, and returns correctly-shaped output**.
+
+```{r}
+#| label: fit-bin
+
+fit_bin <- bcf_binary(
+  y = y_bin,
+  z = z,
+  x_control = X,
+  x_moderate = X,
+  pihat = rep(0.5, n),               # known propensity
+  randeff_design = re$randeff_design,
+  randeff_variance_component_design = re$randeff_variance_component_design,
+  randeff_scales = c(1, 1),          # length K = 2
+  randeff_df = 3,
+  nburn = 200,
+  nsim = 200,
+  update_interval = 50
+)
+```
+
+## Extract and verify the posteriors {#sec-extract}
+
+`get_nested_random_intercepts_posteriors()` slices the fitted random coefficients into the country block (`1:C`) and respondent block (`(C+1):(C+R)`), labels each from the stored dummies, and pulls the two variance-component SD posteriors.
+We run it on both fits and assert the output shapes; for the continuous fit we also check that the recovered posterior-mean SDs **separate** in the right direction (country SD clearly larger than respondent SD), matching the planted truth.
+
+```{r}
+#| label: extract
+
+post_cont <- get_nested_random_intercepts_posteriors(fit_cont, re)
+post_bin <- get_nested_random_intercepts_posteriors(fit_bin, re)
+
+# shape checks: C + R coefficients, two SD columns
+stopifnot(
+  ncol(fit_cont$random_effects) == C + R,
+  ncol(fit_cont$random_effects_sd) == 2,
+  ncol(post_cont$level1_posterior) == C,
+  ncol(post_cont$level2_posterior) == R,
+  ncol(post_bin$level1_posterior) == C,
+  ncol(post_bin$level2_posterior) == R
+)
+
+# posterior-mean variance components (continuous path)
+sd_country_hat <- mean(post_cont$level1_sd)
+sd_resp_hat <- mean(post_cont$level2_sd)
+
+cat("planted   sigma_country / sigma_resp:",
+    sigma_country, "/", sigma_resp, "\n")
+cat("recovered sigma_country / sigma_resp:",
+    round(sd_country_hat, 3), "/", round(sd_resp_hat, 3), "\n")
+
+# the two components should separate in the right direction
+stopifnot(sd_country_hat > sd_resp_hat)
+```
+
+If the planted and recovered scales are in the same ballpark and ordered correctly, the nested extension is working as intended.
+Exact recovery is not expected from a 200-iteration smoke test on a small sample.
+
+# Processing the output downstream {#sec-downstream}
+
+This section shows the shape of what we get back and how to turn it into the tidy objects the manuscript figures consume.
+The random-effects posteriors are `draws × group` matrices; we melt them to long form and summarize per group.
+
+```{r}
+#| label: tidy-re
+
+# country-level intercept posterior -> long tidy summary
+country_re_summary <- post_cont$level1_posterior |>
+  as_tibble() |>
+  mutate(.draw = row_number()) |>
+  pivot_longer(-.draw, names_to = "country", values_to = "intercept") |>
+  summarise(
+    post_mean = mean(intercept),
+    lower = quantile(intercept, 0.05),
+    upper = quantile(intercept, 0.95),
+    .by = country
+  )
+
+country_re_summary
+```
+
+A caterpillar plot of the country intercepts is the kind of appendix-only clustering diagnostic the analysis plan calls for (country structure is a nuisance, shown only to justify the RE specification).
+The chunk below is a template following the project figure conventions; it is not rendered here.
+
+```{r}
+#| label: fig-country-re
+#| fig-cap: "Posterior country-level random intercepts (synthetic smoke-test data), with 90% credible intervals. Diagnostic only."
+#| dpi: 500
+
+country_re_summary |>
+  mutate(country = fct_reorder(country, post_mean)) |>
+  ggplot(aes(x = post_mean, y = country)) +
+  geom_vline(xintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_pointrange(aes(xmin = lower, xmax = upper)) +
+  labs(
+    title = "Country-level random intercepts",
+    x = "Posterior intercept",
+    y = "Country"
+  ) +
+  ggpubr::theme_pubr()
+```
+
+The treatment-effect posterior (`fit_cont$tau`, when present) and the variance-component SD posteriors are processed the same way: melt, summarize, plot.
+The respondent block (`post_cont$level2_posterior`) is large (`R` columns) and is generally summarized in aggregate (e.g. the distribution of posterior-mean respondent intercepts) rather than plotted per respondent.
+
+# Small-subsample fit on real data {#sec-subsample}
+
+::: callout-important
+The cells below are placeholders.
+They depend on the prepared analysis tibble from `01_prep_hte`, which does **not exist yet**.
+Once it does, point the read at the real file, choose the outcome (Dictator or Trust), and pick the fitting path that matches its coding.
+:::
+
+The intent: subset to a handful of countries, fit the nested model, and confirm the *real* data flows through the same machinery — and, critically, gauge the dense `WtW` cost before attempting the full ~37.5k-respondent fit.
+
+```{r}
+#| label: load-subsample
+
+# TODO: replace with real 01_prep_hte output
+# dat <- readRDS(here::here("data", "hte_dictator.rds"))
+
+# few-country subsample to bound the dense WtW cost
+# few_countries <- levels(factor(dat$country_id))[1:3]
+# sub <- dat |> filter(country_id %in% few_countries) |>
+#   mutate(across(c(country_id, respondent_id), fct_drop))
+```
+
+```{r}
+#| label: fit-subsample
+
+# re_sub <- nested_random_intercepts(sub$country_id, sub$respondent_id)
+#
+# fit_sub <- bcf_continuous_linear(   # or bcf_binary, per outcome coding
+#   y = sub$y,
+#   z = sub$z,
+#   x_control = sub_X,                # numeric model matrix of moderators
+#   x_moderate = sub_X,
+#   zhat = rep(0.5, nrow(sub)),       # known conjoint propensity
+#   randeff_design = re_sub$randeff_design,
+#   randeff_variance_component_design = re_sub$randeff_variance_component_design,
+#   randeff_scales = c(1, 1),         # length K = 2
+#   randeff_df = 3,
+#   nburn = 1000,
+#   nsim = 1000
+# )
+#
+# post_sub <- get_nested_random_intercepts_posteriors(fit_sub, re_sub)
+```
+
+Record the wall-clock time and peak memory of this subsample fit.
+Extrapolating the dense solve from a few countries to all 25 (and from a few hundred respondents to ~37.5k) is what decides whether full nested REs are viable in the project window or whether the country-REs-only fallback is the pragmatic call.
+
+# Session Info {#sec-session-info .appendix .unnumbered}
+
+```{r}
+#| label: session-info
+#| echo: true
+session_info()
+```
+
+# Execution Time {#sec-exec-time .appendix .unnumbered}
+
+```{r}
+#| label: exec-time
+#| echo: true
+#| include: true
+
+end_time <- Sys.time()
+exec_time <- end_time - start_time
+cat(paste(
+  "R code execution time:",
+  round(as.numeric(exec_time, units = "secs"), 2),
+  "seconds."
+))
+```
