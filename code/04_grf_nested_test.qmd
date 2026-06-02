@@ -12,8 +12,9 @@ format:
 execute:
   echo: true
   warning: true
-  eval: false
+  eval: true
   message: true
+  cache: true
 ---
 
 # Purpose {#sec-purpose}
@@ -27,12 +28,6 @@ The goals, in priority order, are:
    On *synthetic* two-level data with known effects we confirm that `grf::causal_forest()` with country fixed effects in `X`, respondent-level `clusters`, and the known conjoint propensity recovers the planted average and heterogeneous treatment effects.
 2. **See what the output looks like and how to process it downstream.**
    We walk the forest output through the headline quantities the manuscript needs — cluster-robust ATE, individual `τ̂(x)`, and the best linear projection onto the pre-specified moderators — and produce the same true-vs-recovered figure as the BCF test.
-
-::: callout-important
-`eval: false` is set at the document level on purpose.
-Nothing here is meant to run on render yet: the real data (`01_prep_hte` output) is not prepared.
-The synthetic mechanism check in @sec-synthetic is self-contained and can be run on its own by flipping the relevant chunk to `eval: true`; the subsample section in @sec-subsample additionally requires the prepared data.
-:::
 
 ::: callout-note
 ## How `grf` handles the nesting
@@ -91,6 +86,18 @@ We reuse the **exact data-generating process** from the BCF notebook (same seed)
 Respondents nested in countries, several conjoint tasks per respondent.
 Treatment `z` is randomized with a known propensity of 0.5, as in the conjoint design.
 Country and respondent intercepts are drawn from normals with distinct variances; for `grf` these are pure nuisance — country is handled by fixed effects, respondent by clustering.
+
+In plain language, the chunk below builds a fake dataset where we already know every answer, so we can check whether the causal forest rediscovers it.
+This is the **same** data-generating process and seed as the BCF notebook, so the two methods see identical data.
+The pieces are:
+
+- **The nesting structure** (`country_id`, `resp_id`): 8 countries, 25 respondents each, 3 tasks per respondent, for `n = 600` rows. Respondent ids are numbered globally (1…200), so each respondent belongs to exactly one country — that is what makes the structure *nested* rather than *crossed*.
+- **The group offsets** (`b_country`, `b_resp`): each country gets its own baseline shift and each respondent a smaller one, drawn from normals whose SDs are the planted variance components. Here they are pure nuisance — the things country fixed effects and respondent clustering are meant to absorb — not quantities `grf` reports.
+- **The covariates** (`X_mod`): four standard-normal columns `x1`–`x4`, the respondent/profile characteristics a real analysis would use to explain heterogeneity. (These become the *moderator* matrix; country dummies are appended later in @sec-build.)
+- **The prognostic surface** (`mu_x`): what the outcome looks like *before* any treatment, as a function of the covariates (rising with `x1`, falling with `x2`). `grf` does not report this directly — it is partialled out via `Y.hat` — but it still drives the outcome and so must be generated.
+- **The true treatment effect** (`tau_x`): the quantity of interest, and the thing the causal forest estimates. It is deliberately *heterogeneous* — a step function that is `0.5` when `x3 <= 0` and `1.25` when `x3 > 0` — so we can check the forest recovers not just an average effect but the way it *varies*.
+- **The treatment** (`z`): a coin flip independent of everything else (propensity 0.5), exactly as a randomized conjoint attribute would be.
+- **The outcome** (`y`): the linear predictor sums the prognostic surface, the treatment effect applied only to treated units (`tau_x * z`), the country and respondent offsets, and noise. Only a continuous outcome is generated here (the binary path is exercised in the BCF notebook).
 
 ```{r}
 #| label: simulate
@@ -185,12 +192,34 @@ stopifnot(
 ## Fit the causal forest {#sec-fit}
 
 `causal_forest()` takes the numeric `X`, outcome `y`, and treatment `z`.
-Two strategy choices matter:
+Every argument in the call below:
 
-- **`W.hat = 0.5`** passes the known conjoint propensity directly, so no propensity is estimated (the analogue of passing known `zhat` to BCF).
-- **`clusters = clusters`** switches on respondent-level honest sampling and cluster-robust variance.
+- **`X`** — the numeric covariate matrix: the `p` moderators plus the `C − 1` country fixed-effect dummies assembled in @sec-build. `grf` requires a numeric matrix, which is why country was one-hot encoded rather than passed as a factor.
+- **`Y`** — the outcome vector.
+- **`W`** — the treatment (here binary 0/1, but `grf` also accepts continuous treatments).
+- **`W.hat`** — the propensity `E(W | X)`. Passing the scalar `0.5` fixes it at the known conjoint propensity for every observation, so `grf` skips its internal propensity regression (the analogue of passing known `zhat`/`pihat` to BCF). Left `NULL`, `grf` would estimate it with a regression forest.
+- **`clusters`** — an integer vector assigning each row to a respondent. This switches on cluster-aware *honest* subsampling (whole respondents are held out together, never split across the sample-fitting and estimation halves) and the cluster-robust variance that feeds the ATE standard error. It is how the within-person dependence across the three tasks is absorbed.
+- **`num.trees`** — number of trees in the forest. More trees give more stable estimates and tighter variance estimation; `2000` is a smoke-test value, comfortably below a production setting.
+- **`seed`** — RNG seed for reproducible subsampling and tree construction.
 
-`Y.hat` is left to `grf`'s internal regression forest on `X` (which includes the country FE), the standard partialling-out step.
+Two defaults left implicit are worth knowing:
+
+- **`Y.hat = NULL`** (not passed) means `grf` fits its own regression forest of `Y` on `X` (which includes the country FE) and partials it out — the orthogonalization step at the heart of the R-learner. This is how the prognostic surface and country baselines are removed before estimating `tau(x)`.
+- **`honesty = TRUE`** (the package default) splits each tree's data so the structure is learned on one half and the leaf effects estimated on the other, which is what makes the confidence intervals valid.
+
+::: callout-note
+## What prints to the console while it runs
+
+Unlike the BCF sampler, `grf` is **silent** during fitting — there is no per-iteration trace, and a successful fit prints nothing at all.
+That absence is normal, not a sign the call hung.
+What you may see instead are *warnings*, and they are worth reading:
+
+- a warning that the number of trees is too small for reliable variance estimates (raise `num.trees`);
+- a warning about clusters being unbalanced or fewer clusters than expected (a sign the `clusters` vector was built wrong).
+
+For a readable summary of the fitted object, call `print(cf)`, which reports the forest type, the number of trees, and the number of training samples and clusters — the quickest confirmation that the nesting was passed in as intended.
+The substantive diagnostics all come *after* the fit, from the functions called in @sec-extract.
+:::
 
 ```{r}
 #| label: fit
@@ -204,6 +233,25 @@ cf <- grf::causal_forest(
   seed = 20260602
 )
 ```
+
+## What the fitted object contains {#sec-fit-object}
+
+`causal_forest()` returns a list of class `causal_forest`.
+Unlike the BCF object, the treatment-effect estimates are already sitting on it — no forest needs to be replayed.
+The components worth knowing:
+
+- **`$predictions`** — a length-`n` vector of *out-of-bag* estimates of `tau(x)` for the training rows (each row predicted only by trees that did not see it, which is what keeps them honest). `predict(cf)` with no new data returns the same OOB predictions wrapped in a data frame.
+- **`$variance.estimates`** — per-observation variance of those predictions (populated because the default `ci.group.size` is greater than 1); the basis for individual confidence intervals.
+- **`$X.orig`, `$Y.orig`, `$W.orig`** — the data as passed in.
+- **`$Y.hat`, `$W.hat`** — the fitted nuisance estimates that were partialled out: here `$W.hat` is the constant `0.5` we supplied, and `$Y.hat` is the internal regression-forest fit of `Y` on `X`.
+- **`$clusters`** — the cluster assignment actually used, retained so downstream functions reproduce the cluster-robust variance.
+- **`$tunable.params`, `$num.trees`** — the settings the forest was grown with.
+
+The three headline quantities are read off with dedicated functions rather than from slots directly:
+
+- **`predict(cf)$predictions`** — the individual `tau_hat`, as above.
+- **`average_treatment_effect(cf, target.sample = "all")`** — a named numeric vector with `estimate` and `std.err` (the cluster-robust SE), i.e. the ATE.
+- **`best_linear_projection(cf, X_mod)`** — a coefficient table (an `lmtest::coeftest` matrix) with one row per moderator plus an intercept and columns `Estimate`, `Std. Error`, `t value`, `Pr(>|t|)`. It is the linear summary of how `tau(x)` moves with each pre-specified moderator, and the direct counterpart to the BCF posterior projection.
 
 ## Extract and verify {#sec-extract}
 
@@ -282,7 +330,7 @@ recovery |>
   labs(
     title = "True vs. recovered treatment effect (synthetic smoke test)",
     x = "True effect",
-    y = "Causal-forest posterior mean",
+    y = "Causal-forest estimate",
     colour = NULL
   ) +
   ggpubr::theme_pubr()
