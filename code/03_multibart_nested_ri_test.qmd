@@ -127,10 +127,12 @@ The pieces are:
 - **The nesting structure** (`country_id`, `resp_id`): 8 countries, 25 respondents each, 3 tasks per respondent, for `n = 600` rows. Respondent ids are numbered globally (1…200), so each respondent belongs to exactly one country — that is what makes the structure *nested* rather than *crossed*.
 - **The group offsets** (`b_country`, `b_resp`): each country gets its own baseline shift and each respondent gets a smaller one, drawn from normals whose SDs are the planted "variance components" we later try to recover. These stand in for the real-world fact that some countries (and some people) are simply more generous on average, for reasons we are not modelling and treat as nuisance.
 - **The covariates** (`X`): four standard-normal columns `x1`–`x4`, the respondent/profile characteristics a real analysis would use to explain heterogeneity.
-- **The prognostic surface** (`mu_x`): what the outcome looks like *before* any treatment, as a function of the covariates (here it rises with `x1` and falls with `x2`). In causal-forest language this is the "control" or confounding part — everything that drives the outcome but is not the treatment effect.
-- **The true treatment effect** (`tau_x`): the quantity of substantive interest, and the thing BCF exists to estimate. It is deliberately *heterogeneous* — a step function that is `0.5` when `x3 <= 0` and `1.25` when `x3 > 0` — so we can later check that the model recovers not just an average effect but the way the effect *varies* across people.
+- **The prognostic surface** (`mu_x`): what the outcome looks like *before* any treatment, as a function of the covariates. It is linear, `mu(x) = 1.0 * x1 - 0.5 * x2` — rising with `x1`, falling at half that rate with `x2`, and flat in `x3`/`x4`. In causal-forest language this is the "control" or confounding part — everything that drives the outcome but is not the treatment effect.
+- **The true treatment effect** (`tau_x`): the quantity of substantive interest, and the thing BCF exists to estimate. It is deliberately *heterogeneous* — a step function that is `0.5` when `x3 <= 0` and `1.25` when `x3 > 0` — so we can later check that the model recovers not just an average effect but the way the effect *varies* across people. With `x3` standard-normal, about half the sample sits in each step, so the true average effect is roughly `0.875`.
 - **The treatment** (`z`): a coin flip independent of everything else (propensity 0.5), exactly as a randomized conjoint attribute would be.
-- **The outcome** (`y_cont`, `y_bin`): the linear predictor adds together the prognostic surface, the treatment effect applied only to treated units (`tau_x * z`), the country and respondent offsets, and noise. The continuous outcome is that sum directly; the binary outcome passes it through a probit link to produce 0/1 draws, mimicking the game-decision outcomes in the real data.
+- **The outcome** (`y_cont`, `y_bin`): the linear predictor adds together the prognostic surface, the treatment effect applied only to treated units (`tau_x * z`), the country and respondent offsets, and standard-normal noise (residual SD `1`). The continuous outcome is that sum directly; the binary outcome passes it through a probit link to produce 0/1 draws, mimicking the game-decision outcomes in the real data.
+
+In short, a correct fit should recover: a heterogeneous `tau(x)` that steps up from ~`0.5` to ~`1.25` across `x3 = 0` (average ~`0.875`), the linear `mu(x)` shape in `x1`/`x2`, and two clearly separated variance components with `sigma_country` (1.5) above `sigma_resp` (0.5).
 
 ```{r}
 #| label: simulate
@@ -246,19 +248,26 @@ Two call-site details deserve emphasis:
 ::: callout-note
 ## What prints to the console while it runs
 
-With `text_trace = TRUE` (set inside the wrapper), the sampler narrates itself.
-First come one-off setup lines: `Using random effects.`, `Reading in y`, `Setting up designs` / `Setting up forests` (with a line per design reporting how many covariate columns were instantiated), and finally `Done.` followed by `Beginning MCMC:`.
-If you do **not** see `Using random effects.`, the random-effects block was not detected — the nested design did not reach the sampler.
+Before the chain starts, the wrapper emits one stderr warning: `All values of zhat are equal. zhat will not be included among covariates`.
+This is expected and harmless — because treatment is randomized with a constant known propensity (0.5), `zhat` carries no information to split on, so the sampler simply drops it from the covariate set rather than wasting a useless column.
+
+With `text_trace = TRUE` (set inside the wrapper), the sampler then narrates its setup.
+The first line is `Using random effects.` — if you do **not** see it, the random-effects block was not detected and the nested design did not reach the sampler.
+Next come `Reading in y` and `Setting up designs`, followed by one block per BART design.
+There are two: `design 0` then `design 1`, the prognostic surface `mu(x)` and the treatment-effect surface `tau(x)`.
+Each reports `group setting: 0` — the per-forest grouping flag, off here because the random intercepts ride the separate `W` block rather than the forest's own design — and `Instantiated covariate matrix 1 with 4 columns` / `... matrix 2 with 4 columns`, confirming our four covariates `x1`–`x4` reached each forest.
+Then `Setting up forests`, `Done.`, and `Beginning MCMC:`.
 
 Then, every `update_interval` iterations, it prints a single progress line:
 
 ```
-iteration: 450 sigma/SD(Y): 0.83
+iteration: 500 sigma/SD(Y): 0.542733
 ```
 
-`iteration` counts through the full `nburn + nsim` run, so it is the live progress meter.
-`sigma/SD(Y)` is the current residual SD expressed as a fraction of the outcome's SD (recall `y` is standardized internally): values well below 1 mean the model is explaining a good share of the outcome variance.
-What you want to see is this number *wandering around a stable level* once burn-in is past — a value still drifting downward at the end of the run is a sign the chain has not converged and `nburn` was too short.
+`iteration` counts through the full `nburn + nsim` run (here `0` to `3950`), so it is the live progress meter.
+`sigma/SD(Y)` is the current residual SD on the internally standardized-`y` scale (so `SD(Y) = 1` and the printed value *is* the ratio): values well below 1 mean the model is explaining a good share of the outcome variance.
+In this fit it drops from `1` at iteration 0 to roughly `0.5` within the first 50 iterations and then *wanders in a stable band of about 0.47–0.57* for the rest of the run — residual SD around half the outcome SD, i.e. the model captures most of the variance.
+That stability is what you want to see; a value still drifting downward at the end would signal the chain had not converged and `nburn` was too short.
 :::
 
 ```{r}
@@ -285,6 +294,16 @@ fit_cont <- bcf_continuous_linear(
 Every argument means exactly what it does in the continuous call (@sec-fit-cont), with one rename: the known propensity is passed as **`pihat`** rather than `zhat`.
 Internally this path adds a probit data-augmentation step, so the model operates on a latent continuous scale underneath the binary outcome.
 Here the recovered random-intercept scales live on that latent (probit-like) scale, so they will not numerically match the continuous-outcome truth — for the binary path the test is simply that it **accepts the nested design, runs, and returns correctly-shaped output**.
+
+::: callout-note
+## What prints to the console while it runs
+
+The binary path emits two stderr warnings before fitting: `y appears to be discrete` (the wrapper noticing the 0/1 outcome) and `All values of pihat are equal. Pihat will not be included among covariates` (the binary path's name for the constant-propensity drop described in @sec-fit-cont).
+Both are expected.
+The setup and progress trace is then identical in form to the continuous path: `Using random effects.`, the two `design` blocks each with four covariate columns, `Beginning MCMC:`, and a `sigma/SD(Y)` line every 50 iterations.
+The one substantive difference is the *level* of `sigma/SD(Y)`: it settles in a higher band of about **0.80–0.88** here, versus ~0.47–0.57 for the continuous fit.
+That is exactly what the latent-scale view predicts — a binary outcome carries less information per observation, so a larger share of the latent variance stays in the residual.
+:::
 
 ```{r}
 #| label: fit-bin
@@ -363,8 +382,11 @@ cat(
 stopifnot(sd_country_hat > sd_resp_hat)
 ```
 
+In the rendered fit the comparison reads `planted 1.5 / 0.5` against `recovered 1.034 / 0.378`.
+Both components are recovered in the right order (country clearly above respondent) and the right ballpark, and their ratio (≈2.7) is close to the true 3.0 — so the two levels are being shrunk separately, which is the property under test.
+Both are also biased *downward*, most visibly the country SD: with only `C = 8` level-1 groups there is little information to pin the between-country variance down, and the half-t prior pulls it toward zero.
+That is the expected behaviour of partial pooling at this scale, not a defect — exact recovery is not the goal of a smoke test with 2000 saved draws on `n = 600`, and no formal coverage is claimed here.
 If the planted and recovered scales are in the same ballpark and ordered correctly, the nested extension is working as intended.
-Exact recovery is not expected from a 200-iteration smoke test on a small sample.
 
 ## True vs. recovered covariate effects {#sec-recovery}
 
