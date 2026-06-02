@@ -261,7 +261,7 @@ iteration: 450 sigma/SD(Y): 0.83
 What you want to see is this number *wandering around a stable level* once burn-in is past — a value still drifting downward at the end of the run is a sign the chain has not converged and `nburn` was too short.
 :::
 
-```{r, message = NA}
+```{r}
 #| label: fit-cont
 fit_cont <- bcf_continuous_linear(
   y = y_cont,
@@ -286,7 +286,7 @@ Every argument means exactly what it does in the continuous call (@sec-fit-cont)
 Internally this path adds a probit data-augmentation step, so the model operates on a latent continuous scale underneath the binary outcome.
 Here the recovered random-intercept scales live on that latent (probit-like) scale, so they will not numerically match the continuous-outcome truth — for the binary path the test is simply that it **accepts the nested design, runs, and returns correctly-shaped output**.
 
-```{r, message = NA}
+```{r}
 #| label: fit-bin
 fit_bin <- bcf_binary(
   y = y_bin,
