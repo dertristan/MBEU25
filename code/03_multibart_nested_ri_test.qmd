@@ -122,7 +122,7 @@ The design mirrors the real structure: respondents nested in countries, several 
 The two random-intercept variances are deliberately distinct (`sigma_country` well above `sigma_resp`) — recovering that separation is the key check — and the dimensions are small so the dense `WtW` solve is trivial.
 Per-quantity detail is in the chunk comments below.
 
-A correct fit should recover a heterogeneous `tau(x)` stepping from ~`0.5` to ~`1.25` across `x3 = 0` (average ~`0.875`), the linear `mu(x)` shape in `x1`/`x2`, and two clearly separated variance components with `sigma_country` (1.5) above `sigma_resp` (0.5).
+A correct fit should recover a heterogeneous `tau(x)`: a clean `0.75` contrast between the two levels of the binary `x3`, a mean-zero nonlinear (sine) wiggle in the continuous `x4`, flatness in the two null moderators `x1`/`x2`, the linear `mu(x)` shape in `x1`/`x2`, and two clearly separated variance components with `sigma_country` (1.5) above `sigma_resp` (0.5).
 
 ```{r}
 #| label: simulate
@@ -153,10 +153,14 @@ b_resp <- rnorm(nlevels(resp_id), 0, sigma_resp)
 p <- 4
 X <- matrix(rnorm(n * p), nrow = n)
 colnames(X) <- paste0("x", seq_len(p))
-# prognostic (control) surface: linear, flat in x3/x4
+# x3: binary dummy, a randomized binary conjoint-attribute stand-in
+X[, 3] <- rbinom(n, 1, 0.5)
+# prognostic (control) surface: linear in x1/x2, flat in x3/x4
 mu_x <- 1.0 * X[, 1] - 0.5 * X[, 2]
-# heterogeneous treatment effect: step in x3, 0.5 -> 1.25 (average ~0.875)
-tau_x <- 0.5 + 0.75 * (X[, 3] > 0)
+# x4: mean-zero nonlinear (sine) moderator
+g_x4 <- 0.4 * sin(1.5 * X[, 4])
+# heterogeneous effect: x3 binary contrast (0.75) + x4 sine (average ~0.875)
+tau_x <- 0.5 + 0.75 * X[, 3] + g_x4
 
 # randomized treatment, known propensity 0.5
 z <- rbinom(n, 1, 0.5)
@@ -183,7 +187,11 @@ stopifnot(
   all(resp_country_map == 1),
   length(y_cont) == n,
   nrow(X) == n,
-  all(sort(unique(z)) == c(0, 1))
+  all(sort(unique(z)) == c(0, 1)),
+  all(X[, 3] %in% c(0, 1)), # x3 is a binary dummy
+  is.numeric(X[, 4]), # x4 stays continuous
+  !anyNA(tau_x),
+  abs(mean(g_x4)) < 0.05 # x4 sine is mean-zero: ATE preserved
 )
 ```
 
@@ -473,7 +481,7 @@ This is the genuine numerical recovery check (@fig-recovery-cont): recovered eff
 
 From @sec-simulate, the data-generating values the figures below should reproduce:
 
-- **$\tau(x)$** — a step function: $0.5$ when $x_3 \le 0$, $1.25$ when $x_3 > 0$ (average $\approx 0.875$).
+- **$\tau(x)$** — a binary $0.75$ contrast on $x_3$ ($0.5$ at $x_3 = 0$, $1.25$ at $x_3 = 1$) plus a mean-zero sine in $x_4$ (average $\approx 0.875$).
 - **$\mu(x)$** — linear, $1.0\,x_1 - 0.5\,x_2$, compared in centred form.
 - **Variance components** — $\sigma_{\text{country}} = 1.5$, $\sigma_{\text{resp}} = 0.5$ (recovered and checked in @sec-extract).
 :::
@@ -502,7 +510,7 @@ recovery_cont <- extract_recovery(fit_cont)
 ```
 
 The figure plots recovered against true effect, with the dashed 45° identity as the perfect-recovery reference.
-$\tau(x)$ is a planted step function (low for `x3 <= 0`, high for `x3 > 0`), so its recovered cloud should sit higher at the larger true value — the expected partial-pooling shrinkage pulls the two clouds gently toward the centre.
+$\tau(x)$ is the $x_3$ binary contrast plus the $x_4$ sine, so the true values fan across a range rather than two points, and the recovered cloud should track the identity — the expected partial-pooling shrinkage pulls it gently toward the centre.
 
 ```{r}
 #| label: recovery-panel
@@ -554,8 +562,9 @@ Agreement across that difference is the robustness story; disagreement is what t
 ::: callout-note
 ## The planted truth we are checking against
 
-Because the data-generating process is identical to the `grf` test and $x_1$–$x_4$ are independent standard normals, the population projection of the planted step $\tau$ is $0$ on $x_1$, $x_2$, $x_4$ and $0.75\,\varphi(0) \approx 0.299$ on $x_3$ (the slope of the step against a standard normal).
-The projection should isolate $x_3$ near that value.
+Because the data-generating process is identical to the `grf` test, we read the truth straight off the planted $\tau$: the best linear projection of true $\tau$ onto the centred moderators $[x_1\ x_2\ x_3\ x_4]$.
+That OLS fit recovers $\approx 0.75$ on the binary $x_3$ (its main-effect contrast), a small positive slope on $x_4$ (the linear part of the sine), and $\approx 0$ on the null moderators $x_1$, $x_2$.
+The projection should isolate $x_3$ near $0.75$ and pick up a faint positive $x_4$.
 We summarize with a **95% credible interval** — wider than the 90% interval used for the random-intercept caterpillar — to match `grf`'s $1.96\,\text{SE}$ band in `fig-blp`, so the two coefficient figures are read on the same footing.
 :::
 
@@ -583,22 +592,21 @@ proj_summary <- proj_draws |>
     .by = term
   )
 
-# analytic population projection (identical DGP to the grf test):
-# zero except x3, whose slope is 0.75 * phi(0)
+# numeric truth: OLS of true tau on the centred moderators (identical DGP to grf)
 proj_truth <- tibble(
   term = paste0("x", 1:4),
-  truth = c(0, 0, 0.75 * dnorm(0), 0)
+  truth = unname(coef(lm(tau_x ~ scale(X, center = TRUE, scale = FALSE)))[-1])
 )
 
 proj_summary
 ```
 
 The coefficient figure uses the same grammar as the `grf` BLP plot, which is what makes the two methods legible side by side in the manuscript.
-Orange crosses mark the analytic true projection coefficients: the posterior should isolate `x3` near its true `0.75 φ(0) ≈ 0.30`, with the other three moderators near zero.
+Orange crosses mark the numerically computed true projection coefficients: the posterior should isolate `x3` near its true `≈ 0.75` and pick up a small positive `x4`, with the two null moderators near zero.
 
 ```{r}
 #| label: fig-projection-bcf
-#| fig-cap: "BCF posterior projection of the treatment-effect surface tau(x) onto the pre-specified moderators (synthetic data), with 95% credible intervals. Orange crosses mark the analytic true projection coefficients (zero except x3). Counterpart to the grf best linear projection; template for the BCF/CRF comparison figure."
+#| fig-cap: "BCF posterior projection of the treatment-effect surface tau(x) onto the pre-specified moderators (synthetic data), with 95% credible intervals. Orange crosses mark the numerically computed true projection coefficients (x3 ≈ 0.75, small positive x4, x1/x2 ≈ 0). Counterpart to the grf best linear projection; template for the BCF/CRF comparison figure."
 #| dpi: 500
 proj_summary |>
   filter(term != "(Intercept)") |>

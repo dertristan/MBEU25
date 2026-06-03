@@ -84,7 +84,7 @@ We reuse the **exact data-generating process** from the BCF notebook (same seed)
 
 Respondents nested in countries, three conjoint tasks each, treatment randomized at the known conjoint propensity of 0.5.
 The country and respondent intercepts are pure nuisance for `grf` — country absorbed by fixed effects, respondent by clustering — so unlike the BCF test their variances are not quantities we recover.
-The treatment effect is a deliberate step in `x3`, so a correct fit recovers heterogeneity, not just an average.
+The treatment effect is a clean `0.75` contrast on the binary `x3` plus a mean-zero nonlinear (sine) effect of the continuous `x4`, so a correct fit recovers heterogeneity, not just an average.
 Per-quantity detail is in the chunk comments.
 
 ```{r}
@@ -111,14 +111,18 @@ sigma_resp <- 0.5
 b_country <- rnorm(n_country, 0, sigma_country)
 b_resp <- rnorm(nlevels(resp_id), 0, sigma_resp)
 
-# four standard-normal candidate moderators x1-x4 (country dummies added later)
+# candidate moderators x1-x4 (country dummies added later)
 p <- 4
 X_mod <- matrix(rnorm(n * p), nrow = n)
 colnames(X_mod) <- paste0("x", seq_len(p))
+# x3: binary dummy, a randomized binary conjoint-attribute stand-in
+X_mod[, 3] <- rbinom(n, 1, 0.5)
 # prognostic (control) surface: linear in x1/x2, flat in x3/x4; partialled out
 mu_x <- 1.0 * X_mod[, 1] - 0.5 * X_mod[, 2]
-# heterogeneous treatment effect: step in x3, 0.5 -> 1.25 (sample avg ~0.845)
-tau_x <- 0.5 + 0.75 * (X_mod[, 3] > 0)
+# x4: mean-zero nonlinear (sine) moderator
+g_x4 <- 0.4 * sin(1.5 * X_mod[, 4])
+# heterogeneous effect: x3 binary contrast (0.75) + x4 sine (average ~0.875)
+tau_x <- 0.5 + 0.75 * X_mod[, 3] + g_x4
 
 # randomized treatment, known propensity 0.5
 z <- rbinom(n, 1, 0.5)
@@ -145,7 +149,11 @@ stopifnot(
   all(resp_country_map == 1),
   length(y) == n,
   nrow(X_mod) == n,
-  all(sort(unique(z)) == c(0, 1))
+  all(sort(unique(z)) == c(0, 1)),
+  all(X_mod[, 3] %in% c(0, 1)), # x3 is a binary dummy
+  is.numeric(X_mod[, 4]), # x4 stays continuous
+  !anyNA(tau_x),
+  abs(mean(g_x4)) < 0.05 # x4 sine is mean-zero: ATE preserved
 )
 ```
 
@@ -251,13 +259,13 @@ The three headline quantities are read off with dedicated functions rather than 
 
 From @sec-simulate, the data-generating values the quantities below should reproduce:
 
-- **$\tau(x)$** — a step function: $0.5$ when $x_3 \le 0$, $1.25$ when $x_3 > 0$. Population average $0.875$; the realized sample average is $\approx 0.845$, which is what the cluster-robust ATE targets.
-- **Best linear projection** — because $x_1$–$x_4$ are independent standard normals, the population projection of this step $\tau$ onto them is $0$ on $x_1$, $x_2$, $x_4$ and $0.75\,\varphi(0) \approx 0.299$ on $x_3$ (the slope of the step against a standard normal). The BLP should isolate $x_3$ near that value.
+- **$\tau(x)$** — a binary $0.75$ contrast on $x_3$ ($0.5$ at $x_3 = 0$, $1.25$ at $x_3 = 1$) plus a mean-zero sine in $x_4$. Population average $\approx 0.875$, which is what the cluster-robust ATE targets.
+- **Best linear projection** — read off the planted $\tau$ as its OLS projection onto the centred moderators $[x_1\ x_2\ x_3\ x_4]$: $\approx 0.75$ on $x_3$, a small positive slope on $x_4$ (the linear part of the sine), and $\approx 0$ on $x_1$, $x_2$. The BLP should isolate $x_3$ near $0.75$ and pick up a faint positive $x_4$.
 - **Nuisance** — `grf` does not report the prognostic surface $\mu(x)$ or the country/respondent variance components; those enter only as fixed effects and clusters and are partialled out, so there is no separate recovery check for them (unlike the BCF notebook).
 :::
 
 We pull the three headline quantities.
-The cluster-robust ATE should land near the planted average effect `mean(tau_x)`; the individual predictions should correlate with the true `τ(x)` and separate in the right direction across the `x3` moderator; the best linear projection onto the moderators should flag `x3` as the one with a clearly non-zero slope, near its analytic value above.
+The cluster-robust ATE should land near the planted average effect `mean(tau_x)`; the individual predictions should correlate with the true `τ(x)` and separate in the right direction across the binary `x3` moderator; the best linear projection onto the moderators should flag `x3` as the one with a clearly non-zero slope, near its value above.
 
 ```{r}
 #| label: extract
@@ -303,14 +311,14 @@ Exact recovery is not expected from a smoke-test forest on a small sample; parti
 
 The analogue of the BCF notebook's recovery figure.
 `grf` targets `τ(x)` directly and does not return a separate prognostic surface, so the figure focuses on the treatment effect.
-We plot recovered against true `τ(x)` with a dashed 45° identity line, colouring points by the true moderator group: the planted step function takes two values (low for `x3 <= 0`, high for `x3 > 0`), so the two clouds should sit near their respective true values, shrunk gently toward the centre.
+We plot recovered against true `τ(x)` with a dashed 45° identity line, colouring points by the binary `x3` group: each group fans out along the true axis because the `x4` sine adds within-group spread, and the points should track the identity, shrunk gently toward the centre.
 
 ```{r}
 #| label: recover-effects
 recovery <- tibble(
   truth = tau_x,
   estimate = tau_hat,
-  moderator = if_else(X_mod[, 3] > 0, "x3 > 0", "x3 <= 0")
+  moderator = if_else(X_mod[, 3] == 1, "x3 = 1", "x3 = 0")
 )
 ```
 
@@ -327,7 +335,7 @@ recovery |>
     colour = "grey50"
   ) +
   geom_point(alpha = 0.3) +
-  scale_colour_manual(values = c("x3 <= 0" = "#0072B2", "x3 > 0" = "#D55E00")) +
+  scale_colour_manual(values = c("x3 = 0" = "#0072B2", "x3 = 1" = "#D55E00")) +
   labs(
     title = "True vs. recovered treatment effect (synthetic smoke test)",
     subtitle = "Dashed line: 45° identity (perfect recovery)",
@@ -359,11 +367,10 @@ blp_summary <- blp |>
     upper = estimate + 1.96 * std_error
   )
 
-# analytic population projection of the planted step tau onto independent
-# N(0,1) moderators: zero except x3, whose slope is 0.75 * phi(0)
+# numeric truth: OLS of true tau on the centred moderators (identical DGP to BCF)
 blp_truth <- tibble(
   term = paste0("x", 1:4),
-  truth = c(0, 0, 0.75 * dnorm(0), 0)
+  truth = unname(coef(lm(tau_x ~ scale(X_mod, center = TRUE, scale = FALSE)))[-1])
 )
 
 blp_summary
@@ -371,11 +378,11 @@ blp_summary
 
 The BLP coefficient frame plots as a standard coefficient figure — the same grammar used for the BCF posterior projection, which is what makes the two methods legible side by side in the manuscript.
 The chunk below is a template following project figure conventions; the manuscript figure will overlay BCF and CRF coefficients on shared axes.
-Orange crosses mark the analytic true projection coefficients from @sec-extract: the estimate isolates `x3` near its true `0.75 φ(0) ≈ 0.30`, with the other three moderators near zero.
+Orange crosses mark the numerically computed true projection coefficients: the estimate isolates `x3` near its true `≈ 0.75` and picks up a small positive `x4`, with the two null moderators near zero.
 
 ```{r}
 #| label: fig-blp
-#| fig-cap: "Best linear projection of the causal forest onto the pre-specified moderators (synthetic data), with 95% confidence intervals. Orange crosses mark the analytic true projection coefficients (zero except x3). Template for the BCF/CRF comparison figure."
+#| fig-cap: "Best linear projection of the causal forest onto the pre-specified moderators (synthetic data), with 95% confidence intervals. Orange crosses mark the numerically computed true projection coefficients (x3 ≈ 0.75, small positive x4, x1/x2 ≈ 0). Template for the BCF/CRF comparison figure."
 #| dpi: 500
 blp_summary |>
   filter(term != "(Intercept)") |>
