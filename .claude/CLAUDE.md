@@ -24,7 +24,7 @@ The two outcomes are behavioral game decisions: **Dictator Game** and **Trust Ga
 
 > [!IMPORTANT]
 > **Before implementing the full analysis — to-do list (resolve first):**
-> 1. **Test on a subsample of the real data.** Mechanism tests on synthetic data are done (`code/03_multibart_nested_ri_test.qmd` for hierarchical BCF; `code/04_grf_nested_test.qmd` for `grf`). The `multibart` test covers the **continuous path only** (`bcf_continuous_linear`); it recovers the two variance components (country SD above respondent SD) and the prognostic/treatment surfaces μ(x)/τ(x) against planted truth, with a country random-intercept caterpillar plot as the clustering diagnostic. The binary path was dropped as out of scope for the smoke test. The `grf` test runs on the **same synthetic data and seed**, continuous outcome only (no binary path either): it recovers the cluster-robust ATE, individual τ̂(x), and the best linear projection against planted truth (country as FE dummies in `X`, respondent as `clusters`; μ(x) and the variance components are nuisance that `grf` partials out, so they are not separately checked). Its figure set is two figures — a true-vs-recovered τ scatter against the 45° identity, and a BLP coefficient figure with the analytic true projection coefficients (x3 ≈ 0.75·φ(0), others zero) overlaid as crosses. The next gate is running both methods on a few-country subsample of the prepared `01_prep_hte` data to confirm the real data flows through and to bound the dense `WtW` cost of the nested-RE BCF fit (see CLAUDE.md Open Question #1).
+> 1. **Test on a subsample of the real data.** Mechanism tests on synthetic data are done (`code/03_multibart_nested_ri_test.qmd` for hierarchical BCF; `code/04_grf_nested_test.qmd` for `grf`). The `multibart` test covers the **continuous path only** (`bcf_continuous_linear`); it recovers the two variance components (country SD above respondent SD) and the prognostic/treatment surfaces μ(x)/τ(x) against planted truth, with a country random-intercept caterpillar plot as the clustering diagnostic. The binary path was dropped as out of scope for the smoke test. The `grf` test runs on the **same synthetic data and seed**, continuous outcome only (no binary path either): it recovers the cluster-robust ATE, individual τ̂(x), and the best linear projection against planted truth (country as FE dummies in `X`, respondent as `clusters`; μ(x) and the variance components are nuisance that `grf` partials out, so they are not separately checked). Its figure set is two figures — a true-vs-recovered τ scatter against the 45° identity, and a BLP coefficient figure with the analytic true projection coefficients (x3 ≈ 0.75·φ(0), others zero) overlaid as crosses. The next gate is running both methods on a few-country subsample of the prepared `02_data_prep` data to confirm the real data flows through and to bound the dense `WtW` cost of the nested-RE BCF fit (see CLAUDE.md Open Question #1).
 > 2. **Decide on covariates to explore.** Freeze the pre-specified moderator list (profile-level + respondent-level; see Open Question #4) before fitting. Heterogeneity findings outside this list are exploratory addenda, not main results.
 
 **Primary method: hierarchical Bayesian Causal Forests (BCF)** with nested random intercepts to account for the clustered structure, following the Yeager et al. application lineage (`yeager2019national`, `yeager2022synergistic`) and extended to two-level nesting in the local `multibart` package. Hierarchical BCF is preferred because:
@@ -77,10 +77,10 @@ To be written formally in Research Design section. Sketch:
 | Day | Task |
 |-----|------|
 | Mon | Pre-analysis note (`notes/analysis_plan.md`), covariate inventory, construct scores, freeze moderator list, project skeleton. |
-| Tue | `01_prep_hte.qmd`: clean tibble per outcome (Y, Z, X, respondent_id, country_id). Smoke-test Yeager et al.'s code on one-country subset. Resolve open questions 1–3 above. |
-| Wed | Full BCF fits for Dictator and Trust outcomes. Save full posterior τ̂(x) draws. **Don't look at results.** |
-| Thu | CRF fits with `clusters = respondent_id`, country FEs. Compute headline quantities for both methods: ATE, variable importance (construct-aggregated, split by profile-level vs. respondent-level), posterior projection / BLP onto pre-specified moderators. |
-| Fri | `05_figures.qmd`: Green & Kern–style figures (see below). Tables as TeX fragments. |
+| Tue | `02_data_prep.qmd`: clean tibble per outcome (Y, Z, X, respondent_id, country_id). Smoke-test Yeager et al.'s code on one-country subset. Resolve open questions 1–3 above. |
+| Wed | Full BCF fits for Dictator and Trust outcomes (`05_*.qmd`). Save full posterior τ̂(x) draws. **Don't look at results.** |
+| Thu | CRF fits (`06_*.qmd`) with `clusters = respondent_id`, country FEs. Compute headline quantities for both methods: ATE, variable importance (construct-aggregated, split by profile-level vs. respondent-level), posterior projection / BLP onto pre-specified moderators. |
+| Fri | `07_*.qmd`: Green & Kern–style figures (see below). Tables as TeX fragments. |
 | Sat/Mon | Write manuscript (intro 0.5pp, data/methods 1.5pp, results 3–4pp, discussion 0.5–1pp). |
 | Buffer | Reserve a full day for things that go wrong (MCMC convergence, OOM, weird data quirks). |
 
@@ -128,16 +128,23 @@ quarto preview index.qmd
 - `code/` — numbered R analysis notebooks (`01_`, `02_`, …); `00_template.qmd` is the template for new notebooks
 - `code/helper_scripts/copy_figures.R` — post-render script that copies figures from `_freeze/` into `_manuscript/` so the HTML preview renders correctly
 - `data/` — datasets (structure TBD as project grows)
-- `literature/` — PDF papers (gitignored — not tracked in Git)
+- `literature/` — source papers (gitignored — not tracked in Git); `literature/pdf/` holds the PDFs and `literature/md/` holds converted Markdown. Each file is named by its `references.bib` citation key (e.g. `hahn2020bayesian.pdf` / `hahn2020bayesian.md`). **Do not read these files on your own — always ask first (see Workflow Constraints).**
 - `notes/` — working notes including `analysis_plan.md`
 - `_extensions/andrewheiss/wordcount/` — Quarto extension providing word count and custom citeproc
 
-### Planned analysis notebooks
-- `code/01_prep_hte.qmd` — data prep for heterogeneity analysis
-- `code/02_fit_bcf.qmd` — BCF fits (Dictator + Trust)
-- `code/03_fit_crf.qmd` — CRF fits + cluster-robust ATE
-- `code/04_summarize.qmd` — posterior summaries, projection, variable importance
-- `code/05_figures.qmd` — manuscript figures
+### Analysis notebooks
+Existing:
+- `code/01_exploration4presentation.qmd` — exploratory data work for the presentation
+- `code/02_data_prep.qmd` — data prep for heterogeneity analysis
+- `code/03_multibart_nested_ri_test.qmd` — **estimator test** for hierarchical BCF (`multibart`) on synthetic data; recovers variance components and μ(x)/τ(x) against planted truth (continuous path only)
+- `code/04_grf_nested_test.qmd` — **estimator test** for `grf` on the same synthetic data/seed; recovers cluster-robust ATE, τ̂(x), and BLP against planted truth
+
+Note: `03_` and `04_` are mechanism/smoke tests of the estimators, **not** the substantive analyses.
+
+Planned (full analyses on the real data):
+- `code/05_*.qmd` — full BCF fits (Dictator + Trust): ATE, posterior τ̂(x) draws, posterior projection, variable importance
+- `code/06_*.qmd` — full CRF fits (Dictator + Trust): cluster-robust ATE, τ̂(x), best linear projection, variable importance
+- `code/07_*.qmd` — manuscript figures (Green & Kern visual grammar)
 
 ## Workflow Notes
 
@@ -217,6 +224,7 @@ These rules apply to all code in this project. Follow them without being asked.
 - Do not relitigate open questions 1–3 once decided. Do not propose alternative methods (e.g., `stan4bart`, plain `bcf`) once Yeager et al.'s code is committed.
 - Pre-specified moderator list is frozen after Day 1. Heterogeneity findings outside this list are exploratory addenda, not main results.
 - Output escaped source markdown for copy-paste use when generating prose for the manuscript.
+- **Never read files under `literature/` on your own initiative** — always ask first and wait for confirmation before opening any PDF or converted Markdown there. This is a context-management rule: the papers are large and should only be pulled in when explicitly needed.
 
 ## Methodological References
 
@@ -225,16 +233,12 @@ Core methods literature for the manuscript and methods discussion (all entries a
 - **BCF (foundational):** `hahn2020bayesian`.
 - **BCF extensions / hierarchical:** `caron2022shrinkage`, `thal2024aggregate`, `mcjames2025bayesian`, `prevot2025hierarchical`.
 - **BCF applications (Yeager lineage):** `yeager2019national`, `yeager2022synergistic`.
-- **BART:** `chipman2010bart`, `chipman2006bayesian`, `hill2020bayesian`, `carnegie2019examining`.
+- **BART (foundational):** `chipman2010bart`, `chipman2006bayesian`, `hill2020bayesian`, `carnegie2019examining`, `hill2011bayesian` (BART-for-causal-inference precursor to BCF).
 - **BART for HTE in political science (visual grammar reference):** `green2012modeling`.
-- **Causal forests:** `wager2018estimation`, `athey2019estimating`, `davis2017using`, `jawadekar2023practical`, `zheng2023estimating`.
-- **Conjoint subgroup analysis:** `leeper2020measuring`.
+- **Causal forests:** `wager2018estimation`, `athey2019estimating`, `athey2019generalized` (GRF — methodological basis for the `grf` package), `davis2017using`, `jawadekar2023practical`, `zheng2023estimating`.
+- **Posterior projection / lower-dimensional summarization:** `woody2021model` (basis for the BCF posterior-projection step).
+- **Conjoint identification:** `hainmueller2014causal`.
+- **Conjoint subgroup / heterogeneity analysis:** `leeper2020measuring`, `robinson2024detect`, `goplerud2025estimating`.
 - **Benchmarking causal inference methods:** `dorie2019automated`.
 - **Data context:** `hahm2023divided`, `hahm2024divided`.
-
-**Additional references recommended but not yet in `references.bib` — DOIs to verify before adding:**
-
-- **Hill (2011), "Bayesian Nonparametric Modeling for Causal Inference,"** *JCGS* 20(1): 217–240. DOI: `10.1198/jcgs.2010.08162`. Foundational for BART-for-causal-inference; precursor to BCF.
-- **Hainmueller, Hopkins & Yamamoto (2014), "Causal Inference in Conjoint Analysis,"** *Political Analysis* 22(1): 1–30. DOI: `10.1093/pan/mpt024`. Standard methodological citation for conjoint identification.
-- **Athey, Tibshirani & Wager (2019), "Generalized Random Forests,"** *Annals of Statistics* 47(2): 1148–1178. DOI: `10.1214/18-AOS1709`. Methodological basis for the `grf` package.
-- **Woody, Carvalho & Murray (2021), "Model Interpretation Through Lower-Dimensional Posterior Summarization,"** *JCGS* 30(1): 144–161. DOI: `10.1080/10618600.2020.1796684`. Methodological basis for the posterior-projection step on BCF output.
+- **Substantive (Muslim bias / Islamophobia literature):** `helbling2012islamophobia`, `helbling2014framing`, `helbling2014opposing`, `helbling2020islamophobia`, `helbling2022muslim`, `choi2023hijab`, `findor2025anti`.
