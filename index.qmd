@@ -85,6 +85,16 @@ First, we extend the BCF with random intercepts by @yeager2022synergistic to nes
 Second, we implement a frequentist causal forest [@athey2019generalized] with country fixed effects and respondent level clusters to enhance robustness across estimation procedures.
 In both cases, we estimate separate forests for each game.
 Consequently, we retreive four main models, BCF and CF for the dictator and trust game.
+
+*Working notes on the methodological argument:*
+
+- Bayesian causal forests [@hahn2020bayesian] are our primary estimator: they target the treatment-effect surface $\tau(x)$ directly with a separate prior, avoiding the regularization-induced confounding that afflicts BART-then-difference approaches [@green2012modeling]; the continuous token-allocation outcome is the natural, strong case for the method; and the Bayesian posterior delivers credible intervals on individual CATEs and on any functional of $\tau$ for free.
+- Nested random intercepts (the Yeager application lineage: [@yeager2019national; @yeager2022synergistic]) enter on $\mu(x)$ only, as a nuisance correction for the cross-national and repeated-measures structure; country is not interpreted substantively, and the documented fallback is country-only random intercepts plus cluster-bootstrapped respondent uncertainty if the dense $W^{\top}W$ solve proves too costly.
+- A `grf` causal forest [@athey2019generalized] supplies cross-framework robustness: `clusters = respondent_id`, country fixed effects in $X$, and a best linear projection onto the same frozen moderators; agreement across the two frameworks is the robustness story, while disagreement is flagged.
+- We do not use Goplerud's estimator [@goplerud2025estimating]: it is designed for heterogeneity of a high-dimensional treatment under a forced-choice Bernoulli model, so collapsing to a binary Muslim treatment with a continuous outcome makes its machinery mismatched and unnecessary — we cite it as related work, not as a method we run.
+- We also do not run Robinson and Duch's `cjbart` [@robinson2024detect] as an estimator: it is conceptually aligned, and we borrow its nested-estimand vocabulary (observation-, round-, and individual-level marginal component effects) to organize profile-level versus respondent-level heterogeneity, but its BART-then-aggregate construction is exactly the RIC-prone approach BCF improves on, so it is not a third fit.
+- A terminology clarification: in this literature "nested" usually denotes nested *estimands* [@robinson2024detect], whereas our random intercepts address the nested *sampling structure* — a separate concern.
+- The conjoint design supplies a known treatment propensity that is passed directly to the estimators; throughout, the analysis is descriptive and exploratory, with no causal claims beyond CATE estimation.
  
 
 ## Empirical Analysis {#sec-analysis}
