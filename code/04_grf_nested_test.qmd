@@ -157,6 +157,53 @@ stopifnot(
 )
 ```
 
+## Planted truth by moderator {#sec-planted-truth}
+
+Before fitting, this figure shows the planted truth directly: the true per-observation treatment effect against each candidate moderator.
+It is the same DGP and figure as the BCF notebook, so the two recovery checks are read against an identical truth.
+The two null moderators `x1` and `x2` should read flat; the binary `x3` should show a clean two-level jump of about `0.75`; the continuous `x4` should trace a mean-zero sine.
+Continuous panels show alpha-blended individual truths with a ten-bin mean curve and a covariate rug; the binary `x3` panel shows its two level means.
+The common y-axis lets the flat nulls be read against the active moderators at a glance.
+
+```{r}
+#| label: fig-truth-cont
+#| fig-cap: "Planted truth (synthetic data): true per-observation treatment effect tau(x) against each candidate moderator. Continuous panels (x1, x2, x4) show alpha-blended individual truths, a 10-quantile-bin mean curve, and a covariate rug; the binary x3 panel shows its two level means. Nulls (x1, x2) flat; x3 a clean ~0.75 contrast; x4 a mean-zero sine."
+#| dpi: 500
+# long form: each moderator's value against the true tau_i
+truth_long <- tibble(
+  x1 = X_mod[, 1],
+  x2 = X_mod[, 2],
+  x3 = X_mod[, 3],
+  x4 = X_mod[, 4],
+  tau = tau_x
+) |>
+  pivot_longer(c(x1, x2, x3, x4), names_to = "covariate", values_to = "value")
+
+# continuous covariates: raw points + 10-quantile binned-mean curve
+truth_cont <- truth_long |> filter(covariate != "x3")
+truth_cont_bin <- truth_cont |>
+  mutate(bin = ntile(value, 10), .by = covariate) |>
+  summarise(value = mean(value), tau = mean(tau), .by = c(covariate, bin))
+
+# binary x3: the two level means at 0 and 1
+truth_x3 <- truth_long |>
+  filter(covariate == "x3") |>
+  summarise(tau = mean(tau), .by = c(covariate, value))
+
+ggplot(mapping = aes(x = value, y = tau)) +
+  geom_point(data = truth_cont, alpha = 0.15, colour = "#0072B2") +
+  geom_rug(data = truth_cont, sides = "b", alpha = 0.3, colour = "#0072B2") +
+  geom_line(data = truth_cont_bin, colour = "#0072B2", linewidth = 0.8) +
+  geom_point(data = truth_x3, size = 3, colour = "#0072B2") +
+  facet_wrap(~covariate, scales = "free_x") +
+  labs(
+    title = "Planted truth: true treatment effect by moderator",
+    x = "Moderator value",
+    y = "True treatment effect"
+  ) +
+  ggpubr::theme_pubr()
+```
+
 ## Build covariates and clustering {#sec-build}
 
 Two pieces encode the nesting.
@@ -342,6 +389,103 @@ recovery |>
     x = "True effect",
     y = "Causal-forest estimate",
     colour = NULL
+  ) +
+  ggpubr::theme_pubr()
+```
+
+## CATE recovery by covariate {#sec-cate-by-cov}
+
+This is the `grf` counterpart to the BCF recovery figure: the same bins and levels, but built from causal-forest point estimates with honest cluster-robust confidence intervals rather than a posterior.
+For each bin we compute the subset ATE with `average_treatment_effect()` and form a 95% interval as estimate $\pm\,1.96\times\text{SE}$.
+Continuous moderators use ten shared quantile bins; the binary `x3` uses its two levels.
+The null moderators `x1` and `x2` should sit flat near the ATE, `x3` should show a clean two-level jump of about `0.75`, and `x4` should trace the sine.
+The planted binned truth (orange, dashed) is overlaid on bins identical to the BCF figure, so the two methods are read side by side.
+
+```{r}
+#| label: fig-cate-by-cov-grf
+#| fig-cap: "grf recovery of the treatment-effect surface by moderator (synthetic data). Per bin (10 quantile bins for continuous x1/x2/x4; the two levels for binary x3) the subset ATE is computed with honest cluster-robust CIs (estimate ± 1.96 SE); blue shows the estimate, orange-dashed the planted binned truth. Nulls flat near the ATE; x3 a clean ~0.75 jump; x4 the sine. Same bins as the BCF figure."
+#| dpi: 500
+# map each observation to (covariate, value, bin); x3 binned by its 0/1 level
+cov_bins <- tibble(
+  obs = seq_len(n),
+  x1 = X_mod[, 1],
+  x2 = X_mod[, 2],
+  x3 = X_mod[, 3],
+  x4 = X_mod[, 4]
+) |>
+  pivot_longer(c(x1, x2, x3, x4), names_to = "covariate", values_to = "value") |>
+  mutate(
+    bin = if_else(covariate == "x3", value, as.numeric(ntile(value, 10))),
+    .by = covariate
+  )
+
+# per (covariate, bin): subset ATE with honest cluster-robust CI
+cate_by_bin <- cov_bins |>
+  distinct(covariate, bin) |>
+  pmap(function(covariate, bin) {
+    sel <- cov_bins$covariate == covariate & cov_bins$bin == bin
+    idx <- cov_bins$obs[sel]
+    est <- grf::average_treatment_effect(
+      cf,
+      target.sample = "all",
+      subset = seq_len(n) %in% idx
+    )
+    tibble(
+      covariate = covariate,
+      x_pos = mean(cov_bins$value[sel]),
+      estimate = unname(est["estimate"]),
+      lower = unname(est["estimate"] - 1.96 * est["std.err"]),
+      upper = unname(est["estimate"] + 1.96 * est["std.err"]),
+      truth = mean(tau_x[idx])
+    )
+  }) |>
+  list_rbind()
+
+cate_cont <- cate_by_bin |> filter(covariate != "x3")
+cate_x3 <- cate_by_bin |> filter(covariate == "x3")
+rug_cont <- cov_bins |> filter(covariate != "x3")
+
+ggplot(mapping = aes(x = x_pos)) +
+  geom_ribbon(
+    data = cate_cont,
+    aes(ymin = lower, ymax = upper),
+    alpha = 0.2,
+    fill = "#0072B2"
+  ) +
+  geom_line(data = cate_cont, aes(y = estimate), colour = "#0072B2", linewidth = 0.8) +
+  geom_pointrange(
+    data = cate_x3,
+    aes(y = estimate, ymin = lower, ymax = upper),
+    colour = "#0072B2"
+  ) +
+  geom_line(
+    data = cate_cont,
+    aes(y = truth, colour = "Planted truth", linetype = "Planted truth"),
+    linewidth = 0.8
+  ) +
+  geom_point(
+    data = cate_x3,
+    aes(y = truth, colour = "Planted truth"),
+    shape = 4,
+    size = 3,
+    stroke = 1.2
+  ) +
+  geom_rug(
+    data = rug_cont,
+    aes(x = value),
+    sides = "b",
+    alpha = 0.2,
+    colour = "#0072B2",
+    inherit.aes = FALSE
+  ) +
+  scale_colour_manual(values = c("Planted truth" = "#D55E00"), name = NULL) +
+  scale_linetype_manual(values = c("Planted truth" = "dashed"), name = NULL) +
+  facet_wrap(~covariate, scales = "free_x") +
+  labs(
+    title = "grf recovery of the treatment effect by moderator",
+    subtitle = "Blue: subset ATE + 95% honest CI. Orange dashed: planted truth.",
+    x = "Moderator value",
+    y = "Treatment effect"
   ) +
   ggpubr::theme_pubr()
 ```
