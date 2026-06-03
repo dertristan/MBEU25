@@ -101,3 +101,61 @@ Consequently, we retreive four main models, BCF and CF for the dictator and trus
 :::
 
 ## Appendix {.appendix}
+
+### Causal Estimand, Formally {#sec-estimand}
+
+This appendix states the estimand in the potential-outcomes framework, complementing the sketch in @sec-design.
+
+Each observation is a single profile rating: respondent $i$ in country $c$ evaluates a randomized co-player profile in round $t$.
+The conjoint design randomizes every profile attribute independently, so the displayed attributes are statistically independent of respondent characteristics by construction.
+
+We collapse the four-level religion attribute (Muslim, Catholic, Protestant, non-religious) into the frozen binary treatment
+
+$$
+Z_{ict} = \mathbf{1}\{\text{religion attribute shown as Muslim}\},
+$$ {#eq-treatment}
+
+so that $Z = 1$ for a Muslim profile and $Z = 0$ for any of the three pooled non-Muslim levels.
+
+For each observation we posit potential outcomes $Y_{ict}(z)$ for $z \in \{0, 1\}$, where $Y$ is the number of tokens allocated on the $0$–$10$ scale.
+The observation-level causal effect is the difference
+
+$$
+\delta_{ict} = Y_{ict}(1) - Y_{ict}(0),
+$$ {#eq-ind-effect}
+
+which is never observed directly, since only one religion level is shown per profile.
+
+We partition the covariates into two families, $X = (V, W)$.
+$V$ collects the *other* randomized conjoint attributes shown in the same profile — the profile-level moderators (occupation, education, language skills, and so on).
+$W$ collects respondent-level covariates (anti-immigration attitudes, religiosity, ideology, age, gender, and the like), which are measured rather than randomized.
+
+The conditional average treatment effect (CATE) and the average treatment effect (ATE) are
+
+$$
+\tau(x) = \mathbb{E}[Y(1) - Y(0) \mid X = x], \qquad \text{ATE} = \mathbb{E}[\tau(X)].
+$$ {#eq-cate-appendix}
+
+The two moderator families carry different interpretations.
+Because $V$ is randomized, conditioning the treatment effect on $V$ identifies a genuine *causal moderation* of the Muslim effect by the other profile attributes.
+Because $W$ is not randomized, conditioning on $W$ yields a *descriptive* CATE — heterogeneity in the Muslim effect across respondent types, not causal moderation — so we make no causal claims for the respondent-level moderators beyond CATE estimation.
+
+Identification follows from conjoint randomization [@hainmueller2014causal]: the displayed treatment is independent of the potential outcomes given $X$,
+
+$$
+\{Y(0), Y(1)\} \perp\!\!\!\perp Z \mid X,
+$$ {#eq-ignorability}
+
+with a propensity score that is *known and fixed by design* rather than estimated,
+
+$$
+\pi(x) = \Pr(Z = 1 \mid X = x) = \frac{\#\{\text{Muslim levels}\}}{\#\{\text{religion levels}\}} = \frac{1}{4}.
+$$ {#eq-propensity}
+
+This is generally not $0.5$; the $0.5$ used in the synthetic mechanism tests was only a placeholder, and the true known $\pi(x)$ is passed to the BCF sampler directly, with no first-stage propensity model.
+
+Two structural assumptions complete the setup.
+SUTVA with no carry-over across rounds lets the three rounds per respondent be treated as repeated draws from the same observation-level effect distribution.
+The nested country-and-respondent structure enters only as a nuisance random-intercept correction on the prognostic surface $\mu(x)$, not as an object of substantive interpretation.
+
+For reporting we summarize the high-dimensional surface $\tau(x)$ by a lower-dimensional projection: the posterior projection (BCF) or best linear projection (`grf`) of $\tau(x)$ onto the pre-specified moderators, which makes the two estimators directly comparable.
