@@ -505,10 +505,28 @@ country_re_summary <- post_cont$level1_posterior |>
     by = "country"
   )
 
+# centre both conventions: REs identified only up to a constant
+shift_post <- mean(country_re_summary$post_mean)
+shift_truth <- mean(country_re_summary$truth)
+country_re_summary <- country_re_summary |>
+  mutate(
+    post_mean = post_mean - shift_post,
+    lower = lower - shift_post,
+    upper = upper - shift_post,
+    truth = truth - shift_truth
+  )
+# alternative (not used here): impose sum-to-zero on the country block
+# inside get_nested_random_intercepts_posteriors() so location is carried
+# by the grand mean and the plot is honest by construction.
+
 country_re_summary
 ```
 
-A caterpillar plot of the country intercepts is the appendix-only clustering diagnostic the analysis plan calls for: country structure is a nuisance, shown only to justify the RE specification.
+The global intercept, the BART grand mean inside $\mu(x)$, and the country random intercepts are jointly identified only up to a shared additive constant, so the sampler returns the country intercepts centred near zero.
+The planted `b_country <- rnorm(8, 0, 1.5)` has a nonzero *realized* sample mean (here about $+0.44$), which the model absorbs into $\mu$ rather than into the intercepts, leaving a rigid constant offset on every country if the two conventions are plotted as-is.
+Centring each side on its own mean (shifting the interval bounds with the posterior mean so the intervals stay consistent) removes that offset; after centring the rank order and spacing match the planted truth almost exactly, with a raw correlation of about $0.995$.
+This is a centring *convention*, not a fitting defect: every reported quantity — $\tau(x)$, the posterior projection, the ATE — is invariant to this shared shift and so was never affected.
+The caterpillar is an appendix-only clustering diagnostic whose job is to show between-country *spread*, which is recovered correctly; country structure is a nuisance, shown only to justify the RE specification.
 
 ```{r}
 #| label: fig-country-re
