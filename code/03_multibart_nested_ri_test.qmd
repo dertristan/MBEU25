@@ -14,7 +14,6 @@ execute:
   warning: true
   eval: true
   message: true
-  cache: true
 ---
 
 # Purpose {#sec-purpose}
@@ -66,6 +65,9 @@ p_required <- c(
   "ggpubr", # theme_pubr
   "patchwork", # multi-panel figure
   "sessioninfo", # session docs
+  "future", # future/furrr: run MCMC chains in parallel across cores
+  "furrr", # future/furrr: run MCMC chains in parallel across cores
+  "posterior", # posterior: R-hat / ESS diagnostics
 
   # multibart dependencies -----------------------------------------------------
   "Rcpp", # multibart Depends + LinkingTo
@@ -243,8 +245,70 @@ Every `update_interval` iterations it prints a progress line, e.g. `iteration: 5
 A value still drifting downward at the end would mean `nburn` was too short.
 :::
 
+`multibart` runs one chain per call, so we obtain multiple chains by looping over RNG seeds.
+The C++ sampler draws exclusively from R's RNG (`R::rnorm` / `R::runif` / `R::rgamma`), so a distinct `set.seed()` per call gives a genuinely distinct chain; `furrr_options(seed = TRUE)` supplies parallel-safe independent RNG streams across workers.
+A live forest pointer (`tree_samples`) does not survive return from a worker process, so each worker extracts plain numerics only and never returns a fit object.
+The two traced country contrasts use a *fixed* country index across all chains (the planted extreme-high and extreme-low countries), so R-hat compares the same quantity in every chain.
+The canonical `fit_cont` consumed by every downstream chunk is fitted separately in the **main** process, where its forest pointer stays live.
+
 ```{r}
 #| label: fit-cont
+n_chains <- 4L # chains for convergence; reduce to 2 if the runtime is too slow
+chain_seeds <- 20260601 + seq_len(n_chains)
+hi_idx <- which.max(b_country) # fixed extreme-+ country, same across chains
+lo_idx <- which.min(b_country)
+
+# fit one chain, return ONLY numerics (live forest pointers die on worker return)
+chain_summary <- function(seed) {
+  set.seed(seed)
+  f <- bcf_continuous_linear(
+    y = y_cont,
+    z = z,
+    x_control = X,
+    x_moderate = X,
+    zhat = rep(0.5, n), # known propensity
+    randeff_design = re$randeff_design,
+    randeff_variance_component_design = re$randeff_variance_component_design,
+    randeff_scales = c(1, 1), # length K = 2
+    randeff_df = 3,
+    nburn = 2000,
+    nsim = 2000,
+    update_interval = 50
+  )
+  tau <- get_forest_fit(f$moderate_fit, X) # pointer live INSIDE the worker
+  ccol <- f$random_effects[, 1:C, drop = FALSE]
+  cc <- ccol - rowMeans(ccol) # centred, location-invariant
+  tibble::tibble(
+    .iteration = seq_along(f$sigma),
+    sigma = f$sigma,
+    sd_country = f$random_effects_sd[, 1],
+    sd_resp = f$random_effects_sd[, 2],
+    ate = rowMeans(tau),
+    country_hi = cc[, hi_idx],
+    country_lo = cc[, lo_idx]
+  )
+}
+
+# multisession: required on Windows; one worker per chain
+plan(multisession, workers = min(n_chains, future::availableCores()))
+chain_draws <- chain_seeds |>
+  set_names(seq_len(n_chains)) |> # names carry the chain id through list_rbind
+  future_map(
+    chain_summary,
+    .options = furrr_options(seed = TRUE, packages = "multibart")
+  ) |>
+  list_rbind(names_to = ".chain") |>
+  mutate(.chain = as.integer(.chain))
+plan(sequential) # always reset the backend
+
+# chains must genuinely differ (distinct seeds + R's RNG)
+stopifnot(!isTRUE(all.equal(
+  chain_draws |> filter(.chain == 1) |> pull(sigma),
+  chain_draws |> filter(.chain == 2) |> pull(sigma)
+)))
+
+# canonical single-chain fit in the MAIN process: live forest for downstream chunks
+set.seed(chain_seeds[1])
 fit_cont <- bcf_continuous_linear(
   y = y_cont,
   z = z,
@@ -259,6 +323,82 @@ fit_cont <- bcf_continuous_linear(
   nsim = 2000,
   update_interval = 50
 )
+```
+
+## Convergence and mixing {#sec-convergence}
+
+`multibart` is a Gibbs/Metropolis sampler, not Stan's HMC, so we trace scalar *functionals* of the draws (the residual SD, the two variance-component SDs, the ATE, and two country contrasts) rather than the trees themselves.
+R-hat and bulk-ESS carry over unchanged from the HMC world, but R-hat is only defined across chains, which is why the `n_chains` separate chains fitted above are needed.
+The HMC-specific diagnostics — divergences, E-BFMI / energy, treedepth — do not exist for this sampler, and their absence is expected rather than a problem.
+Variance components mix more slowly under Gibbs, and `sd_country` especially has only `C = 8` groups to inform it, so a lower ESS there than for `sigma` or the ATE is normal.
+The live `iteration: N sigma/SD(Y):` line printed by the canonical fit is a crude running trace; its flattening by roughly iteration 50 is the evidence that `nburn` is long enough.
+Raw intercept *levels* can drift harmlessly in overall location (the identifiability point from @sec-downstream), so the two country contrasts are traced in centred form to keep R-hat meaningful.
+`n_chains` is set in the fit chunk above and can be dropped to 2 if needed; the chains run in parallel through `future`/`furrr` (`multisession`, one worker per chain), so the parallel block costs about one chain of wall time, with the worker count following `n_chains`.
+These are deliberately short smoke-test chains (`nburn` = `nsim` = 2000): each fit runs in a few seconds, so the parallel block plus the separate canonical main-process fit finish in well under a minute.
+Posterior memory scales with `nsim` (the `nsim × n` fitted-value and `nsim × (C + R)` random-effect matrices), so four parallel workers at `nsim` = 20000 exhaust RAM on a typical machine — which is why the smoke test keeps the chains short and why a production-scale fit would run chains sequentially or on more memory.
+
+```{r}
+#| label: trace-helper
+# one functional, coloured by chain
+trace_plot <- function(var, ttl) {
+  chain_draws |>
+    ggplot(aes(x = .iteration, y = .data[[var]], colour = factor(.chain))) +
+    geom_line(alpha = 0.7) +
+    labs(title = ttl, x = "Draw index", y = ttl, colour = "Chain") +
+    ggpubr::theme_pubr()
+}
+```
+
+```{r}
+#| label: fig-trace-sigma
+#| fig-cap: "Trace of the residual SD (sigma) across draws, coloured by chain. Well-mixed chains overlap in a stable band."
+#| dpi: 500
+trace_plot("sigma", "Residual SD (sigma)")
+```
+
+```{r}
+#| label: fig-trace-sd-country
+#| fig-cap: "Trace of the country-level random-intercept SD across draws, coloured by chain. Slower mixing here is expected with only eight groups."
+#| dpi: 500
+trace_plot("sd_country", "Country-level SD")
+```
+
+```{r}
+#| label: fig-trace-sd-resp
+#| fig-cap: "Trace of the respondent-level random-intercept SD across draws, coloured by chain."
+#| dpi: 500
+trace_plot("sd_resp", "Respondent-level SD")
+```
+
+```{r}
+#| label: fig-trace-ate
+#| fig-cap: "Trace of the average treatment effect (mean of tau over observations) across draws, coloured by chain."
+#| dpi: 500
+trace_plot("ate", "Average treatment effect")
+```
+
+```{r}
+#| label: fig-trace-country-hi
+#| fig-cap: "Trace of the centred random intercept for the planted extreme-high country (fixed index across chains), coloured by chain."
+#| dpi: 500
+trace_plot("country_hi", "Centred intercept: extreme-high country")
+```
+
+```{r}
+#| label: fig-trace-country-lo
+#| fig-cap: "Trace of the centred random intercept for the planted extreme-low country (fixed index across chains), coloured by chain."
+#| dpi: 500
+trace_plot("country_lo", "Centred intercept: extreme-low country")
+```
+
+R-hat and bulk-ESS are computed per traced functional from the four chains.
+R-hat near 1 indicates the chains agree; bulk-ESS reports the effective number of independent draws, expected to be lower for the slowly-mixing variance components.
+
+```{r}
+#| label: convergence-summary
+chain_draws |>
+  as_draws_df() |>
+  summarise_draws(rhat, ess_bulk)
 ```
 
 ## What the fitted object contains {#sec-fit-object}
