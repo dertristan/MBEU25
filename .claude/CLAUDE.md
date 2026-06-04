@@ -56,13 +56,13 @@ The two outcomes are behavioral game decisions: **Dictator Game** and **Trust Ga
 
 These need to be resolved before fitting begins. **Do not let Claude Code freelance past them.**
 
-1. **Nested random intercepts feasibility.** Data has two clustering levels: observations nested in respondents nested in countries. Yeager et al.'s code implements single-level (site) random effects, matching their multi-site RCT application. Open: can we extend it to two-level nesting in the time available, or do we use single-level country REs and address respondent dependence via cluster-bootstrapped CIs as a sensitivity check? **Default fallback if extension is non-trivial:** country REs only + cluster-bootstrap respondent-level uncertainty + acknowledge in limitations.
+1. **Nested random intercepts feasibility.** Data has two clustering levels: observations nested in respondents nested in countries. Yeager et al.'s code implements single-level (site) random effects, matching their multi-site RCT application. The original question was: can we extend it to two-level nesting in the time available, or do we use single-level country REs and address respondent dependence via cluster-bootstrapped CIs as a sensitivity check? (Fallback if extension proved non-trivial: country REs only + cluster-bootstrap respondent-level uncertainty + acknowledge in limitations.) **Status (2026-06-04): substantially resolved.** The two-level nested extension is implemented in `multibart` and passes the synthetic smoke test (`03_multibart_nested_ri_test.qmd`, continuous path). The only remaining check is the dense `WtW` compute/memory cost on the real data, bounded via today's few-country subsample test (see Execution Plan, Thu task 3).
 2. **If nested REs are feasible:** specify formally — random intercepts at respondent and country levels on μ(x); none on τ(x).
 3. **If only single-level REs:** use country as the RE (clustering level with substantively meaningful between-cluster variation; partial pooling across 25 countries is principled).
-4. **Pre-specified moderator list** (~10–15 variables for the projection / BLP step) needs to be frozen on Day 1, *before* seeing heterogeneity results. Split into two families matching the research plan:
+4. **Pre-specified moderator list** (~10–15 variables for the projection / BLP step) needs to be frozen at the covariate-selection stage (Thu 2026-06-04), *before* seeing heterogeneity results. Split into two families matching the research plan:
     - **Profile-level moderators:** other conjoint attributes shown in the same profile (occupation, education of profile, language skills, etc.).
     - **Respondent-level moderators:** anti-immigration attitudes, EU identity/attachment, religiosity, education of respondent, political ideology, age, gender; possibly prior contact and pre-treatment anti-Muslim items.
-    - Construct scores for multi-item respondent scales built on Day 1; both scores and items enter `X` for fitting, but interpretation is at the construct level.
+    - Construct scores for multi-item respondent scales built at the same stage (before fitting); both scores and items enter `X` for fitting, but interpretation is at the construct level.
 5. **Treatment coding.** Muslim attribute is one level of a multi-level conjoint factor. Frozen decision: **Muslim vs. all-else-pooled (binary)**.
 
 ## Causal Estimand
@@ -75,7 +75,7 @@ To be written formally in Research Design section. Sketch:
 - Identification by randomization (conjoint design): Y(z) ⫫ Z | X with known propensities π(x) = 1/k for k profile levels (cite `hainmueller2014causal` for identification under conjoint randomization).
 - Known propensities passed to BCF directly; no first-stage propensity estimation needed.
 
-## One-Week Execution Plan
+## Execution Plan (Thu 2026-06-04 → Thu 2026-06-11)
 
 | Day | Task |
 |-----|------|
@@ -85,7 +85,7 @@ To be written formally in Research Design section. Sketch:
 | **Mon 2026-06-08** | Buffer — reserve for things that went wrong (MCMC convergence, OOM, weird data quirks). |
 | **Tue–Thu 2026-06-09/10/11** | Write manuscript (intro 0.5pp, data/methods 1.5pp, results 3–4pp, discussion 0.5–1pp). |
 
-**Explicitly out of scope this week:** formal pre-registration, causal mediation, secondary treatments, cross-country comparative analysis, model comparison beyond BCF vs. CRF, sensitivity to unmeasured confounding (randomized treatment), task-position analysis.
+**Explicitly out of scope for this execution window:** formal pre-registration, causal mediation, secondary treatments, cross-country comparative analysis, model comparison beyond BCF vs. CRF, sensitivity to unmeasured confounding (randomized treatment), task-position analysis.
 
 ## Figures (Green & Kern Visual Grammar)
 
@@ -223,7 +223,7 @@ These rules apply to all code in this project. Follow them without being asked.
 - One scope-limited prompt per notebook. No freelancing into "should we also try X."
 - Stop gate after each notebook: posterior/forest objects saved, summary objects extracted, figures rendered, then move on.
 - Do not relitigate open questions 1–3 once decided. Do not propose alternative methods (e.g., `stan4bart`, plain `bcf`) once Yeager et al.'s code is committed.
-- Pre-specified moderator list is frozen after Day 1. Heterogeneity findings outside this list are exploratory addenda, not main results.
+- Pre-specified moderator list is frozen after the covariate-selection stage (Thu 2026-06-04). Heterogeneity findings outside this list are exploratory addenda, not main results.
 - Output escaped source markdown for copy-paste use when generating prose for the manuscript.
 - **Never read files under `literature/` on your own initiative** — always ask first and wait for confirmation before opening any PDF or converted Markdown there. This is a context-management rule: the papers are large and should only be pulled in when explicitly needed.
 
