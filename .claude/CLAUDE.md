@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 This is a Quarto manuscript project for academic research: **"Muslim Bias in Europe: Evidence from Conjoint Experiments"** (Working Title). The project produces a manuscript (HTML/PDF/DOCX), a Revealjs presentation, and embedded computational notebooks written in R.
 
-**Context:** Final paper for Theory Building and Causal Inference (Marc Ratkovic, Spring 2026). Target length is a 7-page research note. Data comes from Hahm et al.'s conjoint experiment (`eu25games`): 25 European countries, ~1,500 respondents per country, 3 conjoint tasks per respondent (~112,500 observations total).
+**Context:** Final paper for Theory Building and Causal Inference (Marc Ratkovic, Spring 2026). Target length is a 7-page research note. Data comes from Hahm et al.'s conjoint experiment (`eu25games`): 25 European countries, ~1,500 respondents per country, 3 conjoint tasks per respondent (~112,500 observations total). Full dataset (and pre-processing pipeline) is available at [GitHub](https://github.com/LS-Konig/eu25games2019).
 
 ## Research Plan
 
@@ -128,7 +128,7 @@ quarto preview index.qmd
 - `references.bib` — BibTeX bibliography (APSR style); **all entries require a DOI**
 - `code/` — numbered R analysis notebooks (`01_`, `02_`, …); `00_template.qmd` is the template for new notebooks
 - `code/helper_scripts/copy_figures.R` — post-render script that copies figures from `_freeze/` into `_manuscript/` so the HTML preview renders correctly
-- `data/` — datasets (structure TBD as project grows)
+- `data/` — datasets (structure TBD as project grows); full dataset and pre-processing pipeline available at [GitHub](https://github.com/LS-Konig/eu25games2019)
 - `literature/` — source papers (gitignored — not tracked in Git); `literature/pdf/` holds the PDFs and `literature/md/` holds converted Markdown. Each file is named by its `references.bib` citation key (e.g. `hahn2020bayesian.pdf` / `hahn2020bayesian.md`). **Do not read these files on your own — always ask first (see Workflow Constraints).**
 - `notes/` — working notes including `analysis_plan.md`
 - `_extensions/andrewheiss/wordcount/` — Quarto extension providing word count and custom citeproc

@@ -24,6 +24,8 @@ Heterogeneity is estimated with a dual strategy targeting the conditional averag
 
 > Hahm, H., Hilpert, D., & König, T. (2024). Divided we unite: The nature of partyism and the role of coalition partnership in Europe. *American Political Science Review*, 118(1), 69–87. https://doi.org/10.1017/S0003055423000266
 
+Full dataset (and pre-processing pipeline) is available at [GitHub](https://github.com/LS-Konig/eu25games2019).
+
 ---
 
 ## Repository Structure
