@@ -239,7 +239,6 @@ vars_pre_game <- c(
   "q_identity_europe",
   "q_religion",
   "q_class",
-  "q_verif",
   "q_euint_pos",
   "q_eu_efficacy_understand",
   "q_eu_efficacy_care",
@@ -310,7 +309,124 @@ vars_pre_game <- c(
 
 : Pre-game (wave 2/3) respondent-level survey items considered as covariate candidates. Coverage indicates the waves in which the item was asked. {#tbl-pre-game-vars}
 
+# Clean incomplete responses, failed attention checks
 
+```{r}
+#| label: survey-cleaning
+eu25games2019_clean <- eu25games2019 |>
+  # only respondents who passed attention check
+  filter(der_att_check_3)
+
+# still pid duplicates?
+eu25games2019_clean |>
+  group_by(meta_wave) |>
+  count(meta_pid) |>
+  count(n)
+
+# yup
+
+# and with completed games?
+eu25games2019_clean |>
+  filter(!is.na(cj_dict1_pl2)) |>
+  group_by(meta_wave) |>
+  count(meta_pid) |>
+  count(n)
+
+# still a few
+
+eu25games2019_clean |>
+  filter(!is.na(cj_dict1_pl2)) |>
+  group_by(meta_wave) |>
+  count(meta_pid, sort = T) |>
+  filter(n > 1)
+
+# one estonian PID contains 8 (10 w/ games) rows, demographics point to different people, might be true and due to bug of invitation link (identical PSIDs as well), but cannot be certain, hence remove
+
+# others include mostly 2, so I suspect people stopped the survey and joined later again.
+# use completeness to filter
+
+eu25games2019_clean |>
+  filter(!is.na(cj_dict1_pl2)) |>
+  group_by(meta_wave, meta_pid) |>
+  filter(meta_finished) |>
+  count(meta_pid, sort = T) |>
+  filter(n > 1)
+
+# this solves most, but 8 PIDs (9 minus the Estonian quirk) remain
+
+# id 1275872150 is same person according to demographics but gave different responses
+# is panellist across all 3 waves but double wave 2 responses (Dutch),
+# starting time differs only by seconds which is sus
+# which response has more missings?
+eu25games2019_clean |>
+  filter(meta_wave == 2, meta_pid == "1275872150") |>
+  group_by(meta_responseid) |>
+  summarise(total_na = sum(is.na(across(everything()))))
+# almost identical
+
+# id 1385201604 also strange, one response started earlier and ended later than the other,
+# responses themselves very similar again
+eu25games2019_clean |>
+  filter(meta_wave == 2, meta_pid == "1385201604") |>
+  group_by(meta_responseid) |>
+  summarise(total_na = sum(is.na(across(everything()))))
+
+# suspection: they might have clicked the invite link twice, and it worked (even though it shouldn't have)
+eu25games2019_clean |>
+  filter(meta_wave == 2, meta_pid == "1416296382") |>
+  group_by(meta_responseid) |>
+  summarise(total_na = sum(is.na(across(everything()))))
+# same picture, responses very very similar
+
+# response times just are odd, as if the same person did it twice
+
+# choice: remove them to be safe
+
+# collect IDs to remove
+to_remove <- eu25games2019_clean |>
+  filter(!is.na(cj_dict1_pl2)) |>
+  group_by(meta_wave, meta_pid) |>
+  filter(meta_finished) |>
+  count(meta_pid, sort = T) |>
+  filter(n > 1) |>
+  pull(meta_pid)
+
+# implement "cleaning" steps
+eu25games2019_clean2 <- eu25games2019_clean |>
+  # only complete responses
+  filter(meta_finished) |>
+  # remove identified specialists
+  filter(!(meta_pid %in% to_remove)) |>
+  # keep only respondents who appear in w2 or w3, including their w1 rows if they exist
+  filter(meta_pid %in% meta_pid[meta_wave %in% c(2, 3)])
+```
+
+# Inspect missings in selected covariates
+
+```{r}
+#| label: missing-values
+# the following covars have w1 items in principle
+eu25games2019 |>
+  filter(meta_wave == 1) |>
+  select(-contains("_raw")) |>
+  select(contains("q_")) |>
+  select(all_of(vars_pre_game)) |>
+  glimpse()
+
+#
+eu25games2019_clean_selected <- eu25games2019_clean2 |>
+  select(
+    meta_wave,
+    meta_country,
+    meta_pid,
+    all_of(vars_pre_game),
+    starts_with("cj_attr"),
+    starts_with("cj_dict"),
+    starts_with("cj_trust")
+  )
+```
+
+# Final filter
 
 # Reshape to long format data for analyses
 
