@@ -208,8 +208,109 @@ eu25games2019 |>
 eu25games2019 |>
   select(-contains("_raw")) |>
   select(contains("q_")) |>
-  skimr::skim()
+  glimpse()
 ```
+
+**NOTE:** We have decided to only include items asked *prior* to the games.
+
+We can keep all questions asked in wave 1, as those games only started in wave 2.
+
+```{r}
+#| label: inspect-w1-vars
+eu25games2019 |>
+  filter(meta_wave == 1) |>
+  select(-contains("_raw")) |>
+  select(contains("q_")) |>
+  glimpse()
+```
+
+These can serve as fillup maybe.
+
+Variables in w2 and w3 before games (Source: [Data GitHub Repo](https://github.com/LS-Konig/eu25games2019)):
+
+```{r}
+#| label: vars-pre-game
+vars_pre_game <- c(
+  "q_gender",
+  "q_age",
+  "q_nationality",
+  "q_identity_country",
+  "q_identity_eu",
+  "q_identity_europe",
+  "q_religion",
+  "q_class",
+  "q_verif",
+  "q_euint_pos",
+  "q_eu_efficacy_understand",
+  "q_eu_efficacy_care",
+  "q_eu_efficacy_nosay",
+  "q_pop_will",
+  "q_pop_people",
+  "q_pop_citizen",
+  "q_pop_reps",
+  "q_pop_goodevil",
+  "q_pop_compromise",
+  "q_dem_compromise",
+  "q_dem_listen",
+  "q_tech_experts",
+  "q_tech_leaders",
+  "q_party_harm",
+  "q_people_incompetent",
+  "q_eu_longterm",
+  "q_eu_responsive",
+  "q_eu_imp_nat_econ",
+  "q_eu_imp_nat_cul",
+  "q_eu_imp_nat_pol",
+  "q_eu_abolish",
+  "q_eu_satisfaction",
+  "q_election_challenge_polgroups",
+  "q_election_impact_eu",
+  "q_election_importance_self"
+)
+
+# ignoring vote choice and party IDs for now
+```
+
+| Variable | Coverage | Question wording |
+|:---|:---:|:---|
+| `q_gender` | 2/3 | Please indicate your gender. |
+| `q_age` | 2/3 | How old are you? |
+| `q_nationality` | 2/3 | What is your nationality? Please tell me the country(ies) that applies(y). |
+| `q_identity_country` | 2/3 | Please tell me how attached you feel to... - United Kingdom |
+| `q_identity_eu` | 2/3 | Please tell me how attached you feel to... - The European Union (EU) |
+| `q_identity_europe` | 2/3 | Please tell me how attached you feel to... - Europe |
+| `q_religion` | 2/3 | Do you consider yourself to be…? |
+| `q_class` | 2/3 | Do you see yourself and your household belonging to...? |
+| `q_euint_pos` | 2/3 | Some people say that European integration should be pushed further. Others say it already has gone too far. What is your opinion? Please indicate your views using a scale from 1 to 7, where '1' means European integration "has already gone too far" and '7' means it "should be pushed further". What number on this scale best describes your position? |
+| `q_eu_efficacy_understand` | 2/3 | Please tell me to what extent you agree or disagree with each of the following statements. - I can understand and evaluate important political questions about the EU |
+| `q_eu_efficacy_care` | 2/3 | Please tell me to what extent you agree or disagree with each of the following statements. - The politicians in the EU care about what people like me think |
+| `q_eu_efficacy_nosay` | 2/3 | Please tell me to what extent you agree or disagree with each of the following statements. - People like me don't have any say about what the EU does |
+| `q_pop_will` | 2/3 | Please indicate how much you agree with each of the following statements. - The politicians should follow the will of the people. |
+| `q_pop_people` | 2/3 | Please indicate how much you agree with each of the following statements. - The people, and not politicians, should make our most important policy decisions. |
+| `q_pop_citizen` | 2/3 | Please indicate how much you agree with each of the following statements. - I would rather be represented by a citizen than by a specialized politician. |
+| `q_pop_reps` | 2/3 | Please indicate how much you agree with each of the following statements. - Elected officials talk too much and take too little action. |
+| `q_pop_goodevil` | 2/3 | Please indicate how much you agree with each of the following statements. - Politics is ultimately a struggle between good and evil. |
+| `q_pop_compromise` | 2/3 | Please indicate how much you agree with each of the following statements. - What people call "compromise" in politics is really just selling out on one's principles. |
+| `q_dem_compromise` | 2/3 | Please indicate how much you agree with each of the following statements. - In a democracy it is important to make compromises among differing viewpoints. |
+| `q_dem_listen` | 2/3 | Please indicate how much you agree with each of the following statements. - It is important to listen to the opinion of other groups. |
+| `q_tech_experts` | 2/3 | Please indicate how much you agree with each of the following statements. - Our country would run better if political decisions were left up to experts instead of politicians and citizens. |
+| `q_tech_leaders` | 2/3 | Please indicate how much you agree with each of the following statements. - The leaders of our country should be more educated and skilled than ordinary citizens. |
+| `q_party_harm` | 2/3 | Please indicate how much you agree with each of the following statements. - Political parties do more harm than good to society |
+| `q_people_incompetent` | 2/3 | Please indicate how much you agree with each of the following statements. - Ordinary people don't know what policies are good for them. |
+| `q_eu_longterm` | 2/3 | In thinking about the European Union (EU) and its decisions more generally, some people argue that it should act upon its long-term goals without pandering to the demand of the people. On the other hand, others argue that the EU should listen to the demand of people, rather than to act upon its long-term goals. When it comes to the question of whether the EU should act upon its long-term goals or it should listen to the demand of the people, what is your opinion? - The EU should act upon its long-term goals |
+| `q_eu_responsive` | 2/3 | In thinking about the European Union (EU) and its decisions more generally, some people argue that it should act upon its long-term goals without pandering to the demand of the people. On the other hand, others argue that the EU should listen to the demand of people, rather than to act upon its long-term goals. When it comes to the question of whether the EU should act upon its long-term goals or it should listen to the demand of the people, what is your opinion? - The EU should listen to the demand of the people |
+| `q_eu_imp_nat_econ` | 2/3 | Could you tell me whether you think that the EU has a rather positive or rather negative effect on each of the following domains? - UK economy |
+| `q_eu_imp_nat_cul` | 2/3 | Could you tell me whether you think that the EU has a rather positive or rather negative effect on each of the following domains? - Our culture and identity |
+| `q_eu_imp_nat_pol` | 2/3 | Could you tell me whether you think that the EU has a rather positive or rather negative effect on each of the following domains? - UK's political status and influence |
+| `q_eu_abolish` | 2/3 | Please tell me to what extent you agree or disagree with each of the following statements. - If the EU started making a lot of decisions that most people disagreed with, it might be better to do away with the EU altogether |
+| `q_eu_satisfaction` | 2/3 | Please tell me to what extent you agree or disagree with each of the following statements. - I am satisfied with the performance of the EU |
+| `q_election_challenge_polgroups` | 2 | What is your opinion? - How likely do you think the upcoming elections will challenge the existing political groups and members of the European Parliament? |
+| `q_election_impact_eu` | 2 | What is your opinion? - How likely do you think the upcoming elections will play a big role in shaping the European Parliament and the EU's next five years? |
+| `q_election_importance_self` | 2 | How important is the outcome of the upcoming election to you personally? |
+
+: Pre-game (wave 2/3) respondent-level survey items considered as covariate candidates. Coverage indicates the waves in which the item was asked. {#tbl-pre-game-vars}
+
+
 
 # Reshape to long format data for analyses
 
