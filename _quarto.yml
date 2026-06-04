@@ -63,10 +63,10 @@ format:
     other-links:
       - text: "View project source"
         icon: github
-        href: https://github.com/yourusername/your-repo
+        href: https://github.com/dertristan/MBEU25
       - text: "Report an issue"
         icon: flag
-        href: https://github.com/yourusername/your-repo/issues
+        href: https://github.com/dertristan/MBEU25/issues
     citeproc: false
     filters:
       - at: pre-quarto
