@@ -473,6 +473,7 @@ Note that `tau(x)` and `mu(x)` are **not** stored as ready-made `nsim x n` matri
 
 `get_nested_random_intercepts_posteriors()` slices the fitted random coefficients into the country block (`1:C`) and respondent block (`(C+1):(C+R)`), labels each from the stored dummies, and pulls the two variance-component SD posteriors.
 We run it on the fit and assert the output shapes; we also check that the recovered posterior-mean SDs **separate** in the right direction (country SD clearly larger than respondent SD), matching the planted truth.
+Alongside the variance components we also report the planted vs. recovered **ATE** — here as the posterior mean and posterior SD of `tau(x)` averaged over observations — the Bayesian analogue of the estimate ± SE printed in the `grf` notebook (`04_grf_nested_test.qmd`, @sec-extract).
 
 ```{r}
 #| label: extract
@@ -507,6 +508,20 @@ cat(
 
 # the two components should separate in the right direction
 stopifnot(sd_country_hat > sd_resp_hat)
+
+# posterior of the ATE: average tau(x) over observations within each draw
+ate_draws <- rowMeans(get_forest_fit(fit_cont$moderate_fit, X))
+ate_mean <- mean(ate_draws)
+ate_sd <- sd(ate_draws)
+
+cat("planted   ATE:", round(mean(tau_x), 3), "\n")
+cat(
+  "recovered ATE:",
+  round(ate_mean, 3),
+  "(posterior mean; posterior SD",
+  round(ate_sd, 3),
+  ")\n"
+)
 ```
 
 In the rendered fit the comparison reads `planted 1.5 / 0.5` against `recovered 1.072 / 0.384`: the right order (country above respondent), the right ballpark, and a ratio (≈2.8) close to the true 3.0, so the two levels are being shrunk separately — the property under test.
