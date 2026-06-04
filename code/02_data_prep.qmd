@@ -28,8 +28,11 @@ start_time <- Sys.time()
 options(width = 80)
 # packages
 p_required <- c(
-  "tidyverse", # dplyr, ggplot2, tidyr
-  "here", # relative paths
+  "tidyverse", # dplyr, ggplot2, tidyr etc
+  "here", # to never worry about directories
+  "ggpubr", # theme_pubr()
+  "janitor", # tabyl()
+  "knitr", # for kable()
   "sessioninfo" # session docs
 )
 packages <- rownames(installed.packages())
@@ -41,14 +44,205 @@ sapply(p_required, require, character.only = TRUE)
 rm(p_required, p_to_install, packages)
 ```
 
-# Code 1 {#sec-code-1}
+# Load Data
+
+Full dataset (and pre-processing pipeline) is available at [GitHub](https://github.com/LS-Konig/eu25games2019). We can directly fetch the data from there (by now also compressed, so only ca 30 MB). `read_rds()` can decompress the file directly.
 
 ```{r}
-#| label: code-1
-# start your code here
+#| label: load-data
+# URL of raw data
+raw_url <- "https://raw.githubusercontent.com/LS-Konig/eu25games2019/main/data/03_final/eu25games2019.rds?cache_bust=1"
 
+# Create temporary file path
+tmp <- tempfile(fileext = ".rds")
+
+# Download binary file locally
+download.file(raw_url, tmp, mode = "wb")
+
+# Read data into R (takes a couple seconds as it decompresses the file)
+eu25games2019 <- read_rds(tmp)
+
+# Clean up variables
+rm(raw_url, tmp)
 ```
 
+
+# Filter out wave 1 only respondets
+
+Data comes in three waves with partial panel structure.
+
+```{r}
+#| label: explore-partial-panel
+# count obs per wave
+cat("Raw observations per wave:\n")
+eu25games2019 |>
+  count(meta_wave)
+
+# total obs (raw)
+cat("\nRaw observations total:\n")
+eu25games2019 |>
+  nrow()
+
+# missing IDs --- would distort every duplicate count below, so check first ----
+cat("\nMissing values in ID variables:\n")
+eu25games2019 |>
+  summarise(
+    na_responseid = sum(is.na(meta_responseid)),
+    na_psid = sum(is.na(meta_psid)),
+    na_pid = sum(is.na(meta_pid))
+  )
+
+# distinct ID values -----------------------------------------------------------
+cat("\nDistinct `meta_responseid` values:\n")
+eu25games2019 |>
+  distinct(meta_responseid) |>
+  nrow()
+
+cat("\nDistinct `meta_psid` values:\n")
+eu25games2019 |>
+  distinct(meta_psid) |>
+  nrow()
+
+cat("\nDistinct `meta_pid` values:\n")
+eu25games2019 |>
+  distinct(meta_pid) |>
+  nrow()
+
+# row-key integrity: meta_responseid (expected: none) --------------------------
+# anything > 0 here is a data-integrity issue, not respondent behaviour
+cat("\n`meta_responseid` duplication (expected: none):\n")
+eu25games2019 |>
+  count(meta_responseid) |>
+  filter(n > 1) |>
+  summarise(duplicated_ids = n(), excess_rows = sum(n - 1))
+
+# meta_psid duplication --------------------------------------------------------
+# psid = sample-instance ID; collisions are usually partial+complete / re-entries
+cat("\n`meta_psid` duplication (overall):\n")
+eu25games2019 |>
+  count(meta_psid) |>
+  filter(n > 1) |>
+  summarise(duplicated_psids = n(), excess_rows = sum(n - 1))
+
+cat("\n`meta_psid` duplicate rows per wave:\n")
+eu25games2019 |>
+  count(meta_wave, meta_psid) |>
+  filter(n > 1) |>
+  summarise(
+    duplicated_psids = n(),
+    excess_rows = sum(n - 1),
+    .by = meta_wave
+  ) |>
+  arrange(meta_wave)
+
+# does any psid leak across waves? (it shouldn't, if it's per-assignment)
+cat("\n`meta_psid` values spanning more than one wave:\n")
+eu25games2019 |>
+  distinct(meta_psid, meta_wave) |>
+  count(meta_psid) |>
+  filter(n > 1) |>
+  nrow()
+
+# meta_pid WITHIN-wave duplication --- the suspect case ------------------------
+# same panelist appearing >1x in a single wave (re-entry / partial+complete)
+cat("\n`meta_pid` within-wave duplication, per wave:\n")
+eu25games2019 |>
+  count(meta_wave, meta_pid) |>
+  filter(n > 1) |>
+  summarise(duplicated_pids = n(), excess_rows = sum(n - 1), .by = meta_wave) |>
+  arrange(meta_wave)
+
+cat("\n`meta_pid` within-wave duplication (total across waves):\n")
+eu25games2019 |>
+  count(meta_wave, meta_pid) |>
+  filter(n > 1) |>
+  summarise(duplicated_pids = n(), excess_rows = sum(n - 1))
+
+# cross-wave participation --- EXPECTED panel overlap, NOT duplication ---------
+cat("\nPanelists by number of distinct waves participated:\n")
+eu25games2019 |>
+  distinct(meta_pid, meta_wave) |>
+  count(meta_pid, name = "n_waves") |>
+  count(n_waves, name = "n_panelists") |>
+  arrange(n_waves)
+
+cat("\nPanelists appearing in 2+ waves:\n")
+eu25games2019 |>
+  distinct(meta_pid, meta_wave) |>
+  count(meta_pid, name = "n_waves") |>
+  filter(n_waves > 1) |>
+  nrow()
+```
+
+# Filter our respondents who did not participate in games (w2 and w3 only)
+
+```{r}
+#| label: filter-out-nongame-respondents
+# pids of anyone who participated in at least one of w2 / w3
+pids_in_games <- eu25games2019 |>
+  filter(meta_wave %in% c(2, 3)) |>
+  distinct(meta_pid) |>
+  pull(meta_pid)
+
+# keep all w2 + w3 rows; from w1 keep only pids that reappear in w2 or w3
+eu25games2019 <- eu25games2019 |>
+  filter(meta_wave %in% c(2, 3) | meta_pid %in% pids_in_games)
+
+cat("Observations remaining:\n")
+nrow(eu25games2019)
+
+cat("\nObservations per wave:\n")
+eu25games2019 |>
+  count(meta_wave)
+
+cat("\nDistinct panelists remaining:\n")
+eu25games2019 |>
+  distinct(meta_pid) |>
+  nrow()
+```
+
+# Select clean covariate candidates
+
+```{r}
+#| label: select-cleaned-vars
+eu25games2019 |>
+  select(-contains("_raw")) |>
+  select(contains("q_")) |>
+  glimpse()
+```
+
+# Reshape to long format data for analyses
+
+`eu25games2019` contains data in wide format, i.e., one row corresponds one survey response. To analyze outcomes, the data need to be transformed to long (tidy) format, with one row equal to one observation, in this case one row should be one game played.
+
+```{r}
+#| label: game-outcomes-to-long
+# select relevant variables
+eu25_games_long <- eu25games2019 |>
+  # wave, country and respondent identifiers
+  select(
+    meta_wave,
+    meta_country,
+    meta_pid,
+    # dictator game vars
+    contains("cj_dict"),
+    # trust game vars
+    contains("cj_trust")
+  ) |>
+  # to long format
+  pivot_longer(
+    cols = -c(meta_wave, meta_country, meta_pid),
+    names_to = c("game_type", "round", ".value"),
+    names_pattern = "^(cj_dict|cj_trust)(\\d+)_(.+)$"
+  ) |>
+  # keep cj_ prefix for experimental vars
+  rename_with(
+    ~ paste0("cj_", .),
+    -c(meta_wave, meta_country, meta_pid, game_type, round)
+  ) |>
+  # filter observations with valid outcomes
+  filter(!is.na(cj_pl2))
+```
 
 # Session Info {#sec-session-info .appendix .unnumbered}
 
