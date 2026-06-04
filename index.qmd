@@ -119,7 +119,6 @@ Consequently, we retreive four main models, BCF and CF for the dictator and trus
 
 ## Empirical Analysis {#sec-analysis}
 
-{{< embed code/01_exploration4presentation.qmd#fig-tokens-to-muslim-profiles >}}
 
 ## Conclusion {#sec-conclusion}
 

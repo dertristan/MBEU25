@@ -2,19 +2,21 @@ project:
   type: manuscript
   resources:
     - robots.txt
-  post-render:
-    - code/helper_scripts/copy_figures.R
+  render:
+    - "index.qmd"
+  # post-render:
+  #   - code/helper_scripts/copy_figures.R
 
-manuscript:
-  notebooks:
-    - notebook: code/01_exploration4presentation.qmd
-      title: "Code Notebook Test"
-    - notebook: code/02_data_prep.qmd
-      title: "Data Preparation for Analyses"
-    - notebook: code/03_multibart_nested_ri_test.qmd
-      title: "Nested Random Intercepts in multibart — Mechanism Test"
-    - notebook: code/04_grf_nested_test.qmd
-      title: "Nested Structure in grf Causal Forests — Mechanism Test"
+# manuscript:
+  # notebooks:
+  #   - notebook: code/01_exploration4presentation.qmd
+  #     title: "Code Notebook Test"
+  #   - notebook: code/02_data_prep.qmd
+  #     title: "Data Preparation for Analyses"
+  #   - notebook: code/03_multibart_nested_ri_test.qmd
+  #     title: "Nested Random Intercepts in multibart — Mechanism Test"
+  #   - notebook: code/04_grf_nested_test.qmd
+  #     title: "Nested Structure in grf Causal Forests — Mechanism Test"
 
 execute: 
   freeze: auto
