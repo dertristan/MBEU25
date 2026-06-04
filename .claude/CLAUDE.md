@@ -30,14 +30,16 @@ The two outcomes are behavioral game decisions: **Dictator Game** and **Trust Ga
 **Primary method: Causal Random Forests (honest causal forests, Athey et al.)** via `grf::causal_forest()` (`athey2019generalized`, `wager2018estimation`) with:
 - `clusters = respondent_id` for honest cluster-aware sampling and cluster-robust variance.
 - Country fixed effects in the covariate matrix `X` (factor; `grf` handles factors natively).
-- Best linear projection (`best_linear_projection()`) onto the pre-specified moderator set — the headline lower-dimensional summary of heterogeneity.
+- CATE recovery by moderator — the **headline results figure**: subset/binned τ̂ across the levels of each pre-specified moderator with honest cluster-robust CIs. The visual-grammar template is fig 3 (`fig-cate-by-cov-grf`) in `04_grf_nested_test.qmd`.
+- Best linear projection (`best_linear_projection()`) onto the pre-specified moderator set — an appendix/robustness coefficient summary (the linear counterpart to the CATE-by-moderator surface), **not** the headline.
 - Honesty (sample-splitting) gives valid CIs on τ̂(x) and the ATE without distributional assumptions; favoured as primary after its stronger synthetic-test performance (`04_grf_nested_test.qmd`).
 
 **Robustness: hierarchical Bayesian Causal Forests (BCF)** with nested random intercepts to account for the clustered structure, following the Yeager et al. application lineage (`yeager2019national`, `yeager2022synergistic`) and extended to two-level nesting in the local `multibart` package. Hierarchical BCF complements the primary analysis because:
 - It targets τ(x) directly with a separate prior, addressing regularization-induced confounding (RIC) that affects the BART-then-difference approach in `green2012modeling`.
 - The Bayesian posterior gives credible intervals on individual CATEs and any functional of τ for free.
 - Nested random intercepts (respondent within country) handle the clustered structure via partial pooling on μ(x) — see Role of Random Intercepts below.
-- Posterior projection onto the same pre-specified moderator set used for the CRF BLP makes the CRF/BCF comparison legible.
+- The BCF headline is likewise the CATE-by-moderator surface (posterior mean + credible ribbon across each moderator's levels), the Bayesian counterpart to the CRF fig 3 template.
+- Posterior projection onto the same pre-specified moderator set used for the CRF BLP makes the CRF/BCF comparison legible — appendix material (the BCF counterpart to the CRF BLP), not a headline result.
 
 **Why both:** They search the same heterogeneity space with different machinery. Agreement is a strong robustness story; disagreement is substantively interesting and worth flagging.
 
@@ -92,11 +94,13 @@ To be written formally in Research Design section. Sketch:
 
 Target figure set, organized around individual-level and profile-level heterogeneity:
 
+The two headline results figures are the CATE density (#1) and the CATE-recovery-by-moderator small multiples (#2–#3). The latter are the substantive payoff — they follow the visual grammar of **fig 3 (`fig-cate-by-cov-grf`) in `04_grf_nested_test.qmd`**: per-bin/per-level CATE across each moderator with cluster-robust CIs (CRF) or posterior ribbon (BCF). The linear projection is **not** a headline figure — it is appendix/supplement material.
+
 1. **Headline density of individual CATEs** (`green2012modeling` Figure 2 style) with permuted-X null band overlay. One panel per outcome. "Is there heterogeneity at all" — the headline figure.
-2. **Top respondent-level moderator marginal plots:** 4–6 small multiples, posterior τ̂ vs. levels of top respondent moderators (construct-level), posterior mean + credible ribbon. One figure per outcome.
-3. **Top profile-level moderator marginal plots:** 3–5 small multiples for other conjoint attributes that moderate Muslim bias. Separate figure or clearly separated panels.
-4. **Projection table:** CRF `best_linear_projection` coefficients (primary) alongside BCF posterior projection coefficients (robustness) on the same pre-specified moderators. Split into profile-level and respondent-level subtables.
-5. **Variable importance bar plot:** constructs ranked, profile- and respondent-level moderators distinguished by color/facet. Likely supplement.
+2. **Top respondent-level moderator marginal plots (CATE recovery by moderator):** 4–6 small multiples, τ̂ vs. levels of top respondent moderators (construct-level), per-bin/per-level CATE with cluster-robust CIs (CRF) / posterior mean + credible ribbon (BCF), following fig 3 (`fig-cate-by-cov-grf`) of `04_grf_nested_test.qmd`. One figure per outcome. **Headline results figure.**
+3. **Top profile-level moderator marginal plots (CATE recovery by moderator):** 3–5 small multiples for other conjoint attributes that moderate Muslim bias, same fig-3 grammar as #2. Separate figure or clearly separated panels. **Headline results figure.**
+4. **Variable importance bar plot:** constructs ranked, profile- and respondent-level moderators distinguished by color/facet. Likely supplement.
+5. **Appendix / supplement:** projection table — CRF `best_linear_projection` coefficients alongside BCF posterior projection coefficients on the same pre-specified moderators (the linear-summary counterpart to #2–#3), split into profile-level and respondent-level subtables. Template: fig 4 (`fig-blp`) in `04_grf_nested_test.qmd`.
 6. **Appendix only:** country-level ATE variation as a clustering diagnostic.
 
 ## Key Commands
