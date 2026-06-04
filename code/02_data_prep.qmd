@@ -50,20 +50,46 @@ Full dataset (and pre-processing pipeline) is available at [GitHub](https://gith
 
 ```{r}
 #| label: load-data
-# URL of raw data
-raw_url <- "https://raw.githubusercontent.com/LS-Konig/eu25games2019/main/data/03_final/eu25games2019.rds?cache_bust=1"
+# set to true do fetch from source repo
+download_fresh <- F
 
-# Create temporary file path
-tmp <- tempfile(fileext = ".rds")
+if (download_fresh) {
+  # URL of raw data
+  raw_url <- "https://raw.githubusercontent.com/LS-Konig/eu25games2019/main/data/03_final/eu25games2019.rds?cache_bust=1"
 
-# Download binary file locally
-download.file(raw_url, tmp, mode = "wb")
+  # Create temporary file path
+  tmp <- tempfile(fileext = ".rds")
 
-# Read data into R (takes a couple seconds as it decompresses the file)
-eu25games2019 <- read_rds(tmp)
+  # Download binary file locally
+  download.file(raw_url, tmp, mode = "wb")
 
-# Clean up variables
-rm(raw_url, tmp)
+  # Read data into R (takes a couple seconds as it decompresses the file)
+  eu25games2019 <- read_rds(tmp)
+
+  # Write (compressed) file to data/01_raw
+  write_rds(
+    eu25games2019,
+    file = here(
+      "data",
+      "01_raw",
+      "eu25games2019.rds"
+    ),
+    compress = "xz"
+  )
+
+  # Clean up variables
+  rm(raw_url, tmp)
+
+  write
+} else {
+  eu25games2019 <- read_rds(
+    file = here(
+      "data",
+      "01_raw",
+      "eu25games2019.rds"
+    )
+  )
+}
 ```
 
 
@@ -398,22 +424,36 @@ eu25games2019_clean2 <- eu25games2019_clean |>
   # remove identified specialists
   filter(!(meta_pid %in% to_remove)) |>
   # keep only respondents who appear in w2 or w3, including their w1 rows if they exist
-  filter(meta_pid %in% meta_pid[meta_wave %in% c(2, 3)])
+  filter(meta_pid %in% meta_pid[meta_wave %in% c(2, 3)]) |>
+  # remove duplicate IDs in w1
+  filter(!(meta_wave == 1 & meta_pid == "1078674746")) |>
+  filter(!(meta_wave == 1 & meta_pid == "1277956255")) |>
+  filter(!(meta_wave == 1 & meta_pid == "1516614375")) |>
+  # remove NA IDs in w1
+  filter(!(meta_wave == 1 & is.na(meta_pid)))
 ```
 
 # Inspect missings in selected covariates
 
+Because the games only start in wave 2, every pre-game item asked in wave 1 is a valid
+pre-treatment measure for the same panelist.
+We therefore carry each panelist's wave-1 value forward into their *missing* wave-2/3 cells,
+matched on `(meta_pid, meta_country)`.
+Only `NA` cells are touched — existing values are never overwritten — and every filled cell is
+flagged so the operation is fully auditable.
+The recovery is almost entirely attitudinal items (EU-efficacy and populism scales): carrying
+them forward assumes temporal stability, which is acceptable here because the waves are close
+together and these enter the analysis only as respondent-level moderators.
+
 ```{r}
 #| label: missing-values
-# the following covars have w1 items in principle
-eu25games2019 |>
+# w1 items available as fill source
+eu25games2019_clean2 |>
   filter(meta_wave == 1) |>
-  select(-contains("_raw")) |>
-  select(contains("q_")) |>
   select(all_of(vars_pre_game)) |>
   glimpse()
 
-#
+# analysis selection: ids + pre-game covars + conjoint vars
 eu25games2019_clean_selected <- eu25games2019_clean2 |>
   select(
     meta_wave,
@@ -424,6 +464,89 @@ eu25games2019_clean_selected <- eu25games2019_clean2 |>
     starts_with("cj_dict"),
     starts_with("cj_trust")
   )
+
+# step 1: each panelist's w1 covariate values
+w1_values <- eu25games2019_clean_selected |>
+  filter(meta_wave == 1) |>
+  select(meta_pid, meta_country, all_of(vars_pre_game))
+
+# step 2: missing counts before backfill
+na_before <- eu25games2019_clean_selected |>
+  filter(meta_wave %in% c(2, 3)) |>
+  summarise(across(all_of(vars_pre_game), ~ sum(is.na(.x)))) |>
+  pivot_longer(everything(), names_to = "variable", values_to = "na_before")
+
+# step 3: backfill one variable from its w1 partner
+backfill_w1 <- function(df, v) {
+  w1 <- paste0(v, "_w1")
+  df |>
+    # flag fillable cell
+    mutate(
+      "filled_{v}" := meta_wave %in%
+        c(2, 3) &
+        is.na(.data[[v]]) &
+        !is.na(.data[[w1]])
+    ) |>
+    # carry w1 value into NA cell
+    mutate("{v}" := coalesce(.data[[v]], .data[[w1]]))
+}
+
+# attach w1 values, fold the backfill over every covariate, drop helpers
+eu25games2019_clean_selected <- eu25games2019_clean_selected |>
+  left_join(
+    w1_values,
+    by = c("meta_pid", "meta_country"),
+    suffix = c("", "_w1")
+  ) |>
+  reduce(vars_pre_game, backfill_w1, .init = _) |>
+  select(-ends_with("_w1"))
+
+# step 4: missing counts after backfill
+na_after <- eu25games2019_clean_selected |>
+  filter(meta_wave %in% c(2, 3)) |>
+  summarise(across(all_of(vars_pre_game), ~ sum(is.na(.x)))) |>
+  pivot_longer(everything(), names_to = "variable", values_to = "na_after")
+
+# step 5: cells filled per variable
+n_filled <- eu25games2019_clean_selected |>
+  filter(meta_wave %in% c(2, 3)) |>
+  summarise(across(starts_with("filled_"), ~ sum(.x))) |>
+  pivot_longer(everything(), names_to = "variable", values_to = "n_filled") |>
+  mutate(variable = str_remove(variable, "^filled_"))
+
+# step 6: audit table
+fill_audit <- na_before |>
+  left_join(na_after, by = "variable") |>
+  left_join(n_filled, by = "variable") |>
+  filter(n_filled > 0) |>
+  arrange(desc(n_filled))
+
+fill_audit |>
+  kable(
+    caption = "Wave-1 backfill: W2/W3 missing cells before/after and cells recovered."
+  )
+
+cat("Total cells filled from wave 1:", sum(fill_audit$n_filled), "\n")
+
+# step 7: drop flag columns from analysis object
+eu25games2019_clean_selected <- eu25games2019_clean_selected |>
+  select(-starts_with("filled_"))
+
+# verification
+stopifnot(
+  # one row per panelist per wave
+  nrow(filter(
+    count(
+      filter(eu25games2019_clean_selected, !is.na(meta_pid)),
+      meta_wave,
+      meta_pid
+    ),
+    n > 1
+  )) ==
+    0,
+  # accounting reconciles
+  all(fill_audit$na_after == fill_audit$na_before - fill_audit$n_filled)
+)
 ```
 
 # Final filter
