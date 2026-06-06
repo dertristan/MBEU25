@@ -602,10 +602,12 @@ eu25_long <- eu25games2019_clean_selected_final |>
   # keep cj_ prefix for experimental vars
   rename_with(
     ~ paste0("cj_", .),
-    -c(meta_wave, meta_country, meta_pid, game_type, round)
-  ) |>
-  # filter observations with valid outcomes
-  filter(!is.na(cj_pl2))
+    -c(
+      starts_with("meta_"),
+      starts_with("q_"),
+      starts_with("cj_attr")
+    )
+  )
 ```
 
 # Descriptives
