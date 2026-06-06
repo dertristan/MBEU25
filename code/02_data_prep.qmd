@@ -631,7 +631,8 @@ write_rds(
     "data",
     "02_processed",
     "eu25_long.rds"
-  )
+  ),
+  compress = "xz"
 )
 ```
 
