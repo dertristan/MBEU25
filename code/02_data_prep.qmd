@@ -462,7 +462,10 @@ eu25games2019_clean_selected <- eu25games2019_clean2 |>
     all_of(vars_pre_game),
     starts_with("cj_attr"),
     starts_with("cj_dict"),
-    starts_with("cj_trust")
+    starts_with("cj_trust"),
+    # postgame demographic vars only
+    q_rural_urban,
+    q_edu_age_stop
   )
 
 # step 1: each panelist's w1 covariate values
@@ -547,9 +550,36 @@ stopifnot(
   # accounting reconciles
   all(fill_audit$na_after == fill_audit$na_before - fill_audit$n_filled)
 )
-```
 
-# Final filter
+# inspect remaining NAs
+eu25games2019_clean_selected |>
+  summary()
+
+# problematic covariates to be dropped because of many NAs:
+# q_euint_pos (32% NA)
+# q_eu_efficacy_care (41% NA)
+# q_eu_efficacy_nosay (41% NA)
+# q_pop_will (26% NA)
+# q_pop_people (26% NA)
+# q_pop_citizen (26% NA)
+# q_election_challenge_polgroups (54% NA)
+# q_election_impact_eu (54% NA)
+# q_election_importance_self (54% NA)
+
+eu25games2019_clean_selected_final <- eu25games2019_clean_selected |>
+  select(
+    -q_euint_pos,
+    -q_eu_efficacy_care,
+    -q_eu_efficacy_nosay,
+    -q_pop_will,
+    -q_pop_people,
+    -q_pop_citizen,
+    -q_election_challenge_polgroups,
+    -q_election_impact_eu,
+    -q_election_importance_self
+  ) |>
+  na.omit()
+```
 
 # Reshape to long format data for analyses
 
