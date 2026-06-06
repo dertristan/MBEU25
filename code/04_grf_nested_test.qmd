@@ -553,48 +553,89 @@ blp_summary |>
 # Small-subsample fit on real data {#sec-subsample}
 
 ::: callout-important
-The cells below are placeholders.
-They depend on the prepared analysis tibble from `01_prep_hte`, which does **not exist yet**.
-Once it does, point the read at the real file, choose the outcome (Dictator or Trust), and assemble the moderator matrix.
+Smoke test only.
+The prepared long-format tibble now exists at `data/02_processed/eu25_long.rds` (one row = one game round).
+We confirm the *real* data flows through the same `grf` machinery and record the fit time — **no results are inspected**.
 :::
 
-The intent: subset to a handful of countries, fit the causal forest with the real moderators, and confirm the *real* data flows through the same machinery before scaling to the full sample.
+The intent: take a 10,000-row random subset of the dictator game, fit the causal forest with the real moderators, and confirm the *real* data flows through the same machinery before scaling to the full sample.
 
 ```{r}
 #| label: load-subsample
-# TODO: replace with real 01_prep_hte output
-# dat <- readRDS(here::here("data", "hte_dictator.rds"))
+dat <- readRDS(here::here("data", "02_processed", "eu25_long.rds"))
 
-# few-country subsample (grf scales fine; this just mirrors the BCF test)
-# few_countries <- levels(factor(dat$country_id))[1:3]
-# sub <- dat |> filter(country_id %in% few_countries) |>
-#   mutate(across(c(country_id, respondent_id), fct_drop))
+set.seed(20260604) # fixed seed
+sub <- dat |>
+  filter(cj_game_type == "cj_dict") |> # dictator game only
+  slice_sample(n = 10000)
+
+y <- sub$cj_pl2
+z <- as.integer(sub$cj_rel == "muslim") # Muslim vs all-else pooled
+country_id <- factor(sub$meta_country)
+respondent_id <- factor(sub$meta_pid)
+
+# moderators: profile-level conjoint attrs + respondent-level pre-treatment items
+prof_mods <- c("cj_nat", "cj_eupos", "cj_age", "cj_sex", "cj_class")
+resp_mods <- c(
+  "q_gender", "q_age", "q_identity_country", "q_identity_eu",
+  "q_identity_europe", "q_religion", "q_class", "q_eu_efficacy_understand",
+  "q_pop_reps", "q_pop_goodevil", "q_pop_compromise", "q_dem_compromise",
+  "q_dem_listen", "q_tech_experts", "q_tech_leaders", "q_party_harm",
+  "q_people_incompetent", "q_eu_longterm", "q_eu_responsive",
+  "q_eu_imp_nat_econ", "q_eu_imp_nat_cul", "q_eu_imp_nat_pol",
+  "q_eu_abolish", "q_eu_satisfaction", "q_rural_urban", "q_edu_age_stop"
+)
+mod_df <- sub |>
+  select(all_of(c(prof_mods, resp_mods))) |>
+  mutate(across(where(is.character), factor))
+sub_X <- model.matrix(~ . - 1, data = mod_df) # factors -> dummies
+
+stopifnot(
+  nrow(sub_X) == 10000,
+  !anyNA(sub_X),
+  all(z %in% c(0L, 1L)),
+  !anyNA(y)
+)
 ```
 
 ```{r}
 #| label: fit-subsample
 # country FE dummies + respondent clusters from the real data
-# country_fe_sub <- fastDummies::dummy_cols(
-#   data.frame(country = sub$country_id),
-#   remove_first_dummy = TRUE, remove_selected_columns = TRUE
-# ) |> as.matrix()
-# X_sub <- cbind(sub_moderators, country_fe_sub)  # numeric moderator matrix + FE
-#
-# cf_sub <- grf::causal_forest(
-#   X = X_sub,
-#   Y = sub$y,
-#   W = sub$z,
-#   W.hat = 0.5,                       # known conjoint propensity
-#   clusters = as.integer(factor(sub$respondent_id)),
-#   num.trees = 2000
-# )
-#
-# ate_sub <- grf::average_treatment_effect(cf_sub, target.sample = "all")
-# blp_sub <- grf::best_linear_projection(cf_sub, sub_moderators)
-```
+country_fe_sub <- fastDummies::dummy_cols(
+  data.frame(country = country_id),
+  remove_first_dummy = TRUE,
+  remove_selected_columns = TRUE
+) |>
+  as.matrix()
+X_sub <- cbind(sub_X, country_fe_sub) # numeric moderators + FE
 
-Record the wall-clock time of this subsample fit, then scale to the full sample.
-Because `grf` clusters cheaply, the full-sample CRF is expected to be the *less* costly of the two methods; the BCF nested-RE fit is the binding constraint on the project window.
+t0 <- Sys.time()
+cf_sub <- grf::causal_forest(
+  X = X_sub,
+  Y = y,
+  W = z,
+  W.hat = 0.5, # known conjoint propensity
+  clusters = as.integer(respondent_id),
+  num.trees = 2000,
+  seed = 20260604
+)
+fit_secs <- as.numeric(Sys.time() - t0, units = "secs")
+
+ate_sub <- grf::average_treatment_effect(cf_sub, target.sample = "all") # extractors run
+blp_sub <- grf::best_linear_projection(cf_sub, sub_X)
+
+# full-sample cost extrapolation
+n_full <- sum(dat$cj_game_type == "cj_dict")
+cat(sprintf("CF subsample fit: %.1f s (n = %d).\n", fit_secs, length(y)))
+cat(sprintf(
+  paste0(
+    "Full dictator (n = %d) ~%.1f s (~linear in n). grf clusters ",
+    "cheaply, so CF is the lighter of the two methods; the BCF ",
+    "nested-RE fit is the binding constraint on the project window.\n"
+  ),
+  n_full, fit_secs * n_full / length(y)
+))
+```
 
 # Session Info {#sec-session-info .appendix .unnumbered}
 
