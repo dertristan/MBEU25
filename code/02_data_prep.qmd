@@ -576,7 +576,8 @@ eu25games2019_clean_selected_final <- eu25games2019_clean_selected |>
     -q_pop_citizen,
     -q_election_challenge_polgroups,
     -q_election_impact_eu,
-    -q_election_importance_self
+    -q_election_importance_self,
+    -q_nationality # correlates with meta_country
   ) |>
   na.omit()
 ```
@@ -616,6 +617,20 @@ eu25_long <- eu25games2019_clean_selected_final |>
 #| label: tbl-descriptives
 
 
+```
+
+# Save long format data
+
+```{r}
+#| label: save-data
+write_rds(
+  eu25_long,
+  file = here(
+    "data",
+    "02_processed",
+    "eu25_long.rds"
+  )
+)
 ```
 
 # Session Info {#sec-session-info .appendix .unnumbered}
