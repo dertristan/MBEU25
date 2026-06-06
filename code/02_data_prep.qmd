@@ -587,31 +587,33 @@ eu25games2019_clean_selected_final <- eu25games2019_clean_selected |>
 
 ```{r}
 #| label: game-outcomes-to-long
-# # select relevant variables
-# eu25_games_long <- eu25games2019 |>
-#   # wave, country and respondent identifiers
-#   select(
-#     meta_wave,
-#     meta_country,
-#     meta_pid,
-#     # dictator game vars
-#     contains("cj_dict"),
-#     # trust game vars
-#     contains("cj_trust")
-#   ) |>
-#   # to long format
-#   pivot_longer(
-#     cols = -c(meta_wave, meta_country, meta_pid),
-#     names_to = c("game_type", "round", ".value"),
-#     names_pattern = "^(cj_dict|cj_trust)(\\d+)_(.+)$"
-#   ) |>
-#   # keep cj_ prefix for experimental vars
-#   rename_with(
-#     ~ paste0("cj_", .),
-#     -c(meta_wave, meta_country, meta_pid, game_type, round)
-#   ) |>
-#   # filter observations with valid outcomes
-#   filter(!is.na(cj_pl2))
+# select relevant variables
+eu25_long <- eu25games2019_clean_selected_final |>
+  # to long format
+  pivot_longer(
+    cols = -c(
+      starts_with("meta_"),
+      starts_with("q_"),
+      starts_with("cj_attr")
+    ),
+    names_to = c("game_type", "round", ".value"),
+    names_pattern = "^(cj_dict|cj_trust)(\\d+)_(.+)$"
+  ) |>
+  # keep cj_ prefix for experimental vars
+  rename_with(
+    ~ paste0("cj_", .),
+    -c(meta_wave, meta_country, meta_pid, game_type, round)
+  ) |>
+  # filter observations with valid outcomes
+  filter(!is.na(cj_pl2))
+```
+
+# Descriptives
+
+```{r}
+#| label: tbl-descriptives
+
+
 ```
 
 # Session Info {#sec-session-info .appendix .unnumbered}
