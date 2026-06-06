@@ -595,7 +595,8 @@ eu25_long <- eu25games2019_clean_selected_final |>
     cols = -c(
       starts_with("meta_"),
       starts_with("q_"),
-      starts_with("cj_attr")
+      starts_with("cj_attr"),
+      contains("_instr_")
     ),
     names_to = c("game_type", "round", ".value"),
     names_pattern = "^(cj_dict|cj_trust)(\\d+)_(.+)$"
@@ -606,7 +607,8 @@ eu25_long <- eu25games2019_clean_selected_final |>
     -c(
       starts_with("meta_"),
       starts_with("q_"),
-      starts_with("cj_attr")
+      starts_with("cj_attr"),
+      contains("_instr_")
     )
   )
 ```
