@@ -26,7 +26,7 @@ The goals, in priority order, are:
 1. **Verify the modified `multibart` works in principle.**
    On *synthetic* two-level data with known variance components we confirm the new helper builds a valid random-effects design, that the continuous fitting path (`bcf_continuous_linear`) accepts it and runs, and that the posterior extractor returns correctly-shaped, correctly-labelled output that recovers the planted structure.
 2. **See what the output looks like and how to process it downstream.**
-   We fit on a small subsample of the real data (when it exists) and walk the posterior objects through to the tidy summaries and figures the manuscript will need.
+   We fit on a small subsample of the real data with **country-only** random intercepts and walk the posterior objects through to the tidy summaries and figures the manuscript will need; respondent dependence is handled separately by a cluster bootstrap (see @sec-subsample).
 
 ::: callout-note
 ## Why nesting fits the existing sampler
@@ -38,13 +38,12 @@ This is the same `q × 2` mechanism `random_intercepts_slopes()` already uses fo
 :::
 
 ::: callout-warning
-## The real risk is cost, not correctness
+## Cost resolved the design: country-only REs on the real data
 
-`W` is `n × (C + R)`.
-At full scale that is roughly `112,500 × (25 + 37,500)`, and the sampler forms `WtW` (≈ 37.5k²) densely and solves a system of that order every iteration.
-The correctness story is solid; the open question is whether the **dense** sampler runs in acceptable time and memory.
-That is exactly why this notebook smoke-tests on synthetic data and then on a *few-country* subsample first.
-If the dense fit proves prohibitive, the documented fallback (CLAUDE.md Open Question #1) is country random intercepts only, with respondent dependence handled by cluster-bootstrapped uncertainty.
+`W` is `n × (C + R)`, and the sampler forms `Phi = adj·WtW·adj` densely and Cholesky-solves it every Gibbs sweep — an `O(q³)` cost in `q = C + R` that is dominated by the respondent dummies (`R` in the tens of thousands).
+A 10k-row real-data subsample took over 20 minutes to reach iteration 1; at full scale the cubic term explodes, so the **nested respondent-within-country fit is infeasible** in this project window (resolving CLAUDE.md Open Question #1).
+The correctness story is unchanged — the synthetic section below still exercises the full two-level mechanism, where the dimensions are tiny and the dense solve is trivial.
+But the **real-data path adopts the documented fallback: country random intercepts only** (`q ≈ 25`, the RE block becomes negligible), with within-respondent dependence across the three conjoint tasks handled by a respondent cluster bootstrap (explained in @sec-subsample).
 :::
 
 # Setup {#sec-setup}
@@ -356,10 +355,12 @@ chain_draws <- chain_seeds |>
 plan(sequential) # always reset the backend
 
 # chains must genuinely differ (distinct seeds + R's RNG)
-stopifnot(!isTRUE(all.equal(
-  chain_draws |> filter(.chain == 1) |> pull(sigma),
-  chain_draws |> filter(.chain == 2) |> pull(sigma)
-)))
+stopifnot(
+  !isTRUE(all.equal(
+    chain_draws |> filter(.chain == 1) |> pull(sigma),
+    chain_draws |> filter(.chain == 2) |> pull(sigma)
+  ))
+)
 
 # canonical single-chain fit in the MAIN process: live forest for downstream chunks
 set.seed(chain_seeds[1])
@@ -712,7 +713,11 @@ cov_bins <- tibble(
   x3 = X[, 3],
   x4 = X[, 4]
 ) |>
-  pivot_longer(c(x1, x2, x3, x4), names_to = "covariate", values_to = "value") |>
+  pivot_longer(
+    c(x1, x2, x3, x4),
+    names_to = "covariate",
+    values_to = "value"
+  ) |>
   mutate(
     bin = if_else(covariate == "x3", value, as.numeric(ntile(value, 10))),
     .by = covariate
@@ -747,7 +752,12 @@ ggplot(mapping = aes(x = x_pos)) +
     alpha = 0.2,
     fill = "#0072B2"
   ) +
-  geom_line(data = cate_cont, aes(y = estimate), colour = "#0072B2", linewidth = 0.8) +
+  geom_line(
+    data = cate_cont,
+    aes(y = estimate),
+    colour = "#0072B2",
+    linewidth = 0.8
+  ) +
   geom_pointrange(
     data = cate_x3,
     aes(y = estimate, ymin = lower, ymax = upper),
@@ -861,47 +871,143 @@ The respondent block (`post_cont$level2_posterior`) is large (`R` columns) and i
 # Small-subsample fit on real data {#sec-subsample}
 
 ::: callout-important
-The cells below are placeholders.
-They depend on the prepared analysis tibble from `01_prep_hte`, which does **not exist yet**.
-Once it does, point the read at the real file and choose the outcome (Dictator or Trust).
+Smoke test only.
+The prepared long-format tibble now exists at `data/02_processed/eu25_long.rds` (one row = one game round).
+We confirm the *real* data flows through the **country-only** RE machinery and that the fit runs in normal BART time — **no results are inspected**.
 :::
 
-The intent: subset to a handful of countries, fit the nested model, and confirm the *real* data flows through the same machinery — and, critically, gauge the dense `WtW` cost before attempting the full ~37.5k-respondent fit.
+The intent: take a 10,000-row random subset of the dictator game and fit the country-only random-intercept model end-to-end, confirming the real data passes through the same wrapper and that the country RE block adds negligible cost.
+The nested respondent-within-country fit is *not* attempted here — it was benchmarked and found infeasible (see the cost warning in @sec-purpose), so the respondent level is dropped from the model and its within-person dependence is instead handled by a cluster bootstrap, explained below.
 
 ```{r}
 #| label: load-subsample
-# TODO: replace with real 01_prep_hte output
-# dat <- readRDS(here::here("data", "hte_dictator.rds"))
+dat <- readRDS(here::here("data", "02_processed", "eu25_long.rds"))
 
-# few-country subsample to bound the dense WtW cost
-# few_countries <- levels(factor(dat$country_id))[1:3]
-# sub <- dat |> filter(country_id %in% few_countries) |>
-#   mutate(across(c(country_id, respondent_id), fct_drop))
+set.seed(20260604) # fixed seed
+sub <- dat |>
+  filter(cj_game_type == "cj_dict") |> # dictator game only
+  slice_sample(n = 10000)
+
+y <- sub$cj_pl2
+z <- as.integer(sub$cj_rel == "muslim") # Muslim vs all-else pooled
+country_id <- factor(sub$meta_country)
+respondent_id <- factor(sub$meta_pid)
+
+# moderators: profile-level conjoint attrs + respondent-level pre-treatment items
+prof_mods <- c("cj_nat", "cj_eupos", "cj_age", "cj_sex", "cj_class")
+resp_mods <- c(
+  "q_gender",
+  "q_age",
+  "q_identity_country",
+  "q_identity_eu",
+  "q_identity_europe",
+  "q_religion",
+  "q_class",
+  "q_eu_efficacy_understand",
+  "q_pop_reps",
+  "q_pop_goodevil",
+  "q_pop_compromise",
+  "q_dem_compromise",
+  "q_dem_listen",
+  "q_tech_experts",
+  "q_tech_leaders",
+  "q_party_harm",
+  "q_people_incompetent",
+  "q_eu_longterm",
+  "q_eu_responsive",
+  "q_eu_imp_nat_econ",
+  "q_eu_imp_nat_cul",
+  "q_eu_imp_nat_pol",
+  "q_eu_abolish",
+  "q_eu_satisfaction",
+  "q_rural_urban",
+  "q_edu_age_stop"
+)
+mod_df <- sub |>
+  select(all_of(c(prof_mods, resp_mods))) |>
+  mutate(across(where(is.character), factor))
+sub_X <- model.matrix(~ . - 1, data = mod_df) # factors -> dummies
+
+stopifnot(
+  nrow(sub_X) == 10000,
+  !anyNA(sub_X),
+  all(z %in% c(0L, 1L)),
+  !anyNA(y)
+)
 ```
 
 ```{r}
 #| label: fit-subsample
-# re_sub <- nested_random_intercepts(sub$country_id, sub$respondent_id)
-#
-# fit_sub <- bcf_continuous_linear(
-#   y = sub$y,
-#   z = sub$z,
-#   x_control = sub_X,                # numeric model matrix of moderators
-#   x_moderate = sub_X,
-#   zhat = rep(0.5, nrow(sub)),       # known conjoint propensity
-#   randeff_design = re_sub$randeff_design,
-#   randeff_variance_component_design = re_sub$randeff_variance_component_design,
-#   randeff_scales = c(1, 1),         # length K = 2
-#   randeff_df = 3,
-#   nburn = 1000,
-#   nsim = 1000
-# )
-#
-# post_sub <- get_nested_random_intercepts_posteriors(fit_sub, re_sub)
+# country-only random-intercept design, built inline
+# (the random_intercepts() helper has a known typo bug; get_dummies() is fine)
+country_dummies <- get_dummies(country_id) # n x C
+C_sub <- ncol(country_dummies)
+Q_country <- matrix(1, nrow = C_sub, ncol = 1) # single variance component
+
+stopifnot(
+  nrow(country_dummies) == length(y),
+  C_sub == nlevels(country_id),
+  C_sub > 1 # else sampler disables REs
+)
+
+t0 <- Sys.time()
+fit_sub <- bcf_continuous_linear(
+  y = y,
+  z = z,
+  x_control = sub_X, # numeric model matrix of moderators
+  x_moderate = sub_X,
+  zhat = rep(0.5, length(y)), # known conjoint propensity
+  randeff_design = country_dummies,
+  randeff_variance_component_design = Q_country,
+  randeff_scales = 1, # length K = 1 (one component)
+  randeff_df = 3,
+  nburn = 1000,
+  nsim = 1000,
+  update_interval = 100
+)
+fit_secs <- as.numeric(Sys.time() - t0, units = "secs")
+
+# country-block posteriors: with one component the whole design IS the country block
+country_re <- fit_sub$random_effects # nsim x C
+country_sd <- fit_sub$random_effects_sd[, 1] # nsim
+stopifnot(ncol(country_re) == C_sub)
+
+# cost note: country-only WtW is C x C, negligible; BART over n is the driver
+n_full <- sum(dat$cj_game_type == "cj_dict")
+cat(sprintf(
+  "Country-only BCF subsample fit: %.1f s (n = %d, C = %d country clusters).\n",
+  fit_secs,
+  length(y),
+  C_sub
+))
+cat(sprintf(
+  "Country WtW is %d x %d (~%.2g GB) - trivial; cost scales with n, not R.\n",
+  C_sub,
+  C_sub,
+  C_sub^2 * 8 / 1e9
+))
+cat(sprintf(
+  "Naive n-ratio estimate for full dictator (n = %d): ~%.1f min.\n",
+  n_full,
+  fit_secs * n_full / length(y) / 60
+))
 ```
 
-Record the wall-clock time and peak memory of this subsample fit.
-Extrapolating the dense solve from a few countries to all 25 (and from a few hundred respondents to ~37.5k) is what decides whether full nested REs are viable in the project window or whether the country-REs-only fallback is the pragmatic call.
+The printed wall-clock time confirms the country-only fit runs in normal BART time: the random-effects block is now a trivial `C × C` solve, so the cost scales with `n` (the BART forests), not with the respondent count `R`.
+The nested respondent-within-country fit is not attempted — it was benchmarked and found infeasible (@sec-purpose).
+
+## Respondent dependence: the cluster bootstrap {#sec-cluster-bootstrap}
+
+Dropping the respondent random intercept buys a tractable fit, but it leaves one thing unmodelled: each respondent answers **three** conjoint rounds, so their rows are correlated.
+A model that omits the respondent RE treats those correlated rows as independent, which makes the **uncertainty** too optimistic — posterior/sampling intervals come out narrower than they should.
+The point estimates are essentially unaffected (the treatment is randomized within respondent); it is the standard errors that need the correction.
+
+The fix is a **respondent cluster bootstrap**, the cluster analogue of the ordinary nonparametric bootstrap: instead of resampling individual rows, resample whole **respondents** — all three of a person's rows move together as one unit — with replacement, to a dataset of the original size.
+Refit (or recompute the statistic of interest) on each bootstrap dataset, and take the spread of the statistic *across* bootstrap datasets as its cluster-robust uncertainty.
+Because resampling is at the respondent level, the within-respondent correlation is preserved in every replicate, so the resulting intervals reflect that only ~22k independent people — not ~66k independent rows — inform the estimate.
+
+This is a **sensitivity check** that lives in the full BCF fit (`05_*`), not in this smoke test; here we only confirm the country-only fit runs.
+On the primary (GRF/CRF) side the same correction comes for free: `causal_forest(..., clusters = respondent_id)` already does cluster-aware sampling and reports cluster-robust variance, so no separate bootstrap is needed there.
 
 # Session Info {#sec-session-info .appendix .unnumbered}
 
