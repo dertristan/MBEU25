@@ -98,13 +98,32 @@ The frozen moderator list: profile-level conjoint attributes plus respondent-lev
 #| label: moderators
 prof_mods <- c("cj_nat", "cj_eupos", "cj_age", "cj_sex", "cj_class")
 resp_mods <- c(
-  "q_gender", "q_age", "q_identity_country", "q_identity_eu",
-  "q_identity_europe", "q_religion", "q_class", "q_eu_efficacy_understand",
-  "q_pop_reps", "q_pop_goodevil", "q_pop_compromise", "q_dem_compromise",
-  "q_dem_listen", "q_tech_experts", "q_tech_leaders", "q_party_harm",
-  "q_people_incompetent", "q_eu_longterm", "q_eu_responsive",
-  "q_eu_imp_nat_econ", "q_eu_imp_nat_cul", "q_eu_imp_nat_pol",
-  "q_eu_abolish", "q_eu_satisfaction", "q_rural_urban", "q_edu_age_stop"
+  "q_gender",
+  "q_age",
+  "q_identity_country",
+  "q_identity_eu",
+  "q_identity_europe",
+  "q_religion",
+  "q_class",
+  "q_eu_efficacy_understand",
+  "q_pop_reps",
+  "q_pop_goodevil",
+  "q_pop_compromise",
+  "q_dem_compromise",
+  "q_dem_listen",
+  "q_tech_experts",
+  "q_tech_leaders",
+  "q_party_harm",
+  "q_people_incompetent",
+  "q_eu_longterm",
+  "q_eu_responsive",
+  "q_eu_imp_nat_econ",
+  "q_eu_imp_nat_cul",
+  "q_eu_imp_nat_pol",
+  "q_eu_abolish",
+  "q_eu_satisfaction",
+  "q_rural_urban",
+  "q_edu_age_stop"
 )
 ```
 
@@ -134,8 +153,11 @@ prep_game <- function(dat, game) {
   )
 
   list(
-    y = y, z = z, sub_X = sub_X,
-    country_id = country_id, respondent_id = respondent_id
+    y = y,
+    z = z,
+    sub_X = sub_X,
+    country_id = country_id,
+    respondent_id = respondent_id
   )
 }
 ```
@@ -162,7 +184,7 @@ fit_bcf <- function(d) {
     z = d$z,
     x_control = d$sub_X, # numeric model matrix of moderators
     x_moderate = d$sub_X,
-    zhat = rep(0.5, length(d$y)), # known conjoint propensity
+    zhat = rep(0.25, length(d$y)), # known conjoint propensity
     randeff_design = country_dummies,
     randeff_variance_component_design = Q_country,
     randeff_scales = 1, # length K = 1 (one component)
@@ -180,7 +202,11 @@ fit_bcf <- function(d) {
 #| label: fit-dictator
 d_dict <- prep_game(dat, "cj_dict")
 fit_dict <- fit_bcf(d_dict)
-saveRDS(fit_dict, here::here("data", "03_final", "bcf_dictator.rds"), compress = "xz")
+saveRDS(
+  fit_dict,
+  here::here("data", "03_final", "bcf_dictator.rds"),
+  compress = "xz"
+)
 cat(sprintf("BCF dictator fit saved (n = %d).\n", length(d_dict$y)))
 ```
 
@@ -190,7 +216,11 @@ cat(sprintf("BCF dictator fit saved (n = %d).\n", length(d_dict$y)))
 #| label: fit-trust
 d_trust <- prep_game(dat, "cj_trust")
 fit_trust <- fit_bcf(d_trust)
-saveRDS(fit_trust, here::here("data", "03_final", "bcf_trust.rds"), compress = "xz")
+saveRDS(
+  fit_trust,
+  here::here("data", "03_final", "bcf_trust.rds"),
+  compress = "xz"
+)
 cat(sprintf("BCF trust fit saved (n = %d).\n", length(d_trust$y)))
 ```
 

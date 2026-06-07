@@ -66,13 +66,32 @@ The frozen moderator list: profile-level conjoint attributes plus respondent-lev
 #| label: moderators
 prof_mods <- c("cj_nat", "cj_eupos", "cj_age", "cj_sex", "cj_class")
 resp_mods <- c(
-  "q_gender", "q_age", "q_identity_country", "q_identity_eu",
-  "q_identity_europe", "q_religion", "q_class", "q_eu_efficacy_understand",
-  "q_pop_reps", "q_pop_goodevil", "q_pop_compromise", "q_dem_compromise",
-  "q_dem_listen", "q_tech_experts", "q_tech_leaders", "q_party_harm",
-  "q_people_incompetent", "q_eu_longterm", "q_eu_responsive",
-  "q_eu_imp_nat_econ", "q_eu_imp_nat_cul", "q_eu_imp_nat_pol",
-  "q_eu_abolish", "q_eu_satisfaction", "q_rural_urban", "q_edu_age_stop"
+  "q_gender",
+  "q_age",
+  "q_identity_country",
+  "q_identity_eu",
+  "q_identity_europe",
+  "q_religion",
+  "q_class",
+  "q_eu_efficacy_understand",
+  "q_pop_reps",
+  "q_pop_goodevil",
+  "q_pop_compromise",
+  "q_dem_compromise",
+  "q_dem_listen",
+  "q_tech_experts",
+  "q_tech_leaders",
+  "q_party_harm",
+  "q_people_incompetent",
+  "q_eu_longterm",
+  "q_eu_responsive",
+  "q_eu_imp_nat_econ",
+  "q_eu_imp_nat_cul",
+  "q_eu_imp_nat_pol",
+  "q_eu_abolish",
+  "q_eu_satisfaction",
+  "q_rural_urban",
+  "q_edu_age_stop"
 )
 ```
 
@@ -102,8 +121,11 @@ prep_game <- function(dat, game) {
   )
 
   list(
-    y = y, z = z, sub_X = sub_X,
-    country_id = country_id, respondent_id = respondent_id
+    y = y,
+    z = z,
+    sub_X = sub_X,
+    country_id = country_id,
+    respondent_id = respondent_id
   )
 }
 ```
@@ -125,7 +147,7 @@ fit_grf <- function(d) {
     X = X,
     Y = d$y,
     W = d$z,
-    W.hat = 0.5, # known conjoint propensity
+    W.hat = 0.25, # known conjoint propensity
     clusters = as.integer(d$respondent_id), # respondent-level cluster-robustness
     num.trees = 2000,
     seed = 20260604
@@ -139,7 +161,11 @@ fit_grf <- function(d) {
 #| label: fit-dictator
 d_dict <- prep_game(dat, "cj_dict")
 cf_dict <- fit_grf(d_dict)
-saveRDS(cf_dict, here::here("data", "03_final", "grf_dictator.rds"), compress = "xz")
+saveRDS(
+  cf_dict,
+  here::here("data", "03_final", "grf_dictator.rds"),
+  compress = "xz"
+)
 cat(sprintf("GRF dictator fit saved (n = %d).\n", length(d_dict$y)))
 ```
 
@@ -149,7 +175,11 @@ cat(sprintf("GRF dictator fit saved (n = %d).\n", length(d_dict$y)))
 #| label: fit-trust
 d_trust <- prep_game(dat, "cj_trust")
 cf_trust <- fit_grf(d_trust)
-saveRDS(cf_trust, here::here("data", "03_final", "grf_trust.rds"), compress = "xz")
+saveRDS(
+  cf_trust,
+  here::here("data", "03_final", "grf_trust.rds"),
+  compress = "xz"
+)
 cat(sprintf("GRF trust fit saved (n = %d).\n", length(d_trust$y)))
 ```
 
