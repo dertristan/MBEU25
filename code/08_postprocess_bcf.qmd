@@ -1,0 +1,411 @@
+---
+subtitle: |
+  BCF Post-Processing — CATE by Moderator (Dictator + Trust)
+date: last-modified
+date-format: MMMM D, YYYY
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    code-tools: true
+execute:
+  echo: true
+  warning: true
+  eval: true
+  message: true
+---
+
+# Purpose {#sec-purpose}
+
+This notebook post-processes the **robustness** estimator — the saved hierarchical BCF fits
+(`data/03_final/bcf_{dictator,trust}.rds`) — into Green (2012)–style figures: estimated CATE on
+the y-axis, a moderator on the x-axis.
+It is the BCF counterpart to `07_postprocess_grf.qmd` and is structurally parallel to it; only the
+τ̂ extraction and the per-level uncertainty differ.
+
+This is the first, *exploratory* pass.
+For each moderator we build a **standalone `ggplot` object** (kept in a named list), not the final
+composed/faceted figure; paneling is decided later.
+
+Two moderator families, matching the research plan:
+
+- **Conjoint round-level** moderators (`prof_mods`) — other attributes in the same profile.
+- **Individual-level** moderators (`resp_mods`) — respondent pre-treatment items and indices.
+
+Per-level uncertainty is the **95% posterior credible interval** of the bin/level CATE, mirroring
+`fig-cate-by-cov-bcf` in `03_multibart_nested_ri_test.qmd`.
+The credible interval here reflects posterior uncertainty only; the respondent cluster bootstrap
+(within-person dependence across the three rounds) is a separate downstream step, not done here.
+The covariate distribution is shown in every panel (rug for binned numerics, per-level count bars
+for discrete moderators).
+
+# Setup {#sec-setup}
+
+The setup chunk loads the project packages plus `multibart`'s own dependencies before the local
+package is attached (needed for `get_forest_fit()`).
+
+```{r}
+#| label: setup
+#| include: false
+# execution time
+start_time <- Sys.time()
+# console width
+options(width = 80)
+# packages
+p_required <- c(
+  "tidyverse", # dplyr, ggplot2, tidyr, purrr
+  "here", # relative paths
+  "ggpubr", # theme_pubr
+  "patchwork", # later composition
+  "sessioninfo", # session docs
+
+  # multibart dependencies -----------------------------------------------------
+  "Rcpp", # multibart Depends + LinkingTo
+  "RcppArmadillo", # multibart Depends + LinkingTo
+  "Rcereal", # multibart Depends + LinkingTo
+  "fastDummies" # multibart helper dependency
+)
+packages <- rownames(installed.packages())
+p_to_install <- p_required[!(p_required %in% packages)]
+if (length(p_to_install) > 0) {
+  install.packages(p_to_install)
+}
+sapply(p_required, require, character.only = TRUE)
+rm(p_required, p_to_install, packages)
+```
+
+```{r}
+#| label: setup-multibart
+#| include: false
+# install local source on first use
+if (!requireNamespace("multibart", quietly = TRUE)) {
+  install.packages(
+    here::here("code", "multibart"),
+    repos = NULL,
+    type = "source"
+  )
+}
+# attach installed package
+library(multibart)
+```
+
+# Load data and fits {#sec-load}
+
+```{r}
+#| label: load-data
+dat <- readRDS(here::here("data", "02_processed", "eu25_long.rds"))
+fit_dict <- readRDS(here::here("data", "03_final", "bcf_dictator.rds"))
+fit_trust <- readRDS(here::here("data", "03_final", "bcf_trust.rds"))
+```
+
+# Variable definitions {#sec-vars}
+
+The frozen moderator list and `prep_game()` are reused verbatim from `05_bcf_fit.qmd` so the
+reconstructed moderate design matches fit-time row order and columns exactly.
+
+```{r}
+#| label: moderators
+prof_mods <- c("cj_nat", "cj_eupos", "cj_age", "cj_sex", "cj_class")
+resp_mods <- c(
+  "q_gender", "q_age", "q_identity_country", "q_identity_eu",
+  "q_identity_europe", "q_religion", "q_class", "q_eu_efficacy_understand",
+  "q_pop_reps", "q_pop_goodevil", "q_pop_compromise", "q_dem_compromise",
+  "q_dem_listen", "q_tech_experts", "q_tech_leaders", "q_party_harm",
+  "q_people_incompetent", "q_eu_longterm", "q_eu_responsive",
+  "q_eu_imp_nat_econ", "q_eu_imp_nat_cul", "q_eu_imp_nat_pol",
+  "q_eu_abolish", "q_eu_satisfaction", "q_rural_urban", "q_edu_age_stop"
+)
+```
+
+```{r}
+#| label: prep-game
+prep_game <- function(dat, game) {
+  sub <- dat |>
+    filter(cj_game_type == game) # full per-game sample (no subsampling)
+
+  y <- sub$cj_pl2
+  z <- as.integer(sub$cj_rel == "muslim") # Muslim vs all-else pooled
+  country_id <- factor(sub$meta_country)
+  respondent_id <- factor(sub$meta_pid)
+
+  mod_df <- sub |>
+    select(all_of(c(prof_mods, resp_mods))) |>
+    mutate(across(where(is.character), factor))
+  sub_X <- model.matrix(~ . - 1, data = mod_df) # factors -> dummies
+
+  stopifnot(
+    !anyNA(sub_X),
+    all(z %in% c(0L, 1L)),
+    !anyNA(y),
+    nrow(sub_X) == length(y)
+  )
+
+  list(
+    y = y, z = z, sub_X = sub_X,
+    country_id = country_id, respondent_id = respondent_id
+  )
+}
+```
+
+`game_mods()` returns the original (pre-dummy) moderator values for one game, in the same row
+order as `prep_game()`, so each observation's τ̂ aligns with its moderator value.
+
+```{r}
+#| label: game-mods
+game_mods <- function(dat, game) {
+  dat |>
+    filter(cj_game_type == game) |>
+    select(all_of(c(prof_mods, resp_mods))) |>
+    mutate(across(where(is.character), factor))
+}
+```
+
+# CATE-by-moderator machinery {#sec-machinery}
+
+A moderator is **discrete** (factor, or numeric with ≤ 10 distinct values: Likert items) or
+**binned** (higher-cardinality numeric → 10 quantile bins).
+
+```{r}
+#| label: classify
+classify_mod <- function(col) {
+  if (is.factor(col) || is.character(col)) {
+    return("discrete")
+  }
+  if (dplyr::n_distinct(col) <= 10) {
+    return("discrete")
+  }
+  "binned"
+}
+```
+
+For each moderator level / bin, the posterior of the bin CATE is the within-draw mean of τ(x) over
+the bin's observations; we summarize with the median and a 95% credible interval.
+`tau_draws` is the `nsim × n` posterior matrix from `get_forest_fit()`; columns index observations.
+
+```{r}
+#| label: bcf-summary
+bcf_summary <- function(tau_draws, col, name) {
+  kind <- classify_mod(col)
+  # posterior of the bin CATE over a logical keep-vector (length n)
+  post <- function(keep) {
+    bd <- rowMeans(tau_draws[, keep, drop = FALSE]) # posterior of bin mean
+    tibble(
+      estimate = median(bd),
+      lower = unname(quantile(bd, 0.025)),
+      upper = unname(quantile(bd, 0.975))
+    )
+  }
+  if (kind == "discrete") {
+    levs <- if (is.factor(col)) levels(col) else sort(unique(col))
+    out <- map(levs, function(v) {
+      keep <- !is.na(col) & col == v
+      post(keep) |>
+        mutate(x_lab = as.character(v), x_pos = NA_real_, n = sum(keep))
+    })
+  } else {
+    b <- ntile(col, 10)
+    out <- map(sort(unique(b[!is.na(b)])), function(bb) {
+      keep <- !is.na(b) & b == bb
+      post(keep) |>
+        mutate(x_lab = NA_character_, x_pos = mean(col[keep]), n = sum(keep))
+    })
+  }
+  list_rbind(out) |> mutate(moderator = name, kind = kind)
+}
+```
+
+The plot helpers draw blue estimates + credible interval and the covariate distribution.
+
+```{r}
+#| label: plot-helpers
+.cate_col <- "#0072B2"
+
+# discrete: pointrange per level + grey count bars (categorical distribution)
+plot_discrete <- function(summ, name, ylab) {
+  summ <- summ |>
+    filter(!is.na(estimate)) |>
+    mutate(x = factor(x_lab, levels = x_lab))
+  yr <- range(c(summ$lower, summ$upper), na.rm = TRUE)
+  pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+  floor_y <- yr[1] - pad
+  span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+  summ <- summ |> mutate(bar_top = floor_y + (n / max(n)) * span)
+
+  ggplot(summ, aes(x = x)) +
+    geom_segment(
+      aes(xend = x, y = floor_y, yend = bar_top),
+      colour = "grey80", linewidth = 4
+    ) +
+    geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+    geom_linerange(aes(ymin = lower, ymax = upper), colour = .cate_col) +
+    geom_point(aes(y = estimate), colour = .cate_col, size = 2) +
+    labs(title = paste0("CATE by ", name), x = name, y = ylab) +
+    ggpubr::theme_pubr() +
+    theme(axis.text.x = element_text(angle = 30, hjust = 1))
+}
+
+# binned: ribbon + line + rug of raw values (continuous distribution)
+plot_binned <- function(summ, raw, name, ylab) {
+  rug <- tibble(value = raw)
+  ggplot(summ, aes(x = x_pos)) +
+    geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+    geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, fill = .cate_col) +
+    geom_line(aes(y = estimate), colour = .cate_col, linewidth = 0.8) +
+    geom_point(aes(y = estimate), colour = .cate_col, size = 1.5) +
+    geom_rug(
+      data = rug, aes(x = value), sides = "b",
+      alpha = 0.15, colour = .cate_col, inherit.aes = FALSE
+    ) +
+    labs(title = paste0("CATE by ", name), x = name, y = ylab) +
+    ggpubr::theme_pubr()
+}
+
+plot_mod <- function(summ, raw, name, ylab) {
+  if (summ$kind[1] == "discrete") {
+    plot_discrete(summ, name, ylab)
+  } else {
+    plot_binned(summ, raw, name, ylab)
+  }
+}
+
+# build one named list of plots over a set of moderators
+build_bcf_plots <- function(tau_draws, mvals, mods, ylab) {
+  setNames(
+    lapply(mods, function(m) {
+      col <- mvals[[m]]
+      plot_mod(bcf_summary(tau_draws, col, m), col, m, ylab)
+    }),
+    mods
+  )
+}
+```
+
+# Build plots {#sec-build}
+
+`tau_draws` is large (`nsim × n`); we extract it one game at a time and free it once the plots
+(which retain only their summary tibbles) are built.
+
+```{r}
+#| label: build-dictator
+yl <- "CATE (effect of Muslim profile)"
+
+d_dict <- prep_game(dat, "cj_dict")
+m_dict <- game_mods(dat, "cj_dict")
+tau_dict <- get_forest_fit(fit_dict$moderate_fit, d_dict$sub_X) # nsim x n
+
+stopifnot(
+  nrow(m_dict) == length(d_dict$y),
+  ncol(tau_dict) == length(d_dict$y)
+)
+
+# ATE sanity check (token scale)
+mean(colMeans(tau_dict))
+
+p_dict_prof <- build_bcf_plots(tau_dict, m_dict, prof_mods, yl)
+p_dict_resp <- build_bcf_plots(tau_dict, m_dict, resp_mods, yl)
+
+rm(tau_dict, fit_dict)
+invisible(gc())
+```
+
+```{r}
+#| label: build-trust
+d_trust <- prep_game(dat, "cj_trust")
+m_trust <- game_mods(dat, "cj_trust")
+tau_trust <- get_forest_fit(fit_trust$moderate_fit, d_trust$sub_X) # nsim x n
+
+stopifnot(
+  nrow(m_trust) == length(d_trust$y),
+  ncol(tau_trust) == length(d_trust$y)
+)
+
+mean(colMeans(tau_trust))
+
+p_trust_prof <- build_bcf_plots(tau_trust, m_trust, prof_mods, yl)
+p_trust_resp <- build_bcf_plots(tau_trust, m_trust, resp_mods, yl)
+
+rm(tau_trust, fit_trust)
+invisible(gc())
+
+stopifnot(
+  length(p_dict_prof) == length(prof_mods),
+  length(p_dict_resp) == length(resp_mods),
+  length(p_trust_prof) == length(prof_mods),
+  length(p_trust_resp) == length(resp_mods)
+)
+```
+
+# Dictator game {#sec-dictator}
+
+## Conjoint round-level moderators {#sec-dict-prof}
+
+```{r}
+#| label: fig-bcf-dict-prof
+#| fig-cap: "BCF: CATE of the Muslim profile attribute by conjoint round-level moderator (Dictator game). Blue: posterior median + 95% credible interval; grey bars: per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+walk(p_dict_prof, print)
+```
+
+## Individual-level moderators {#sec-dict-resp}
+
+```{r}
+#| label: fig-bcf-dict-resp
+#| fig-cap: "BCF: CATE of the Muslim profile attribute by respondent-level moderator (Dictator game). Blue: posterior median + 95% credible interval; grey bars / rug: covariate distribution."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+walk(p_dict_resp, print)
+```
+
+# Trust game {#sec-trust}
+
+## Conjoint round-level moderators {#sec-trust-prof}
+
+```{r}
+#| label: fig-bcf-trust-prof
+#| fig-cap: "BCF: CATE of the Muslim profile attribute by conjoint round-level moderator (Trust game). Blue: posterior median + 95% credible interval; grey bars: per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+walk(p_trust_prof, print)
+```
+
+## Individual-level moderators {#sec-trust-resp}
+
+```{r}
+#| label: fig-bcf-trust-resp
+#| fig-cap: "BCF: CATE of the Muslim profile attribute by respondent-level moderator (Trust game). Blue: posterior median + 95% credible interval; grey bars / rug: covariate distribution."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+walk(p_trust_resp, print)
+```
+
+# Session Info {#sec-session-info .appendix .unnumbered}
+
+```{r}
+#| label: session-info
+#| eval: true
+#| echo: true
+session_info()
+```
+
+# Execution Time {#sec-exec-time .appendix .unnumbered}
+
+```{r}
+#| label: exec-time
+#| eval: true
+#| echo: true
+#| include: true
+
+end_time <- Sys.time()
+exec_time <- end_time - start_time
+cat(paste(
+  "R code execution time:",
+  round(as.numeric(exec_time, units = "secs"), 2),
+  "seconds."
+))
+```
