@@ -18,7 +18,7 @@ Country-level structure is treated as a nuisance to account for, not interpreted
 
 ### Empirical Strategy
 
-Heterogeneity is estimated with a dual strategy targeting the conditional average treatment effect (CATE) of the Muslim attribute. The primary method is **hierarchical Bayesian Causal Forests** with nested random intercepts (respondent within country) to account for the clustered data structure. As a frequentist robustness check, we additionally fit **causal random forests** (`grf`) with respondent-level clusters and country fixed effects. Separate models are estimated for each behavioral game (dictator and trust). See `index.qmd` for more details.
+Heterogeneity is estimated with a dual strategy targeting the conditional average treatment effect (CATE) of the Muslim attribute. The primary method is **causal random forests** (`grf`) with respondent-level clusters and country fixed effects, giving honest cluster-robust confidence intervals on τ̂(x). As a Bayesian robustness check, we additionally fit **hierarchical Bayesian Causal Forests** (BCF). The clustered data structure is handled by **country random intercepts**; within-respondent dependence across the three conjoint rounds is absorbed by the cluster structure on the `grf` side and by a respondent cluster bootstrap on the BCF side. Separate models are estimated for each behavioral game (dictator and trust). See `index.qmd` for more details.
 
 ### Data Source
 
@@ -47,6 +47,8 @@ MBEU25/
 │   ├── 02_data_prep.qmd                  # Data cleaning / prep for heterogeneity analysis
 │   ├── 03_multibart_nested_ri_test.qmd  # Hierarchical (nested RI) BCF mechanism test
 │   ├── 04_grf_nested_test.qmd           # grf causal-forest nested-structure test
+│   ├── 05_bcf_fit.qmd                    # Full BCF fits on real data (robustness)
+│   ├── 06_grf_fit.qmd                    # Full grf causal-forest fits on real data (primary)
 │   ├── multibart/                        # Local R package: hierarchical BCF with nested random intercepts
 │   └── helper_scripts/
 │       ├── copy_figures.R                # Post-render: copies figures into _manuscript/
@@ -68,7 +70,7 @@ MBEU25/
 
 ### The `multibart` package
 
-The local `code/multibart/` package implements **hierarchical Bayesian Causal Forests with nested random intercepts** (respondent within country), the primary method for this project. The code is adapted from the BCF implementation released with the following study:
+The local `code/multibart/` package implements **hierarchical Bayesian Causal Forests with nested random intercepts** (respondent within country), used here as the **Bayesian robustness check** (the primary analysis is `grf`). The nested two-level extension is implemented and validated on synthetic data, but the full-scale nested respondent fit was benchmarked and found computationally infeasible in the project window; the real-data BCF fits therefore use **country random intercepts only**, with respondent dependence handled by a cluster bootstrap. The code is adapted from the BCF implementation released with the following study:
 
 > Yeager, D. S., Bryan, C. J., Gross, J. J., Murray, J. S., Krettek Cobb, D., HF Santos, P., Gravelding, H., Johnson, M., & Jamieson, J. P. (2022). A synergistic mindsets intervention protects adolescents from stress. *Nature*, 607(7919), 512–520. https://doi.org/10.1038/s41586-022-04907-7
 

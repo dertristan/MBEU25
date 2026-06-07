@@ -133,7 +133,7 @@ quarto preview index.qmd
 - `references.bib` — BibTeX bibliography (APSR style); **all entries require a DOI**
 - `code/` — numbered R analysis notebooks (`01_`, `02_`, …); `00_template.qmd` is the template for new notebooks
 - `code/helper_scripts/copy_figures.R` — post-render script that copies figures from `_freeze/` into `_manuscript/` so the HTML preview renders correctly
-- `data/` — datasets (structure TBD as project grows); full dataset and pre-processing pipeline available at [GitHub](https://github.com/LS-Konig/eu25games2019)
+- `data/` — `01_raw/` (raw source `eu25games2019.rds`), `02_processed/` (clean long-format analysis tibble `eu25_long.rds`), `03_final/` (saved fits: `grf_{dictator,trust}.rds`, `bcf_{dictator,trust}.rds`); full dataset and pre-processing pipeline available at [GitHub](https://github.com/LS-Konig/eu25games2019)
 - `literature/` — source papers (gitignored — not tracked in Git); `literature/pdf/` holds the PDFs and `literature/md/` holds converted Markdown. Each file is named by its `references.bib` citation key (e.g. `hahn2020bayesian.pdf` / `hahn2020bayesian.md`). **Do not read these files on your own — always ask first (see Workflow Constraints).**
 - `notes/` — working notes including `analysis_plan.md`
 - `_extensions/andrewheiss/wordcount/` — Quarto extension providing word count and custom citeproc
@@ -141,16 +141,18 @@ quarto preview index.qmd
 ### Analysis notebooks
 Existing:
 - `code/01_exploration4presentation.qmd` — exploratory data work for the presentation
-- `code/02_data_prep.qmd` — data prep for heterogeneity analysis (currently a template skeleton; to be written Thu 2026-06-04: data summary/overview for collaborators + clean long-format analysis tibble)
-- `code/03_multibart_nested_ri_test.qmd` — **estimator test** for hierarchical BCF (`multibart`) on synthetic data; recovers variance components and μ(x)/τ(x) against planted truth (continuous path only), plus parallel multi-chain convergence diagnostics (trace plots, R̂, bulk-ESS via `posterior`; chains via `furrr`/`future`)
+- `code/02_data_prep.qmd` — data prep for heterogeneity analysis: data summary/overview for collaborators + clean long-format analysis tibble (Y, Z, X, respondent_id, country_id), written to `data/02_processed/eu25_long.rds`
+- `code/03_multibart_nested_ri_test.qmd` — **estimator test** for hierarchical BCF (`multibart`) on synthetic data; recovers variance components and μ(x)/τ(x) against planted truth (continuous path only), plus parallel multi-chain convergence diagnostics (trace plots, R̂, bulk-ESS via `posterior`; chains via `furrr`/`future`). Its real-data section (`#sec-subsample`) fits country-only REs on a subsample and bounds the nested-fit compute cost — the basis for the feasibility decision
 - `code/04_grf_nested_test.qmd` — **estimator test** for `grf` on the same synthetic data/seed; recovers cluster-robust ATE, τ̂(x), and BLP against planted truth
 
 Note: `03_` and `04_` are mechanism/smoke tests of the estimators, **not** the substantive analyses.
 
-Planned (full analyses on the real data):
-- `code/05_*.qmd` — full BCF fits (Dictator + Trust): ATE, posterior τ̂(x) draws, posterior projection, variable importance
-- `code/06_*.qmd` — full CRF fits (Dictator + Trust): cluster-robust ATE, τ̂(x), best linear projection, variable importance
-- `code/07_*.qmd` — manuscript figures (Green & Kern visual grammar)
+Full fits on the real data (**fitting and saving only** — no τ(x) extraction, projection, variable importance, figures, or tables; those are deferred to the post-processing/figures step):
+- `code/05_bcf_fit.qmd` — full hierarchical BCF fits (Dictator + Trust), **country-only REs** (nested respondent fit infeasible; respondent dependence left for a cluster bootstrap downstream), saved to `data/03_final/bcf_{dictator,trust}.rds`. The **robustness** estimator.
+- `code/06_grf_fit.qmd` — full `grf` causal-forest fits (Dictator + Trust), `clusters = respondent_id` + country FE in `X`, saved to `data/03_final/grf_{dictator,trust}.rds`. The **primary** estimator.
+
+Planned:
+- `code/07_*.qmd` — post-processing + manuscript figures (Green & Kern visual grammar): extract τ̂(x), ATE, projection / BLP, variable importance, and the CATE-by-moderator headline figures from the saved fits; respondent cluster bootstrap on the BCF side.
 
 ## Workflow Notes
 
