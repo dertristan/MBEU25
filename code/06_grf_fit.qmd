@@ -139,7 +139,7 @@ fit_grf <- function(d) {
 #| label: fit-dictator
 d_dict <- prep_game(dat, "cj_dict")
 cf_dict <- fit_grf(d_dict)
-saveRDS(cf_dict, here::here("data", "03_final", "grf_dictator.rds"))
+saveRDS(cf_dict, here::here("data", "03_final", "grf_dictator.rds"), compress = "xz")
 cat(sprintf("GRF dictator fit saved (n = %d).\n", length(d_dict$y)))
 ```
 
@@ -149,7 +149,7 @@ cat(sprintf("GRF dictator fit saved (n = %d).\n", length(d_dict$y)))
 #| label: fit-trust
 d_trust <- prep_game(dat, "cj_trust")
 cf_trust <- fit_grf(d_trust)
-saveRDS(cf_trust, here::here("data", "03_final", "grf_trust.rds"))
+saveRDS(cf_trust, here::here("data", "03_final", "grf_trust.rds"), compress = "xz")
 cat(sprintf("GRF trust fit saved (n = %d).\n", length(d_trust$y)))
 ```
 

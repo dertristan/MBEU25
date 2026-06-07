@@ -180,7 +180,7 @@ fit_bcf <- function(d) {
 #| label: fit-dictator
 d_dict <- prep_game(dat, "cj_dict")
 fit_dict <- fit_bcf(d_dict)
-saveRDS(fit_dict, here::here("data", "03_final", "bcf_dictator.rds"))
+saveRDS(fit_dict, here::here("data", "03_final", "bcf_dictator.rds"), compress = "xz")
 cat(sprintf("BCF dictator fit saved (n = %d).\n", length(d_dict$y)))
 ```
 
@@ -190,7 +190,7 @@ cat(sprintf("BCF dictator fit saved (n = %d).\n", length(d_dict$y)))
 #| label: fit-trust
 d_trust <- prep_game(dat, "cj_trust")
 fit_trust <- fit_bcf(d_trust)
-saveRDS(fit_trust, here::here("data", "03_final", "bcf_trust.rds"))
+saveRDS(fit_trust, here::here("data", "03_final", "bcf_trust.rds"), compress = "xz")
 cat(sprintf("BCF trust fit saved (n = %d).\n", length(d_trust$y)))
 ```
 
