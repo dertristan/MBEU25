@@ -17,6 +17,10 @@ project:
   #     title: "Nested Random Intercepts in multibart — Mechanism Test"
   #   - notebook: code/04_grf_nested_test.qmd
   #     title: "Nested Structure in grf Causal Forests — Mechanism Test"
+  #   - notebook: code/05_bcf_fit.qmd
+  #     title: "Hierarchical BCF Fits on Real Data (Dictator + Trust)"
+  #   - notebook: code/06_grf_fit.qmd
+  #     title: "Causal-Forest Fits on Real Data (Dictator + Trust)"
 
 execute: 
   freeze: auto
