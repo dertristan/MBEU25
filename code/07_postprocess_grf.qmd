@@ -1,0 +1,3324 @@
+---
+subtitle: |
+  GRF Post-Processing — ATE, Heterogeneity Diagnostics, and CATE by Moderator (Dictator + Trust)
+date: last-modified
+date-format: MMMM D, YYYY
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    code-tools: true
+execute:
+  echo: true
+  warning: true
+  eval: true
+  message: true
+---
+
+# Purpose {#sec-purpose}
+
+This notebook post-processes the **primary** estimator — the saved `grf` causal forests
+(`data/03_final/grf_{dictator,trust}.rds`) — following the canonical post-fit workflow from
+the generalized-random-forest literature (`athey2019generalized`, `wager2018estimation`,
+`athey2019estimating`).
+
+It is written to be read **line by line**: every step is laid out sequentially, the two
+games (Dictator, Trust) are done one after the other, and the headline CATE-by-moderator
+figures are built **one explicit chunk per moderator** rather than through shared helper
+functions.
+
+For each game we run, in order:
+
+1. **Average treatment effect (ATE) + SE** — `average_treatment_effect()`, the doubly-robust
+   (AIPW) estimate with the cluster-robust standard error from the respondent clusters stored
+   on the forest.
+2. **Targeting Operator Characteristic (TOC) / RATE** — `rank_average_treatment_effect()`,
+   the overall "is there targetable heterogeneity" summary (AUTOC ± SE plus the TOC curve).
+3. **Best linear projection (BLP)** — `best_linear_projection()` of the CATE onto the
+   moderator set, an appendix-style linear summary of effect modification.
+4. **Variable importance** — `variable_importance()`, aggregated from the expanded dummy
+   columns back up to the original moderators (construct level).
+5. **CATE by moderator** — the headline figures: estimated CATE on the y-axis, the moderator
+   on the x-axis, with an **honest 95% confidence interval at each level**. Per-level
+   intervals come straight from `average_treatment_effect(cf, subset = ...)`, which is the
+   documented `grf` way to get a doubly-robust, cluster-robust subset ATE.
+
+Two moderator families, matching the research plan:
+
+- **Conjoint round-level** moderators (`prof_mods`) — other attributes in the same profile.
+- **Individual-level** moderators (`resp_mods`) — respondent pre-treatment items and indices.
+
+The companion notebook `08_postprocess_bcf.qmd` runs the analogous workflow on the BCF fits.
+
+::: callout-note
+## A note on cost
+
+Each per-level CI is a separate `average_treatment_effect()` call, so the CATE-by-moderator
+sweep makes many calls (one per level, across 31 moderators, twice). This is slower than
+computing the doubly-robust scores once and reusing them, but it is the most transparent
+route and the user-requested one; Quarto `freeze: auto` caches the rendered result.
+:::
+
+# Setup {#sec-setup}
+
+```{r}
+#| label: setup
+#| include: false
+# execution time
+start_time <- Sys.time()
+# console width
+options(width = 80)
+# packages
+p_required <- c(
+  "tidyverse", # dplyr, ggplot2, tidyr, purrr
+  "here", # relative paths
+  "ggpubr", # theme_pubr
+  "patchwork", # later composition
+  "grf", # causal_forest predictions, ATE, RATE, BLP
+  "sessioninfo" # session docs
+)
+packages <- rownames(installed.packages())
+p_to_install <- p_required[!(p_required %in% packages)]
+if (length(p_to_install) > 0) {
+  install.packages(p_to_install)
+}
+sapply(p_required, require, character.only = TRUE)
+rm(p_required, p_to_install, packages)
+```
+
+# Load data and fits {#sec-load}
+
+```{r}
+#| label: load-data
+dat <- readRDS(here::here("data", "02_processed", "eu25_long.rds"))
+cf_dict <- readRDS(here::here("data", "03_final", "grf_dictator.rds"))
+cf_trust <- readRDS(here::here("data", "03_final", "grf_trust.rds"))
+```
+
+# Reconstruct the moderator designs {#sec-designs}
+
+The frozen moderator list, copied verbatim from `06_grf_fit.qmd`.
+
+```{r}
+#| label: moderators
+prof_mods <- c("cj_nat", "cj_eupos", "cj_age", "cj_sex", "cj_class")
+resp_mods <- c(
+  "q_gender",
+  "q_age",
+  "q_identity_country",
+  "q_identity_eu",
+  "q_identity_europe",
+  "q_religion",
+  "q_class",
+  "q_eu_efficacy_understand",
+  "q_pop_reps",
+  "q_pop_goodevil",
+  "q_pop_compromise",
+  "q_dem_compromise",
+  "q_dem_listen",
+  "q_tech_experts",
+  "q_tech_leaders",
+  "q_party_harm",
+  "q_people_incompetent",
+  "q_eu_longterm",
+  "q_eu_responsive",
+  "q_eu_imp_nat_econ",
+  "q_eu_imp_nat_cul",
+  "q_eu_imp_nat_pol",
+  "q_eu_abolish",
+  "q_eu_satisfaction",
+  "q_rural_urban",
+  "q_edu_age_stop"
+)
+all_mods <- c(prof_mods, resp_mods)
+```
+
+For each game we filter `dat` to that game in its original order (the same order the forest
+was fit on), keep the original moderator columns for plotting (`m_dict` / `m_trust`), and
+build the numeric moderator matrix used by the projection and importance steps (`X_dict` /
+`X_trust`) exactly as at fit time.
+The `stopifnot()` confirms the reconstructed rows line up with the forest's training rows, so
+each τ̂ aligns with its moderator value.
+
+```{r}
+#| label: designs
+# dictator design (same row order as the fit)
+sub_dict <- dat |> filter(cj_game_type == "cj_dict")
+m_dict <- sub_dict |>
+  select(all_of(all_mods)) |>
+  mutate(across(where(is.character), factor))
+X_dict <- model.matrix(~ . - 1, data = m_dict)
+
+# trust design (same row order as the fit)
+sub_trust <- dat |> filter(cj_game_type == "cj_trust")
+m_trust <- sub_trust |>
+  select(all_of(all_mods)) |>
+  mutate(across(where(is.character), factor))
+X_trust <- model.matrix(~ . - 1, data = m_trust)
+
+stopifnot(
+  length(cf_dict$Y.orig) == nrow(m_dict),
+  length(cf_trust$Y.orig) == nrow(m_trust),
+  !anyNA(X_dict),
+  !anyNA(X_trust)
+)
+```
+
+The y-axis label, shared by every CATE figure.
+
+```{r}
+#| label: ylab
+yl <- "CATE (effect of Muslim profile)"
+```
+
+# Dictator game {#sec-dict}
+
+## Average treatment effect {#sec-dict-ate}
+
+The doubly-robust ATE with its cluster-robust SE (respondent clusters are stored on the
+forest), and the implied 95% interval.
+
+```{r}
+#| label: ate-dict
+ate_dict <- grf::average_treatment_effect(cf_dict, target.sample = "all")
+cat(sprintf(
+  "Dictator ATE: %.4f  (SE %.4f);  95%% CI [%.4f, %.4f]\n",
+  ate_dict["estimate"],
+  ate_dict["std.err"],
+  ate_dict["estimate"] - 1.96 * ate_dict["std.err"],
+  ate_dict["estimate"] + 1.96 * ate_dict["std.err"]
+))
+```
+
+## Targeting Operator Characteristic (RATE) {#sec-dict-toc}
+
+`rank_average_treatment_effect()` ranks observations by their out-of-bag predicted CATE and
+traces the ATE among the top-`q` fraction against the overall ATE.
+The area under this curve is the AUTOC; a curve and AUTOC clearly above zero is evidence of
+targetable heterogeneity.
+Priorities here are the forest's own out-of-bag predictions, which is acceptable because they
+are honest (out-of-bag); a separate train/evaluate split would be the stricter alternative
+but is out of scope.
+
+```{r}
+#| label: fig-grf-dict-toc
+#| fig-cap: "GRF Targeting Operator Characteristic curve (Dictator game): ATE among the top-q fraction by predicted CATE minus the overall ATE, with 95% CI. AUTOC summarises the area under the curve."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+prio_dict <- predict(cf_dict)$predictions
+rate_dict <- grf::rank_average_treatment_effect(cf_dict, prio_dict)
+print(rate_dict)
+
+toc_dict <- rate_dict$TOC |>
+  mutate(lower = estimate - 1.96 * std.err, upper = estimate + 1.96 * std.err)
+
+ggplot(toc_dict, aes(x = q, y = estimate)) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, fill = "#0072B2") +
+  geom_line(colour = "#0072B2", linewidth = 0.8) +
+  labs(
+    title = sprintf(
+      "TOC (Dictator): AUTOC = %.3f (SE %.3f)",
+      rate_dict$estimate,
+      rate_dict$std.err
+    ),
+    x = "Treated fraction q (highest predicted CATE first)",
+    y = "ATE(top q) - ATE(all)"
+  ) +
+  ggpubr::theme_pubr()
+```
+
+## Best linear projection {#sec-dict-blp}
+
+The best linear projection of the CATE onto the moderator matrix: a linear summary of which
+moderators shift the treatment effect.
+This is an appendix/robustness summary, not a headline.
+
+```{r}
+#| label: fig-grf-dict-blp
+#| fig-cap: "GRF best linear projection of the CATE onto the moderator set (Dictator game), with 95% CIs. Appendix-style linear summary of effect modification."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 9
+blp_dict <- grf::best_linear_projection(cf_dict, X_dict)
+blp_dict_df <- blp_dict |>
+  unclass() |>
+  as.data.frame() |>
+  tibble::rownames_to_column("term") |>
+  as_tibble() |>
+  rename(estimate = Estimate, std_error = `Std. Error`) |>
+  mutate(
+    lower = estimate - 1.96 * std_error,
+    upper = estimate + 1.96 * std_error
+  ) |>
+  filter(term != "(Intercept)")
+
+ggplot(blp_dict_df, aes(x = estimate, y = fct_reorder(term, estimate))) +
+  geom_vline(xintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_pointrange(aes(xmin = lower, xmax = upper), colour = "#0072B2") +
+  labs(
+    title = "Best linear projection of the CATE (Dictator)",
+    x = "Projection coefficient",
+    y = NULL
+  ) +
+  ggpubr::theme_pubr()
+```
+
+## Variable importance {#sec-dict-vi}
+
+`variable_importance()` returns one value per design column (the expanded moderator dummies
+plus the country fixed-effect dummies).
+We map each column back to its source moderator by longest-prefix match and sum, giving a
+construct-level ranking; country fixed-effect columns match no moderator and are dropped.
+
+```{r}
+#| label: fig-grf-dict-vi
+#| fig-cap: "GRF variable importance (Dictator game), aggregated to the original moderators. Profile-level and respondent-level moderators distinguished by colour. Country fixed-effect columns excluded."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 7
+vi_dict <- grf::variable_importance(cf_dict)
+vi_dict_df <- tibble(
+  column = colnames(cf_dict$X.orig),
+  importance = as.numeric(vi_dict)
+) |>
+  mutate(
+    moderator = map_chr(column, function(cn) {
+      hit <- all_mods[startsWith(cn, all_mods)]
+      if (length(hit) == 0) NA_character_ else hit[which.max(nchar(hit))]
+    })
+  ) |>
+  filter(!is.na(moderator)) |>
+  summarise(importance = sum(importance), .by = moderator) |>
+  mutate(
+    family = if_else(
+      moderator %in% prof_mods,
+      "Profile-level",
+      "Respondent-level"
+    ),
+    moderator = fct_reorder(moderator, importance)
+  )
+
+ggplot(vi_dict_df, aes(x = importance, y = moderator, fill = family)) +
+  geom_col() +
+  scale_fill_manual(
+    values = c("Profile-level" = "#D55E00", "Respondent-level" = "#0072B2")
+  ) +
+  labs(
+    title = "Variable importance (Dictator)",
+    x = "Importance (depth-weighted split frequency)",
+    y = NULL,
+    fill = NULL
+  ) +
+  ggpubr::theme_pubr()
+```
+
+## CATE by moderator — conjoint round-level {#sec-dict-prof}
+
+For each discrete moderator we loop over its levels, compute the subset ATE with its honest
+cluster-robust SE, form the 95% interval as estimate ± 1.96·SE, and plot the per-level
+estimate (blue) over grey per-level count bars.
+
+### cj_nat {#sec-dict-cj-nat}
+
+```{r}
+#| label: fig-grf-dict-cj-nat
+#| fig-cap: "GRF CATE of the Muslim profile by cj_nat (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "cj_nat"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### cj_eupos {#sec-dict-cj-eupos}
+
+```{r}
+#| label: fig-grf-dict-cj-eupos
+#| fig-cap: "GRF CATE of the Muslim profile by cj_eupos (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "cj_eupos"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### cj_age {#sec-dict-cj-age}
+
+```{r}
+#| label: fig-grf-dict-cj-age
+#| fig-cap: "GRF CATE of the Muslim profile by cj_age (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "cj_age"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### cj_sex {#sec-dict-cj-sex}
+
+```{r}
+#| label: fig-grf-dict-cj-sex
+#| fig-cap: "GRF CATE of the Muslim profile by cj_sex (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "cj_sex"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### cj_class {#sec-dict-cj-class}
+
+```{r}
+#| label: fig-grf-dict-cj-class
+#| fig-cap: "GRF CATE of the Muslim profile by cj_class (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "cj_class"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+## CATE by moderator — respondent-level {#sec-dict-resp}
+
+Same per-level construction for the respondent moderators.
+The two genuinely continuous moderators — `q_age` and `q_edu_age_stop` — are instead split
+into ten quantile bins and drawn as a ribbon-and-line with a covariate rug.
+
+### q_gender {#sec-dict-q-gender}
+
+```{r}
+#| label: fig-grf-dict-q-gender
+#| fig-cap: "GRF CATE of the Muslim profile by q_gender (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_gender"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_age {#sec-dict-q-age}
+
+```{r}
+#| label: fig-grf-dict-q-age
+#| fig-cap: "GRF CATE of the Muslim profile across deciles of q_age (Dictator): per-bin subset ATE with honest cluster-robust 95% CI (ribbon); rug shows the covariate distribution."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_age"
+col <- m_dict[[mod]]
+bin <- ntile(col, 10)
+rows <- list()
+for (k in sort(unique(bin))) {
+  sel <- bin == k
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(k)]] <- tibble(
+    bin = k,
+    x_pos = mean(col[sel]),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(lower = estimate - 1.96 * se, upper = estimate + 1.96 * se)
+ggplot(cate, aes(x = x_pos)) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, fill = "#0072B2") +
+  geom_line(aes(y = estimate), colour = "#0072B2", linewidth = 0.8) +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 1.5) +
+  # geom_rug(
+  #   data = tibble(value = {
+  #     v <- col[!is.na(col)]
+  #     if (length(v) > 2000) v[seq(1, length(v), length.out = 2000)] else v
+  #   }),
+  #   aes(x = value),
+  #   sides = "b",
+  #   alpha = 0.15,
+  #   colour = "#0072B2",
+  #   inherit.aes = FALSE
+  # ) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr()
+```
+
+### q_identity_country {#sec-dict-q-identity-country}
+
+```{r}
+#| label: fig-grf-dict-q-identity-country
+#| fig-cap: "GRF CATE of the Muslim profile by q_identity_country (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_identity_country"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_identity_eu {#sec-dict-q-identity-eu}
+
+```{r}
+#| label: fig-grf-dict-q-identity-eu
+#| fig-cap: "GRF CATE of the Muslim profile by q_identity_eu (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_identity_eu"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_identity_europe {#sec-dict-q-identity-europe}
+
+```{r}
+#| label: fig-grf-dict-q-identity-europe
+#| fig-cap: "GRF CATE of the Muslim profile by q_identity_europe (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_identity_europe"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_religion {#sec-dict-q-religion}
+
+```{r}
+#| label: fig-grf-dict-q-religion
+#| fig-cap: "GRF CATE of the Muslim profile by q_religion (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts. Rare categories give wide CIs."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_religion"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_class {#sec-dict-q-class}
+
+```{r}
+#| label: fig-grf-dict-q-class
+#| fig-cap: "GRF CATE of the Muslim profile by q_class (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_class"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_eu_efficacy_understand {#sec-dict-q-eu-efficacy-understand}
+
+```{r}
+#| label: fig-grf-dict-q-eu-efficacy-understand
+#| fig-cap: "GRF CATE of the Muslim profile by q_eu_efficacy_understand (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_eu_efficacy_understand"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_pop_reps {#sec-dict-q-pop-reps}
+
+```{r}
+#| label: fig-grf-dict-q-pop-reps
+#| fig-cap: "GRF CATE of the Muslim profile by q_pop_reps (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_pop_reps"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_pop_goodevil {#sec-dict-q-pop-goodevil}
+
+```{r}
+#| label: fig-grf-dict-q-pop-goodevil
+#| fig-cap: "GRF CATE of the Muslim profile by q_pop_goodevil (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_pop_goodevil"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_pop_compromise {#sec-dict-q-pop-compromise}
+
+```{r}
+#| label: fig-grf-dict-q-pop-compromise
+#| fig-cap: "GRF CATE of the Muslim profile by q_pop_compromise (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_pop_compromise"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_dem_compromise {#sec-dict-q-dem-compromise}
+
+```{r}
+#| label: fig-grf-dict-q-dem-compromise
+#| fig-cap: "GRF CATE of the Muslim profile by q_dem_compromise (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_dem_compromise"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_dem_listen {#sec-dict-q-dem-listen}
+
+```{r}
+#| label: fig-grf-dict-q-dem-listen
+#| fig-cap: "GRF CATE of the Muslim profile by q_dem_listen (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_dem_listen"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_tech_experts {#sec-dict-q-tech-experts}
+
+```{r}
+#| label: fig-grf-dict-q-tech-experts
+#| fig-cap: "GRF CATE of the Muslim profile by q_tech_experts (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_tech_experts"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_tech_leaders {#sec-dict-q-tech-leaders}
+
+```{r}
+#| label: fig-grf-dict-q-tech-leaders
+#| fig-cap: "GRF CATE of the Muslim profile by q_tech_leaders (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_tech_leaders"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_party_harm {#sec-dict-q-party-harm}
+
+```{r}
+#| label: fig-grf-dict-q-party-harm
+#| fig-cap: "GRF CATE of the Muslim profile by q_party_harm (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_party_harm"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_people_incompetent {#sec-dict-q-people-incompetent}
+
+```{r}
+#| label: fig-grf-dict-q-people-incompetent
+#| fig-cap: "GRF CATE of the Muslim profile by q_people_incompetent (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_people_incompetent"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_eu_longterm {#sec-dict-q-eu-longterm}
+
+```{r}
+#| label: fig-grf-dict-q-eu-longterm
+#| fig-cap: "GRF CATE of the Muslim profile by q_eu_longterm (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_eu_longterm"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_eu_responsive {#sec-dict-q-eu-responsive}
+
+```{r}
+#| label: fig-grf-dict-q-eu-responsive
+#| fig-cap: "GRF CATE of the Muslim profile by q_eu_responsive (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_eu_responsive"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_eu_imp_nat_econ {#sec-dict-q-eu-imp-nat-econ}
+
+```{r}
+#| label: fig-grf-dict-q-eu-imp-nat-econ
+#| fig-cap: "GRF CATE of the Muslim profile by q_eu_imp_nat_econ (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_eu_imp_nat_econ"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_eu_imp_nat_cul {#sec-dict-q-eu-imp-nat-cul}
+
+```{r}
+#| label: fig-grf-dict-q-eu-imp-nat-cul
+#| fig-cap: "GRF CATE of the Muslim profile by q_eu_imp_nat_cul (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_eu_imp_nat_cul"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_eu_imp_nat_pol {#sec-dict-q-eu-imp-nat-pol}
+
+```{r}
+#| label: fig-grf-dict-q-eu-imp-nat-pol
+#| fig-cap: "GRF CATE of the Muslim profile by q_eu_imp_nat_pol (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_eu_imp_nat_pol"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_eu_abolish {#sec-dict-q-eu-abolish}
+
+```{r}
+#| label: fig-grf-dict-q-eu-abolish
+#| fig-cap: "GRF CATE of the Muslim profile by q_eu_abolish (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_eu_abolish"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_eu_satisfaction {#sec-dict-q-eu-satisfaction}
+
+```{r}
+#| label: fig-grf-dict-q-eu-satisfaction
+#| fig-cap: "GRF CATE of the Muslim profile by q_eu_satisfaction (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_eu_satisfaction"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_rural_urban {#sec-dict-q-rural-urban}
+
+```{r}
+#| label: fig-grf-dict-q-rural-urban
+#| fig-cap: "GRF CATE of the Muslim profile by q_rural_urban (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_rural_urban"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_edu_age_stop {#sec-dict-q-edu-age-stop}
+
+```{r}
+#| label: fig-grf-dict-q-edu-age-stop
+#| fig-cap: "GRF CATE of the Muslim profile across deciles of q_edu_age_stop (Dictator): per-bin subset ATE with honest cluster-robust 95% CI (ribbon); rug shows the covariate distribution."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_edu_age_stop"
+col <- m_dict[[mod]]
+bin <- ntile(col, 10)
+rows <- list()
+for (k in sort(unique(bin))) {
+  sel <- bin == k
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(k)]] <- tibble(
+    bin = k,
+    x_pos = mean(col[sel]),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(lower = estimate - 1.96 * se, upper = estimate + 1.96 * se)
+ggplot(cate, aes(x = x_pos)) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, fill = "#0072B2") +
+  geom_line(aes(y = estimate), colour = "#0072B2", linewidth = 0.8) +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 1.5) +
+  # geom_rug(
+  #   data = tibble(value = {
+  #     v <- col[!is.na(col)]
+  #     if (length(v) > 2000) v[seq(1, length(v), length.out = 2000)] else v
+  #   }),
+  #   aes(x = value),
+  #   sides = "b",
+  #   alpha = 0.15,
+  #   colour = "#0072B2",
+  #   inherit.aes = FALSE
+  # ) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr()
+```
+
+# Trust game {#sec-trust}
+
+## Average treatment effect {#sec-trust-ate}
+
+```{r}
+#| label: ate-trust
+ate_trust <- grf::average_treatment_effect(cf_trust, target.sample = "all")
+cat(sprintf(
+  "Trust ATE: %.4f  (SE %.4f);  95%% CI [%.4f, %.4f]\n",
+  ate_trust["estimate"],
+  ate_trust["std.err"],
+  ate_trust["estimate"] - 1.96 * ate_trust["std.err"],
+  ate_trust["estimate"] + 1.96 * ate_trust["std.err"]
+))
+```
+
+## Targeting Operator Characteristic (RATE) {#sec-trust-toc}
+
+```{r}
+#| label: fig-grf-trust-toc
+#| fig-cap: "GRF Targeting Operator Characteristic curve (Trust game): ATE among the top-q fraction by predicted CATE minus the overall ATE, with 95% CI. AUTOC summarises the area under the curve."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+prio_trust <- predict(cf_trust)$predictions
+rate_trust <- grf::rank_average_treatment_effect(cf_trust, prio_trust)
+print(rate_trust)
+
+toc_trust <- rate_trust$TOC |>
+  mutate(lower = estimate - 1.96 * std.err, upper = estimate + 1.96 * std.err)
+
+ggplot(toc_trust, aes(x = q, y = estimate)) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, fill = "#0072B2") +
+  geom_line(colour = "#0072B2", linewidth = 0.8) +
+  labs(
+    title = sprintf(
+      "TOC (Trust): AUTOC = %.3f (SE %.3f)",
+      rate_trust$estimate,
+      rate_trust$std.err
+    ),
+    x = "Treated fraction q (highest predicted CATE first)",
+    y = "ATE(top q) - ATE(all)"
+  ) +
+  ggpubr::theme_pubr()
+```
+
+## Best linear projection {#sec-trust-blp}
+
+```{r}
+#| label: fig-grf-trust-blp
+#| fig-cap: "GRF best linear projection of the CATE onto the moderator set (Trust game), with 95% CIs. Appendix-style linear summary of effect modification."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 9
+blp_trust <- grf::best_linear_projection(cf_trust, X_trust)
+blp_trust_df <- blp_trust |>
+  unclass() |>
+  as.data.frame() |>
+  tibble::rownames_to_column("term") |>
+  as_tibble() |>
+  rename(estimate = Estimate, std_error = `Std. Error`) |>
+  mutate(
+    lower = estimate - 1.96 * std_error,
+    upper = estimate + 1.96 * std_error
+  ) |>
+  filter(term != "(Intercept)")
+
+ggplot(blp_trust_df, aes(x = estimate, y = fct_reorder(term, estimate))) +
+  geom_vline(xintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_pointrange(aes(xmin = lower, xmax = upper), colour = "#0072B2") +
+  labs(
+    title = "Best linear projection of the CATE (Trust)",
+    x = "Projection coefficient",
+    y = NULL
+  ) +
+  ggpubr::theme_pubr()
+```
+
+## Variable importance {#sec-trust-vi}
+
+```{r}
+#| label: fig-grf-trust-vi
+#| fig-cap: "GRF variable importance (Trust game), aggregated to the original moderators. Profile-level and respondent-level moderators distinguished by colour. Country fixed-effect columns excluded."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 7
+vi_trust <- grf::variable_importance(cf_trust)
+vi_trust_df <- tibble(
+  column = colnames(cf_trust$X.orig),
+  importance = as.numeric(vi_trust)
+) |>
+  mutate(
+    moderator = map_chr(column, function(cn) {
+      hit <- all_mods[startsWith(cn, all_mods)]
+      if (length(hit) == 0) NA_character_ else hit[which.max(nchar(hit))]
+    })
+  ) |>
+  filter(!is.na(moderator)) |>
+  summarise(importance = sum(importance), .by = moderator) |>
+  mutate(
+    family = if_else(
+      moderator %in% prof_mods,
+      "Profile-level",
+      "Respondent-level"
+    ),
+    moderator = fct_reorder(moderator, importance)
+  )
+
+ggplot(vi_trust_df, aes(x = importance, y = moderator, fill = family)) +
+  geom_col() +
+  scale_fill_manual(
+    values = c("Profile-level" = "#D55E00", "Respondent-level" = "#0072B2")
+  ) +
+  labs(
+    title = "Variable importance (Trust)",
+    x = "Importance (depth-weighted split frequency)",
+    y = NULL,
+    fill = NULL
+  ) +
+  ggpubr::theme_pubr()
+```
+
+## CATE by moderator — conjoint round-level {#sec-trust-prof}
+
+### cj_nat {#sec-trust-cj-nat}
+
+```{r}
+#| label: fig-grf-trust-cj-nat
+#| fig-cap: "GRF CATE of the Muslim profile by cj_nat (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "cj_nat"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### cj_eupos {#sec-trust-cj-eupos}
+
+```{r}
+#| label: fig-grf-trust-cj-eupos
+#| fig-cap: "GRF CATE of the Muslim profile by cj_eupos (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "cj_eupos"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### cj_age {#sec-trust-cj-age}
+
+```{r}
+#| label: fig-grf-trust-cj-age
+#| fig-cap: "GRF CATE of the Muslim profile by cj_age (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "cj_age"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### cj_sex {#sec-trust-cj-sex}
+
+```{r}
+#| label: fig-grf-trust-cj-sex
+#| fig-cap: "GRF CATE of the Muslim profile by cj_sex (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "cj_sex"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### cj_class {#sec-trust-cj-class}
+
+```{r}
+#| label: fig-grf-trust-cj-class
+#| fig-cap: "GRF CATE of the Muslim profile by cj_class (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "cj_class"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+## CATE by moderator — respondent-level {#sec-trust-resp}
+
+### q_gender {#sec-trust-q-gender}
+
+```{r}
+#| label: fig-grf-trust-q-gender
+#| fig-cap: "GRF CATE of the Muslim profile by q_gender (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_gender"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_age {#sec-trust-q-age}
+
+```{r}
+#| label: fig-grf-trust-q-age
+#| fig-cap: "GRF CATE of the Muslim profile across deciles of q_age (Trust): per-bin subset ATE with honest cluster-robust 95% CI (ribbon); rug shows the covariate distribution."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_age"
+col <- m_trust[[mod]]
+bin <- ntile(col, 10)
+rows <- list()
+for (k in sort(unique(bin))) {
+  sel <- bin == k
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(k)]] <- tibble(
+    bin = k,
+    x_pos = mean(col[sel]),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(lower = estimate - 1.96 * se, upper = estimate + 1.96 * se)
+ggplot(cate, aes(x = x_pos)) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, fill = "#0072B2") +
+  geom_line(aes(y = estimate), colour = "#0072B2", linewidth = 0.8) +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 1.5) +
+  # geom_rug(
+  #   data = tibble(value = {
+  #     v <- col[!is.na(col)]
+  #     if (length(v) > 2000) v[seq(1, length(v), length.out = 2000)] else v
+  #   }),
+  #   aes(x = value),
+  #   sides = "b",
+  #   alpha = 0.15,
+  #   colour = "#0072B2",
+  #   inherit.aes = FALSE
+  # ) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr()
+```
+
+### q_identity_country {#sec-trust-q-identity-country}
+
+```{r}
+#| label: fig-grf-trust-q-identity-country
+#| fig-cap: "GRF CATE of the Muslim profile by q_identity_country (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_identity_country"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_identity_eu {#sec-trust-q-identity-eu}
+
+```{r}
+#| label: fig-grf-trust-q-identity-eu
+#| fig-cap: "GRF CATE of the Muslim profile by q_identity_eu (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_identity_eu"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_identity_europe {#sec-trust-q-identity-europe}
+
+```{r}
+#| label: fig-grf-trust-q-identity-europe
+#| fig-cap: "GRF CATE of the Muslim profile by q_identity_europe (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_identity_europe"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_religion {#sec-trust-q-religion}
+
+```{r}
+#| label: fig-grf-trust-q-religion
+#| fig-cap: "GRF CATE of the Muslim profile by q_religion (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts. Rare categories give wide CIs."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_religion"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_class {#sec-trust-q-class}
+
+```{r}
+#| label: fig-grf-trust-q-class
+#| fig-cap: "GRF CATE of the Muslim profile by q_class (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_class"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_eu_efficacy_understand {#sec-trust-q-eu-efficacy-understand}
+
+```{r}
+#| label: fig-grf-trust-q-eu-efficacy-understand
+#| fig-cap: "GRF CATE of the Muslim profile by q_eu_efficacy_understand (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_eu_efficacy_understand"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_pop_reps {#sec-trust-q-pop-reps}
+
+```{r}
+#| label: fig-grf-trust-q-pop-reps
+#| fig-cap: "GRF CATE of the Muslim profile by q_pop_reps (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_pop_reps"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_pop_goodevil {#sec-trust-q-pop-goodevil}
+
+```{r}
+#| label: fig-grf-trust-q-pop-goodevil
+#| fig-cap: "GRF CATE of the Muslim profile by q_pop_goodevil (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_pop_goodevil"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_pop_compromise {#sec-trust-q-pop-compromise}
+
+```{r}
+#| label: fig-grf-trust-q-pop-compromise
+#| fig-cap: "GRF CATE of the Muslim profile by q_pop_compromise (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_pop_compromise"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_dem_compromise {#sec-trust-q-dem-compromise}
+
+```{r}
+#| label: fig-grf-trust-q-dem-compromise
+#| fig-cap: "GRF CATE of the Muslim profile by q_dem_compromise (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_dem_compromise"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_dem_listen {#sec-trust-q-dem-listen}
+
+```{r}
+#| label: fig-grf-trust-q-dem-listen
+#| fig-cap: "GRF CATE of the Muslim profile by q_dem_listen (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_dem_listen"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_tech_experts {#sec-trust-q-tech-experts}
+
+```{r}
+#| label: fig-grf-trust-q-tech-experts
+#| fig-cap: "GRF CATE of the Muslim profile by q_tech_experts (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_tech_experts"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_tech_leaders {#sec-trust-q-tech-leaders}
+
+```{r}
+#| label: fig-grf-trust-q-tech-leaders
+#| fig-cap: "GRF CATE of the Muslim profile by q_tech_leaders (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_tech_leaders"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_party_harm {#sec-trust-q-party-harm}
+
+```{r}
+#| label: fig-grf-trust-q-party-harm
+#| fig-cap: "GRF CATE of the Muslim profile by q_party_harm (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_party_harm"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_people_incompetent {#sec-trust-q-people-incompetent}
+
+```{r}
+#| label: fig-grf-trust-q-people-incompetent
+#| fig-cap: "GRF CATE of the Muslim profile by q_people_incompetent (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_people_incompetent"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_eu_longterm {#sec-trust-q-eu-longterm}
+
+```{r}
+#| label: fig-grf-trust-q-eu-longterm
+#| fig-cap: "GRF CATE of the Muslim profile by q_eu_longterm (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_eu_longterm"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_eu_responsive {#sec-trust-q-eu-responsive}
+
+```{r}
+#| label: fig-grf-trust-q-eu-responsive
+#| fig-cap: "GRF CATE of the Muslim profile by q_eu_responsive (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_eu_responsive"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_eu_imp_nat_econ {#sec-trust-q-eu-imp-nat-econ}
+
+```{r}
+#| label: fig-grf-trust-q-eu-imp-nat-econ
+#| fig-cap: "GRF CATE of the Muslim profile by q_eu_imp_nat_econ (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_eu_imp_nat_econ"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_eu_imp_nat_cul {#sec-trust-q-eu-imp-nat-cul}
+
+```{r}
+#| label: fig-grf-trust-q-eu-imp-nat-cul
+#| fig-cap: "GRF CATE of the Muslim profile by q_eu_imp_nat_cul (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_eu_imp_nat_cul"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_eu_imp_nat_pol {#sec-trust-q-eu-imp-nat-pol}
+
+```{r}
+#| label: fig-grf-trust-q-eu-imp-nat-pol
+#| fig-cap: "GRF CATE of the Muslim profile by q_eu_imp_nat_pol (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_eu_imp_nat_pol"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_eu_abolish {#sec-trust-q-eu-abolish}
+
+```{r}
+#| label: fig-grf-trust-q-eu-abolish
+#| fig-cap: "GRF CATE of the Muslim profile by q_eu_abolish (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_eu_abolish"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_eu_satisfaction {#sec-trust-q-eu-satisfaction}
+
+```{r}
+#| label: fig-grf-trust-q-eu-satisfaction
+#| fig-cap: "GRF CATE of the Muslim profile by q_eu_satisfaction (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_eu_satisfaction"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_rural_urban {#sec-trust-q-rural-urban}
+
+```{r}
+#| label: fig-grf-trust-q-rural-urban
+#| fig-cap: "GRF CATE of the Muslim profile by q_rural_urban (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_rural_urban"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### q_edu_age_stop {#sec-trust-q-edu-age-stop}
+
+```{r}
+#| label: fig-grf-trust-q-edu-age-stop
+#| fig-cap: "GRF CATE of the Muslim profile across deciles of q_edu_age_stop (Trust): per-bin subset ATE with honest cluster-robust 95% CI (ribbon); rug shows the covariate distribution."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "q_edu_age_stop"
+col <- m_trust[[mod]]
+bin <- ntile(col, 10)
+rows <- list()
+for (k in sort(unique(bin))) {
+  sel <- bin == k
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(k)]] <- tibble(
+    bin = k,
+    x_pos = mean(col[sel]),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(lower = estimate - 1.96 * se, upper = estimate + 1.96 * se)
+ggplot(cate, aes(x = x_pos)) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, fill = "#0072B2") +
+  geom_line(aes(y = estimate), colour = "#0072B2", linewidth = 0.8) +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 1.5) +
+  # geom_rug(
+  #   data = tibble(value = {
+  #     v <- col[!is.na(col)]
+  #     if (length(v) > 2000) v[seq(1, length(v), length.out = 2000)] else v
+  #   }),
+  #   aes(x = value),
+  #   sides = "b",
+  #   alpha = 0.15,
+  #   colour = "#0072B2",
+  #   inherit.aes = FALSE
+  # ) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr()
+```
+
+# Session Info {#sec-session-info .appendix .unnumbered}
+
+```{r}
+#| label: session-info
+#| eval: true
+#| echo: true
+session_info()
+```
+
+# Execution Time {#sec-exec-time .appendix .unnumbered}
+
+```{r}
+#| label: exec-time
+#| eval: true
+#| echo: true
+#| include: true
+end_time <- Sys.time()
+exec_time <- end_time - start_time
+cat(paste(
+  "R code execution time:",
+  round(as.numeric(exec_time, units = "secs"), 2),
+  "seconds."
+))
+```
