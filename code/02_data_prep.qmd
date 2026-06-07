@@ -212,6 +212,7 @@ pids_in_games <- eu25games2019 |>
 
 # keep all w2 + w3 rows; from w1 keep only pids that reappear in w2 or w3
 eu25games2019 <- eu25games2019 |>
+  # n = 103,685 -> 70,685 (dropped 33,000: wave-1-only respondents who never played a game)
   filter(meta_wave %in% c(2, 3) | meta_pid %in% pids_in_games)
 
 cat("Observations remaining:\n")
@@ -341,6 +342,7 @@ vars_pre_game <- c(
 #| label: survey-cleaning
 eu25games2019_clean <- eu25games2019 |>
   # only respondents who passed attention check
+  # n = 70,685 -> 41,457 (dropped 29,228: failed attention check der_att_check_3)
   filter(der_att_check_3)
 
 # still pid duplicates?
@@ -420,16 +422,21 @@ to_remove <- eu25games2019_clean |>
 # implement "cleaning" steps
 eu25games2019_clean2 <- eu25games2019_clean |>
   # only complete responses
+  # n = 41,457 -> 36,912 (dropped 4,545: incomplete responses)
   filter(meta_finished) |>
   # remove identified specialists
+  # n = 36,912 -> 36,881 (dropped 31: duplicate-PID specialists with completed games)
   filter(!(meta_pid %in% to_remove)) |>
   # keep only respondents who appear in w2 or w3, including their w1 rows if they exist
+  # n = 36,881 -> 35,235 (dropped 1,646: pids never present in w2/w3)
   filter(meta_pid %in% meta_pid[meta_wave %in% c(2, 3)]) |>
   # remove duplicate IDs in w1
+  # n = 35,235 -> 35,212 (dropped 23: three duplicate w1 IDs)
   filter(!(meta_wave == 1 & meta_pid == "1078674746")) |>
   filter(!(meta_wave == 1 & meta_pid == "1277956255")) |>
   filter(!(meta_wave == 1 & meta_pid == "1516614375")) |>
   # remove NA IDs in w1
+  # n = 35,212 -> 35,212 (dropped 0: no NA w1 IDs remain after prior filters)
   filter(!(meta_wave == 1 & is.na(meta_pid)))
 ```
 
@@ -579,6 +586,7 @@ eu25games2019_clean_selected_final <- eu25games2019_clean_selected |>
     -q_election_importance_self,
     -q_nationality # correlates with meta_country
   ) |>
+  # n = 35,212 -> 28,201 (dropped 7,011: NA cleaning -- rows with any remaining missing covariate)
   na.omit()
 ```
 
@@ -591,6 +599,7 @@ eu25games2019_clean_selected_final <- eu25games2019_clean_selected |>
 # select relevant variables
 eu25_long <- eu25games2019_clean_selected_final |>
   # to long format
+  # n = 28,201 -> 169,206 (reshape, not a drop: x6 = 2 games x 3 rounds; 84,603 rows per game)
   pivot_longer(
     cols = -c(
       starts_with("meta_"),
