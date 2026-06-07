@@ -626,8 +626,9 @@ eu25_long <- eu25games2019_clean_selected_final |>
 
 ```{r}
 #| label: tbl-descriptives
-
-
+# respondent covariates --------------------------------------------------------
+# gender
+skimr::skim(eu25_long)
 ```
 
 # Save long format data
