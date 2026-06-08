@@ -169,7 +169,7 @@ The y-axis label, shared by every CATE figure.
 
 ```{r}
 #| label: ylab
-yl <- "CATE (effect of Muslim profile)"
+yl <- expression(widehat(CATE))
 ```
 
 # Dictator game {#sec-dict}
@@ -3174,17 +3174,54 @@ theme_mbeu <- function(base_size = 11) {
 }
 ref_zero <- geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60")
 dodge <- position_dodge(width = 0.5)
-yl_cate <- "CATE (effect of Muslim profile)"
+yl_cate <- expression(widehat(CATE))
+```
+
+## Presentational moderator transforms {#sec-combined-transforms}
+
+Two display-only recodings, applied to the plotting copies `m_dict` / `m_trust` only.
+The forest design matrices `X_dict` / `X_trust` were built far above, so the best linear
+projection and variable-importance figures are untouched; only the CATE-by-moderator panels
+below see these.
+The three identity scales run `1` (most attached) to `5` (least attached); we reverse them to
+`6 - x` so that, like every other panel, moving right means *more* of the construct (more
+attachment).
+`q_class` is reordered from working class up to higher class, with the non-substantive
+`dont_know` last, so the facet reads as a status gradient rather than alphabetically.
+
+```{r}
+#| label: combined-transforms
+class_order <- c(
+  "working_class", "lower_middle_class", "middle_class",
+  "upper_middle_class", "higher_class", "dont_know", "other"
+)
+flip5 <- \(x) 6 - x # identity scales: 1 = most attached -> 5 after flip
+for (nm in c("m_dict", "m_trust")) {
+  assign(nm, get(nm) |>
+    mutate(
+      across(
+        c(q_identity_country, q_identity_eu, q_identity_europe),
+        flip5
+      ),
+      q_class = factor(q_class, levels = class_order)
+    ))
+}
 ```
 
 ## Builders {#sec-combined-build}
 
-`cate_one()` returns the per-level (or per-decile, for the two genuinely continuous moderators)
+`cate_one()` returns the per-level (or per-grid-cell, for the two genuinely continuous moderators)
 subset ATE and 95% CI for one moderator in one game, tagging whether the moderator is an ordered
 numeric scale (which earns a connecting line) and carrying the per-level count `n`.
-Levels with fewer than 500 rows in that game are dropped to keep the facets legible, and `cj_age`
-is treated as discrete (points only, no line) because its five values are fixed conjoint ages, not
-a continuous scale.
+Discrete levels comprising fewer than 1% of that game's sample are dropped, because their subset
+CATE is too imprecisely estimated to compare against the well-populated levels; `cj_age` is treated
+as discrete (points only, no line) because its five values are fixed conjoint ages, not a
+continuous scale.
+The two genuinely continuous moderators are binned on a **fixed display grid** rather than into
+deciles — `q_age` over 100 equal intervals across 18–75, `q_edu_age_stop` at each integer year
+15–30 — so the line spans the full range (decile bins were plotted at their bin *means*, which is
+why the old `q_age` line began near 25 rather than 18); the 1% rule is not applied to these grid
+cells, since the full range is shown by design.
 `build_comb()` stacks that over a set of moderators and both games.
 `plot_comb()` draws the faceted overview with a free y-axis per facet: grey per-level count bars
 (pooled over the games shown) along the bottom, points and CIs dodged by game everywhere, plus a
@@ -3192,11 +3229,38 @@ connecting line on the ordered-scale facets only.
 
 ```{r}
 #| label: combined-builders
+# fixed display grids for the two genuinely continuous moderators
+cont_grids <- list(
+  q_age = seq(18, 75, length.out = 101), # 100 intervals over the full range
+  q_edu_age_stop = seq(14.5, 30.5, by = 1) # integer years 15..30
+)
+
 cate_one <- function(cf, mm, mod, game_label) {
   v <- mm[[mod]]
   is_num <- is.numeric(v)
-  # continuous moderators: decile bins, integer labels
+  # genuinely continuous moderators
   if (is_num && length(unique(v)) > 12) {
+    # fixed-grid moderators: subset ATE per non-empty grid cell, plotted at the
+    # cell midpoint so the line spans the full display range
+    if (mod %in% names(cont_grids)) {
+      br <- cont_grids[[mod]]
+      cell <- cut(v, breaks = br, include.lowest = TRUE)
+      mids <- (head(br, -1) + tail(br, -1)) / 2
+      rows <- lapply(which(tabulate(cell, nbins = length(mids)) > 0), function(k) {
+        sel <- !is.na(cell) & as.integer(cell) == k
+        a <- grf::average_treatment_effect(cf, subset = sel)
+        tibble(
+          mod = mod, level = as.character(round(mids[k])),
+          order = mids[k], is_scale = TRUE, game = game_label,
+          n = sum(sel),
+          estimate = a["estimate"],
+          lower = a["estimate"] - 1.96 * a["std.err"],
+          upper = a["estimate"] + 1.96 * a["std.err"]
+        )
+      })
+      return(bind_rows(rows))
+    }
+    # fallback: decile bins, integer labels
     bin <- ntile(v, 10)
     rows <- lapply(sort(unique(bin)), function(k) {
       sel <- bin == k
@@ -3212,12 +3276,19 @@ cate_one <- function(cf, mm, mod, game_label) {
     })
     return(bind_rows(rows))
   }
-  levs <- if (is_num) sort(unique(v)) else sort(unique(as.character(v)))
+  # discrete moderators: honor factor level order; drop levels below 1% of the game sample
+  levs <- if (is_num) {
+    sort(unique(v))
+  } else if (is.factor(v)) {
+    levels(droplevels(v))
+  } else {
+    sort(unique(as.character(v)))
+  }
   rows <- lapply(seq_along(levs), function(i) {
     lev <- levs[i]
     sel <- if (is_num) v == lev else as.character(v) == lev
-    # drop sparse levels (within game)
-    if (sum(sel) < 500) {
+    # drop rare levels (< 1% of the game sample): subset CATE too imprecise to compare
+    if (sum(sel) / sum(!is.na(v)) < 0.01) {
       return(NULL)
     }
     a <- grf::average_treatment_effect(cf, subset = sel)
@@ -3308,7 +3379,7 @@ plot_comb <- function(df, ncol, title) {
     theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 7))
 }
 
-# one continuous moderator: decile CATE ribbon + real histogram, x trimmed to xlim
+# one continuous moderator: fixed-grid CATE ribbon + real histogram, x trimmed to xlim
 cont_panel <- function(mod, xlim) {
   d <- build_comb(mod)
   # covariate distribution within the visible range
@@ -3353,7 +3424,7 @@ is drawn as dodged points only.
 
 ```{r}
 #| label: fig-grf-combined-prof
-#| fig-cap: "GRF CATE of the Muslim profile (y-axis) across the levels of every conjoint-round moderator (x-axis), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. Points are per-level doubly-robust subset ATEs and the vertical bars are honest cluster-robust 95% confidence intervals (each a separate average_treatment_effect() call on that subset, clustered by respondent). Grey bars along the bottom of each facet show the per-level row count (pooled over games). The y-axis is free per facet; levels with fewer than 500 rows in a game are dropped for legibility."
+#| fig-cap: "GRF CATE of the Muslim profile (y-axis) across the levels of every conjoint-round moderator (x-axis), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. Points are per-level doubly-robust subset ATEs and the vertical bars are honest cluster-robust 95% confidence intervals (each a separate average_treatment_effect() call on that subset, clustered by respondent). Grey bars along the bottom of each facet show the per-level row count (pooled over games). The y-axis is free per facet; levels comprising less than 1% of a game's sample are dropped because their subset CATE is too imprecise to compare."
 #| dpi: 500
 #| fig-width: 9
 #| fig-height: 6
@@ -3371,6 +3442,9 @@ beside the discrete moderators it belongs with.
 Ordered numeric scales (the 5- and 7-point items) now carry the same ribbon styling as the
 continuous panels — an overlaid 95% CI band plus connecting line per game; categorical moderators
 keep dodged points and CIs.
+The three identity scales (`q_identity_country`, `q_identity_eu`, `q_identity_europe`) are reversed
+for display so higher on the x-axis means *more* attachment, and `q_class` is ordered from working
+class up to higher class with `dont_know` last.
 The shared game legend is drawn once, from the top panel.
 
 ```{r}
@@ -3383,7 +3457,7 @@ resp_half2 <- resp_cat[(half + 1):length(resp_cat)]
 
 ```{r}
 #| label: fig-grf-combined-resp-1
-#| fig-cap: "GRF CATE of the Muslim profile (y-axis) across the levels of the first half of the discrete individual-level moderators (top panel) and across age (q_age, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. Top: points are per-level doubly-robust subset ATEs with honest cluster-robust 95% confidence intervals (each a separate average_treatment_effect() call on that subset, clustered by respondent); ordered numeric scales are drawn as a connecting line and 95% CI ribbon, categorical moderators as dodged points and CIs; grey bars show the per-level row count (pooled over games). Bottom: per-decile subset ATE, 95% CI ribbon, and connecting line per game over a grey histogram of the covariate; the x-axis is truncated to 18–75 years. The y-axis is free per facet; levels with fewer than 500 rows in a game are dropped for legibility."
+#| fig-cap: "GRF CATE of the Muslim profile (y-axis) across the levels of the first half of the discrete individual-level moderators (top panel) and across age (q_age, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. Identity scales are reversed so higher means more attachment; q_class runs working class up to higher class with dont_know last. Top: points are per-level doubly-robust subset ATEs with honest cluster-robust 95% confidence intervals (each a separate average_treatment_effect() call on that subset, clustered by respondent); ordered numeric scales are drawn as a connecting line and 95% CI ribbon, categorical moderators as dodged points and CIs; grey bars show the per-level row count (pooled over games). Bottom: per-grid-cell subset ATE, 95% CI ribbon, and connecting line per game over a grey histogram of the covariate, on 100 equal intervals across the full 18–75 years. The y-axis is free per facet; discrete levels comprising less than 1% of a game's sample are dropped because their subset CATE is too imprecise to compare."
 #| dpi: 500
 #| fig-width: 11
 #| fig-height: 14
@@ -3400,7 +3474,7 @@ p_age <- cont_panel("q_age", c(18, 75)) +
 
 ```{r}
 #| label: fig-grf-combined-resp-2
-#| fig-cap: "GRF CATE of the Muslim profile (y-axis) across the levels of the second half of the discrete individual-level moderators (top panel) and across age at which education stopped (q_edu_age_stop, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. Top: points are per-level doubly-robust subset ATEs with honest cluster-robust 95% confidence intervals (each a separate average_treatment_effect() call on that subset, clustered by respondent); ordered numeric scales are drawn as a connecting line and 95% CI ribbon, categorical moderators as dodged points and CIs; grey bars show the per-level row count (pooled over games). Bottom: per-decile subset ATE, 95% CI ribbon, and connecting line per game over a grey histogram of the covariate; the x-axis is truncated to 15–30 years. The y-axis is free per facet; levels with fewer than 500 rows in a game are dropped for legibility."
+#| fig-cap: "GRF CATE of the Muslim profile (y-axis) across the levels of the second half of the discrete individual-level moderators (top panel) and across age at which education stopped (q_edu_age_stop, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. Identity scales are reversed so higher means more attachment; q_class runs working class up to higher class with dont_know last. Top: points are per-level doubly-robust subset ATEs with honest cluster-robust 95% confidence intervals (each a separate average_treatment_effect() call on that subset, clustered by respondent); ordered numeric scales are drawn as a connecting line and 95% CI ribbon, categorical moderators as dodged points and CIs; grey bars show the per-level row count (pooled over games). Bottom: subset ATE, 95% CI ribbon, and connecting line per game at each integer year of education-stopping age from 15 to 30, over a grey histogram of the covariate. The y-axis is free per facet; discrete levels comprising less than 1% of a game's sample are dropped because their subset CATE is too imprecise to compare."
 #| dpi: 500
 #| fig-width: 11
 #| fig-height: 14
