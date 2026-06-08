@@ -21,6 +21,7 @@ Yet, less is known about what drives variation in that frequently and robustly o
 Reanalyzing a large scale conjoint survey experiment fielded in 25 European Union member states [@hahm2023divided; @hahm2024divided], we analyze variation in the experimentally identified Muslim penalty to explore 1) what and how other conjoint features and 2) how individual level covariates affect the estimated Muslim bias.
 
 
+{{< embed code/09_main_figs_tables.qmd#fig-diff-in-means >}}
 
 ## Theory {#sec-theory}
 
@@ -31,20 +32,6 @@ Reanalyzing a large scale conjoint survey experiment fielded in 25 European Unio
 Our data structure is inherently hierarchical.
 Each respondent played three rounds of a Dictator (or Solidarity) game and a Trust game, the latter introduced announced reciprocity in the instructions.
 Additionally, given the cross-national structure, respondents are grouped into 25 countries.
-
-```{mermaid}
-%%{init: {'theme': 'neutral'}}%%
-flowchart TD
-    A["EU25 Dataset"] --> B["Country 1"]
-    A --> C["Country 2"]
-    A --> D["... Country 25"]
-    C --> E["Respondent 1"]
-    C --> F["Respondent 2"]
-    C --> G["... Respondent n"]
-    E --> H["Round 1"]
-    E --> I["Round 2"]
-    E --> J["Round 3"]
-```
 
 In each round, respondents received a fictional co-player with randomized attributes age, gender, social class, nationality, partisan affiliation, EU stance and religion.
 Randomization occured in multiple instances: both the order in which attributes were displayed as well as the *feature* of each attribute were both random by design.
@@ -115,10 +102,16 @@ Consequently, we retreive four main models, BCF and CF for the dictator and trus
 - A terminology clarification: in this literature "nested" usually denotes nested *estimands* [@robinson2024detect], whereas our random intercepts address the nested *sampling structure* — a separate concern.
 - The conjoint design supplies a known treatment propensity that is passed directly to the estimators; throughout, the analysis is descriptive and exploratory, with no causal claims beyond CATE estimation.
 
- 
 
 ## Empirical Analysis {#sec-analysis}
 
+Mention: recovered ATEs
+
+CF recovered an estimated ATE of -0.42 [-0.4569, -0.3860] in the dictator and -0.49 [-0.5234, -0.4465] in the trust game, which is less than the difference in means estimates presented earlier, but mirrors the same pattern: the penalty is slightly larger in the trust game.
+
+Fig 1: moderation by round level cj_covars
+
+Fig 2: moderation by individual level covars
 
 ## Conclusion {#sec-conclusion}
 
@@ -129,5 +122,22 @@ Consequently, we retreive four main models, BCF and CF for the dictator and trus
 ::: {#refs}
 :::
 
-## Appendix {.appendix}
+## Appendix {.unnumbered}
 
+### Appendix A {.unnumbered}
+
+#### Examplary Profile From Conjoint Experiment {.unnumbered}
+
+![Player 2 Profile Example. *Note:* Figure embedded from @hahm2024divided, Figure 1.](https://static.cambridge.org/binary/version/id/urn:cambridge.org:id:binary:20240123150926403-0273:S0003055423000266:S0003055423000266_fig1.png)
+
+#### Distribution of Outcome Variable {.unnumbered}
+
+{{< embed code/09_main_figs_tables.qmd#fig-outcome-distr >}}
+
+#### Distribution of Profile-level Covariates {.unnumbered}
+
+{{< embed code/09_main_figs_tables.qmd#tbl-balance-round-mods >}}
+
+#### Distribution of Respondent-level Covariates {.unnumbered}
+
+{{< embed code/09_main_figs_tables.qmd#tbl-balance-resp-mods >}}
