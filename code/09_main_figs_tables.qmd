@@ -30,6 +30,8 @@ p_required <- c(
   "here", # relative paths
   "ggpubr", # theme_pubr
   "patchwork", # multi-panel composition
+  "gtsummary",
+  "gt",
   "sessioninfo" # session docs
 )
 packages <- rownames(installed.packages())
@@ -223,7 +225,7 @@ numbers of decisions.
 
 ```{r}
 #| label: fig-outcome-distr
-#| fig-cap: "Distribution of outcomes (tokens allocated to the displayed profile) by game. Height of bars are the within-game share of decisions at each integer token value, connected within game."
+#| fig-cap: "Distribution of outcomes (tokens allocated to the displayed profile) by game. Points are the within-game share of decisions at each integer token value, connected within game. $N=84.603$ in both games."
 #| fig-dpi: 500
 #| fig-width: 5.5
 #| fig-height: 3.4
@@ -252,11 +254,118 @@ outcome_distr |>
   scale_x_continuous(breaks = 0:10) +
   scale_y_continuous(labels = scales::label_percent()) +
   labs(
-    title = "Token allocations cluster at the endpoints in both games",
     x = "Tokens allocated to profile",
     y = "Share of decisions"
   ) +
   theme_mbeu()
+```
+
+# Data Covariate Balance Table
+
+```{r}
+#| label: tbl-balance-round-mods
+#| tbl-cap: "Profile level covariates distributions by treatment."
+prof_mods <- c("cj_nat", "cj_eupos", "cj_age", "cj_sex", "cj_class")
+resp_mods <- c(
+  "q_gender",
+  "q_age",
+  "q_identity_country",
+  "q_identity_eu",
+  "q_identity_europe",
+  "q_religion",
+  "q_class",
+  "q_eu_efficacy_understand",
+  "q_pop_reps",
+  "q_pop_goodevil",
+  "q_pop_compromise",
+  "q_dem_compromise",
+  "q_dem_listen",
+  "q_tech_experts",
+  "q_tech_leaders",
+  "q_party_harm",
+  "q_people_incompetent",
+  "q_eu_longterm",
+  "q_eu_responsive",
+  "q_eu_imp_nat_econ",
+  "q_eu_imp_nat_cul",
+  "q_eu_imp_nat_pol",
+  "q_eu_abolish",
+  "q_eu_satisfaction",
+  "q_rural_urban",
+  "q_edu_age_stop"
+)
+all_mods <- c(prof_mods, resp_mods)
+
+eu25_long |>
+  mutate(
+    treat = factor(
+      if_else(cj_rel == "muslim", "Muslim", "Non-Muslim"),
+      levels = c("Non-Muslim", "Muslim")
+    )
+  ) |>
+  select(
+    all_of(prof_mods),
+    treat
+  ) |>
+  tbl_summary(
+    by = treat
+  ) |>
+  modify_header(
+    label = "**Variable**"
+  ) |>
+  as_kable()
+```
+
+```{r}
+#| label: tbl-balance-resp-mods
+#| tbl-cap: "Individual level covariate distributions by treatment."
+#| warning: false
+#| message: false
+eu25_long |>
+  mutate(
+    treat = factor(
+      if_else(cj_rel == "muslim", "Muslim", "Non-Muslim"),
+      levels = c("Non-Muslim", "Muslim")
+    )
+  ) |>
+  select(
+    all_of(resp_mods),
+    treat,
+    meta_pid
+  ) |>
+  distinct(meta_pid, .keep_all = T) |>
+  select(-meta_pid) |>
+  tbl_summary(
+    by = treat,
+    type = list(
+      q_age ~ "continuous",
+      q_identity_country ~ "continuous",
+      q_identity_eu ~ "continuous",
+      q_identity_europe ~ "continuous",
+      q_eu_efficacy_understand ~ "continuous",
+      q_pop_reps ~ "continuous",
+      q_pop_goodevil ~ "continuous",
+      q_pop_compromise ~ "continuous",
+      q_dem_compromise ~ "continuous",
+      q_dem_listen ~ "continuous",
+      q_tech_experts ~ "continuous",
+      q_tech_leaders ~ "continuous",
+      q_party_harm ~ "continuous",
+      q_people_incompetent ~ "continuous",
+      q_eu_longterm ~ "continuous",
+      q_eu_responsive ~ "continuous",
+      q_eu_imp_nat_econ ~ "continuous",
+      q_eu_imp_nat_cul ~ "continuous",
+      q_eu_imp_nat_pol ~ "continuous",
+      q_eu_abolish ~ "continuous",
+      q_eu_satisfaction ~ "continuous",
+      q_edu_age_stop ~ "continuous"
+    )
+  ) |>
+  modify_header(
+    label = "**Variable**"
+  ) |>
+  as_kable()
 ```
 
 # Session Info {#sec-session-info .appendix .unnumbered}
