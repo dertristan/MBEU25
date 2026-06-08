@@ -417,7 +417,7 @@ ggplot(cate, aes(x = level)) +
 
 ```{r}
 #| label: fig-grf-dict-cj-age
-#| fig-cap: "GRF CATE of the Muslim profile by cj_age (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| fig-cap: "GRF CATE of the Muslim profile by cj_age (Dictator): connected per-level subset ATE with honest cluster-robust 95% CI ribbon (blue); grey bars show per-level counts."
 #| dpi: 500
 #| fig-width: 6.5
 #| fig-height: 4
@@ -428,35 +428,31 @@ for (lev in levs) {
   sel <- m_dict[[mod]] == lev
   a <- grf::average_treatment_effect(cf_dict, subset = sel)
   rows[[as.character(lev)]] <- tibble(
-    level = as.character(lev),
+    value = as.numeric(lev),
     n = sum(sel),
     estimate = a["estimate"],
     se = a["std.err"]
   )
 }
 cate <- bind_rows(rows) |>
-  mutate(
-    level = factor(level, levels = as.character(levs)),
-    lower = estimate - 1.96 * se,
-    upper = estimate + 1.96 * se
-  )
+  mutate(lower = estimate - 1.96 * se, upper = estimate + 1.96 * se)
 yr <- range(c(cate$lower, cate$upper))
 pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
 floor_y <- yr[1] - pad
 span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
 cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
-ggplot(cate, aes(x = level)) +
+ggplot(cate, aes(x = value)) +
   geom_segment(
-    aes(xend = level, y = floor_y, yend = bar_top),
+    aes(xend = value, y = floor_y, yend = bar_top),
     colour = "grey80",
     linewidth = 4
   ) +
   geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
-  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, fill = "#0072B2") +
+  geom_line(aes(y = estimate), colour = "#0072B2", linewidth = 0.8) +
   geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
   labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
-  ggpubr::theme_pubr() +
-  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+  ggpubr::theme_pubr()
 ```
 
 ### cj_sex {#sec-dict-cj-sex}
