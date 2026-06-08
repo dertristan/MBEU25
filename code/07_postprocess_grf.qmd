@@ -91,7 +91,7 @@ rm(p_required, p_to_install, packages)
 
 ```{r}
 #| label: load-data
-dat <- readRDS(here::here("data", "02_processed", "eu25_long.rds"))
+eu25_long <- readRDS(here::here("data", "02_processed", "eu25_long.rds"))
 cf_dict <- readRDS(here::here("data", "03_final", "grf_dictator.rds"))
 cf_trust <- readRDS(here::here("data", "03_final", "grf_trust.rds"))
 ```
@@ -144,14 +144,14 @@ each τ̂ aligns with its moderator value.
 ```{r}
 #| label: designs
 # dictator design (same row order as the fit)
-sub_dict <- dat |> filter(cj_game_type == "cj_dict")
+sub_dict <- eu25_long |> filter(cj_game_type == "cj_dict")
 m_dict <- sub_dict |>
   select(all_of(all_mods)) |>
   mutate(across(where(is.character), factor))
 X_dict <- model.matrix(~ . - 1, data = m_dict)
 
 # trust design (same row order as the fit)
-sub_trust <- dat |> filter(cj_game_type == "cj_trust")
+sub_trust <- eu25_long |> filter(cj_game_type == "cj_trust")
 m_trust <- sub_trust |>
   select(all_of(all_mods)) |>
   mutate(across(where(is.character), factor))
@@ -607,7 +607,7 @@ ggplot(cate, aes(x = level)) +
 
 ```{r}
 #| label: fig-grf-dict-q-age
-#| fig-cap: "GRF CATE of the Muslim profile across deciles of q_age (Dictator): per-bin subset ATE with honest cluster-robust 95% CI (ribbon); rug shows the covariate distribution."
+#| fig-cap: "GRF CATE of the Muslim profile across deciles of q_age (Dictator): per-bin subset ATE with honest cluster-robust 95% CI (ribbon); grey histogram shows the covariate distribution."
 #| dpi: 500
 #| fig-width: 6.5
 #| fig-height: 4
@@ -627,22 +627,25 @@ for (k in sort(unique(bin))) {
 }
 cate <- bind_rows(rows) |>
   mutate(lower = estimate - 1.96 * se, upper = estimate + 1.96 * se)
+# distribution band
+yr <- range(c(cate$lower, cate$upper))
+pad <- 0.12 * diff(yr)
+floor_y <- yr[1] - pad
+span <- 0.20 * diff(yr)
+h <- hist(col[!is.na(col)], breaks = 30, plot = FALSE)
+hd <- tibble(mid = h$mids, w = diff(h$breaks)[1], cnt = h$counts) |>
+  mutate(bar_top = floor_y + (cnt / max(cnt)) * span)
 ggplot(cate, aes(x = x_pos)) +
+  geom_rect(
+    data = hd,
+    aes(xmin = mid - w / 2, xmax = mid + w / 2, ymin = floor_y, ymax = bar_top),
+    fill = "grey80",
+    inherit.aes = FALSE
+  ) +
   geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, fill = "#0072B2") +
   geom_line(aes(y = estimate), colour = "#0072B2", linewidth = 0.8) +
   geom_point(aes(y = estimate), colour = "#0072B2", size = 1.5) +
-  # geom_rug(
-  #   data = tibble(value = {
-  #     v <- col[!is.na(col)]
-  #     if (length(v) > 2000) v[seq(1, length(v), length.out = 2000)] else v
-  #   }),
-  #   aes(x = value),
-  #   sides = "b",
-  #   alpha = 0.15,
-  #   colour = "#0072B2",
-  #   inherit.aes = FALSE
-  # ) +
   labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
   ggpubr::theme_pubr()
 ```
@@ -1709,7 +1712,7 @@ ggplot(cate, aes(x = level)) +
 
 ```{r}
 #| label: fig-grf-dict-q-edu-age-stop
-#| fig-cap: "GRF CATE of the Muslim profile across deciles of q_edu_age_stop (Dictator): per-bin subset ATE with honest cluster-robust 95% CI (ribbon); rug shows the covariate distribution."
+#| fig-cap: "GRF CATE of the Muslim profile across deciles of q_edu_age_stop (Dictator): per-bin subset ATE with honest cluster-robust 95% CI (ribbon); grey histogram shows the covariate distribution."
 #| dpi: 500
 #| fig-width: 6.5
 #| fig-height: 4
@@ -1729,22 +1732,25 @@ for (k in sort(unique(bin))) {
 }
 cate <- bind_rows(rows) |>
   mutate(lower = estimate - 1.96 * se, upper = estimate + 1.96 * se)
+# distribution band
+yr <- range(c(cate$lower, cate$upper))
+pad <- 0.12 * diff(yr)
+floor_y <- yr[1] - pad
+span <- 0.20 * diff(yr)
+h <- hist(col[!is.na(col)], breaks = 30, plot = FALSE)
+hd <- tibble(mid = h$mids, w = diff(h$breaks)[1], cnt = h$counts) |>
+  mutate(bar_top = floor_y + (cnt / max(cnt)) * span)
 ggplot(cate, aes(x = x_pos)) +
+  geom_rect(
+    data = hd,
+    aes(xmin = mid - w / 2, xmax = mid + w / 2, ymin = floor_y, ymax = bar_top),
+    fill = "grey80",
+    inherit.aes = FALSE
+  ) +
   geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, fill = "#0072B2") +
   geom_line(aes(y = estimate), colour = "#0072B2", linewidth = 0.8) +
   geom_point(aes(y = estimate), colour = "#0072B2", size = 1.5) +
-  # geom_rug(
-  #   data = tibble(value = {
-  #     v <- col[!is.na(col)]
-  #     if (length(v) > 2000) v[seq(1, length(v), length.out = 2000)] else v
-  #   }),
-  #   aes(x = value),
-  #   sides = "b",
-  #   alpha = 0.15,
-  #   colour = "#0072B2",
-  #   inherit.aes = FALSE
-  # ) +
   labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
   ggpubr::theme_pubr()
 ```
@@ -2156,7 +2162,7 @@ ggplot(cate, aes(x = level)) +
 
 ```{r}
 #| label: fig-grf-trust-q-age
-#| fig-cap: "GRF CATE of the Muslim profile across deciles of q_age (Trust): per-bin subset ATE with honest cluster-robust 95% CI (ribbon); rug shows the covariate distribution."
+#| fig-cap: "GRF CATE of the Muslim profile across deciles of q_age (Trust): per-bin subset ATE with honest cluster-robust 95% CI (ribbon); grey histogram shows the covariate distribution."
 #| dpi: 500
 #| fig-width: 6.5
 #| fig-height: 4
@@ -2176,22 +2182,25 @@ for (k in sort(unique(bin))) {
 }
 cate <- bind_rows(rows) |>
   mutate(lower = estimate - 1.96 * se, upper = estimate + 1.96 * se)
+# distribution band
+yr <- range(c(cate$lower, cate$upper))
+pad <- 0.12 * diff(yr)
+floor_y <- yr[1] - pad
+span <- 0.20 * diff(yr)
+h <- hist(col[!is.na(col)], breaks = 30, plot = FALSE)
+hd <- tibble(mid = h$mids, w = diff(h$breaks)[1], cnt = h$counts) |>
+  mutate(bar_top = floor_y + (cnt / max(cnt)) * span)
 ggplot(cate, aes(x = x_pos)) +
+  geom_rect(
+    data = hd,
+    aes(xmin = mid - w / 2, xmax = mid + w / 2, ymin = floor_y, ymax = bar_top),
+    fill = "grey80",
+    inherit.aes = FALSE
+  ) +
   geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, fill = "#0072B2") +
   geom_line(aes(y = estimate), colour = "#0072B2", linewidth = 0.8) +
   geom_point(aes(y = estimate), colour = "#0072B2", size = 1.5) +
-  # geom_rug(
-  #   data = tibble(value = {
-  #     v <- col[!is.na(col)]
-  #     if (length(v) > 2000) v[seq(1, length(v), length.out = 2000)] else v
-  #   }),
-  #   aes(x = value),
-  #   sides = "b",
-  #   alpha = 0.15,
-  #   colour = "#0072B2",
-  #   inherit.aes = FALSE
-  # ) +
   labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
   ggpubr::theme_pubr()
 ```
@@ -3258,7 +3267,7 @@ ggplot(cate, aes(x = level)) +
 
 ```{r}
 #| label: fig-grf-trust-q-edu-age-stop
-#| fig-cap: "GRF CATE of the Muslim profile across deciles of q_edu_age_stop (Trust): per-bin subset ATE with honest cluster-robust 95% CI (ribbon); rug shows the covariate distribution."
+#| fig-cap: "GRF CATE of the Muslim profile across deciles of q_edu_age_stop (Trust): per-bin subset ATE with honest cluster-robust 95% CI (ribbon); grey histogram shows the covariate distribution."
 #| dpi: 500
 #| fig-width: 6.5
 #| fig-height: 4
@@ -3278,22 +3287,25 @@ for (k in sort(unique(bin))) {
 }
 cate <- bind_rows(rows) |>
   mutate(lower = estimate - 1.96 * se, upper = estimate + 1.96 * se)
+# distribution band
+yr <- range(c(cate$lower, cate$upper))
+pad <- 0.12 * diff(yr)
+floor_y <- yr[1] - pad
+span <- 0.20 * diff(yr)
+h <- hist(col[!is.na(col)], breaks = 30, plot = FALSE)
+hd <- tibble(mid = h$mids, w = diff(h$breaks)[1], cnt = h$counts) |>
+  mutate(bar_top = floor_y + (cnt / max(cnt)) * span)
 ggplot(cate, aes(x = x_pos)) +
+  geom_rect(
+    data = hd,
+    aes(xmin = mid - w / 2, xmax = mid + w / 2, ymin = floor_y, ymax = bar_top),
+    fill = "grey80",
+    inherit.aes = FALSE
+  ) +
   geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
   geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, fill = "#0072B2") +
   geom_line(aes(y = estimate), colour = "#0072B2", linewidth = 0.8) +
   geom_point(aes(y = estimate), colour = "#0072B2", size = 1.5) +
-  # geom_rug(
-  #   data = tibble(value = {
-  #     v <- col[!is.na(col)]
-  #     if (length(v) > 2000) v[seq(1, length(v), length.out = 2000)] else v
-  #   }),
-  #   aes(x = value),
-  #   sides = "b",
-  #   alpha = 0.15,
-  #   colour = "#0072B2",
-  #   inherit.aes = FALSE
-  # ) +
   labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
   ggpubr::theme_pubr()
 ```
