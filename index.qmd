@@ -157,7 +157,13 @@ CF recovered an estimated ATE of -0.42 [-0.4569, -0.3860] in the dictator and -0
 
 Fig 1: moderation by round level cj_covars
 
+{{< embed code/07_postprocess_grf.qmd#fig-grf-combined-prof >}}
+
 Fig 2: moderation by individual level covars
+
+{{< embed code/07_postprocess_grf.qmd#fig-grf-combined-resp-1 >}}
+
+{{< embed code/07_postprocess_grf.qmd#fig-grf-combined-resp-2 >}}
 
 ## Conclusion {#sec-conclusion}
 
@@ -187,3 +193,7 @@ Fig 2: moderation by individual level covars
 #### Distribution of Respondent-level Covariates {.unnumbered}
 
 {{< embed code/09_main_figs_tables.qmd#tbl-balance-resp-mods >}}
+
+#### Question Wordings and Scales {.unnumbered}
+
+{{< embed code/09_main_figs_tables.qmd#tbl-wordings >}}
