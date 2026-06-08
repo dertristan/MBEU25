@@ -70,7 +70,7 @@ These need to be resolved before fitting begins. **Do not let Claude Code freela
 
 ## Causal Estimand
 
-To be written formally in Research Design section. Sketch:
+Drafted in the Research Design section of `index.qmd` (2026-06-08). Sketch:
 
 - Potential outcomes Y_i(z) for z ∈ {0, 1} where z indexes Muslim attribute presence in the profile.
 - Conditional average treatment effect: τ(x) = E[Y(1) − Y(0) | X = x].
@@ -79,6 +79,9 @@ To be written formally in Research Design section. Sketch:
 - Known propensities passed to BCF directly; no first-stage propensity estimation needed.
 
 ## Execution Plan (Thu 2026-06-04 → Thu 2026-06-11)
+
+> [!NOTE]
+> **Status (Mon 2026-06-08):** ahead of the table. Data prep, both full fits (all four `data/03_final/*.rds`), and post-processing/figures are done — the planned `07_*` figures step shipped as three notebooks (`07_postprocess_grf`, `08_postprocess_bcf`, `09_main_figs_tables`). Manuscript writing has started: the causal-estimand and data-description sections are drafted and appendix figures/tables are embedded in `index.qmd`. The Mon buffer day was not needed for firefighting; effort has rolled into writing (the Tue–Thu task).
 
 | Day | Task |
 |-----|------|
@@ -147,12 +150,14 @@ Existing:
 
 Note: `03_` and `04_` are mechanism/smoke tests of the estimators, **not** the substantive analyses.
 
-Full fits on the real data (**fitting and saving only** — no τ(x) extraction, projection, variable importance, figures, or tables; those are deferred to the post-processing/figures step):
+Full fits on the real data (**fitting and saving only** — no τ(x) extraction, projection, variable importance, figures, or tables; those are deferred to the post-processing/figures step). Both done; all four fits saved under `data/03_final/`:
 - `code/05_bcf_fit.qmd` — full hierarchical BCF fits (Dictator + Trust), **country-only REs** (nested respondent fit infeasible; respondent dependence left for a cluster bootstrap downstream), saved to `data/03_final/bcf_{dictator,trust}.rds`. The **robustness** estimator.
 - `code/06_grf_fit.qmd` — full `grf` causal-forest fits (Dictator + Trust), `clusters = respondent_id` + country FE in `X`, saved to `data/03_final/grf_{dictator,trust}.rds`. The **primary** estimator.
 
-Planned:
-- `code/07_*.qmd` — post-processing + manuscript figures (Green & Kern visual grammar): extract τ̂(x), ATE, projection / BLP, variable importance, and the CATE-by-moderator headline figures from the saved fits; respondent cluster bootstrap on the BCF side.
+Post-processing + figures (the planned single `07_*` was split into three notebooks; all exist as of 2026-06-08). Green & Kern visual grammar throughout:
+- `code/07_postprocess_grf.qmd` — post-processes the **primary** GRF fits into ATE (`average_treatment_effect`, doubly-robust/AIPW with cluster-robust SE), TOC/RATE (`rank_average_treatment_effect`, AUTOC), BLP (`best_linear_projection`), variable importance (aggregated from the expanded dummy columns up to construct level), and the headline **CATE-by-moderator** figures (per-level subset ATE with honest cluster-robust 95% CIs). Written line-by-line, one explicit chunk per moderator; moderators split into `prof_mods` (conjoint round-level) and `resp_mods` (respondent-level). Includes combined figures overlaying both games on one canvas.
+- `code/08_postprocess_bcf.qmd` — BCF counterpart, structurally parallel to `07`: ATE posterior, **posterior linear projection** (`woody2021model`, the Bayesian counterpart to GRF's BLP), and CATE-by-moderator figures with **posterior medians + 95% credible intervals** read off the τ(x) draws via `get_forest_fit()`. Combined-figure grammar (each game encoded by colour + shape + linetype together, so it survives greyscale and colourblindness). The respondent cluster bootstrap is a separate downstream step, not done here.
+- `code/09_main_figs_tables.qmd` — manuscript-level descriptive figures and tables built from `eu25_long.rds` (not from the fits): house-style definitions (Okabe-Ito game palette, golden-ratio helpers), token-allocation difference-in-means by game (Welch t-test), outcome distributions, the covariate-balance table, and the survey-item reference table.
 
 ## Workflow Notes
 
