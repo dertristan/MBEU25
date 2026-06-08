@@ -3142,6 +3142,166 @@ ggplot(cate, aes(x = x_pos)) +
   ggpubr::theme_pubr()
 ```
 
+# Combined figures {#sec-combined}
+
+The per-game, per-moderator figures above are the detailed view.
+This section attempts two compact overviews that place every moderator on one canvas and
+overlay both games at once.
+Following the house style of `09_main_figs_tables.qmd`, the two games are the only thing
+encoded by colour, shape, and linetype, and they are always encoded by all three together, so
+each game is distinguishable in colour, in greyscale print, and under colourblindness.
+Every other distinction (which moderator, which level) is carried by facets and axis position.
+
+## House style {#sec-combined-house}
+
+The Okabe-Ito game palette with redundant shape and linetype, the three reserved scales, the
+shared theme, and the golden-ratio helper, copied from `09_main_figs_tables.qmd`.
+
+```{r}
+#| label: game-style
+game_labs <- c(cj_dict = "Dictator game", cj_trust = "Trust game")
+game_cols <- c("Dictator game" = "#0072B2", "Trust game" = "#D55E00")
+game_shapes <- c("Dictator game" = 16, "Trust game" = 17) # circle / triangle
+game_ltys <- c("Dictator game" = "solid", "Trust game" = "longdash")
+
+scale_colour_game <- function() scale_colour_manual(values = game_cols, name = NULL)
+scale_shape_game <- function() scale_shape_manual(values = game_shapes, name = NULL)
+scale_linetype_game <- function() scale_linetype_manual(values = game_ltys, name = NULL)
+
+theme_mbeu <- function(base_size = 11) {
+  ggpubr::theme_pubr(base_size = base_size) +
+    theme(legend.position = "top")
+}
+ref_zero <- geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60")
+dodge <- position_dodge(width = 0.5)
+yl_cate <- "CATE (effect of Muslim profile)"
+```
+
+## Builders {#sec-combined-build}
+
+`cate_one()` returns the per-level (or per-decile, for the two genuinely continuous moderators)
+subset ATE and 95% CI for one moderator in one game, tagging whether the moderator is an ordered
+numeric scale (which earns a connecting line).
+`build_comb()` stacks that over a set of moderators and both games.
+`plot_comb()` draws the faceted overview: points and CIs dodged by game everywhere, plus a
+connecting line on the ordered-scale facets only.
+
+```{r}
+#| label: combined-builders
+cate_one <- function(cf, mm, mod, game_label) {
+  v <- mm[[mod]]
+  is_num <- is.numeric(v)
+  # continuous moderators: decile bins
+  if (is_num && length(unique(v)) > 12) {
+    bin <- ntile(v, 10)
+    rows <- lapply(sort(unique(bin)), function(k) {
+      sel <- bin == k
+      a <- grf::average_treatment_effect(cf, subset = sel)
+      tibble(
+        mod = mod, level = as.character(round(mean(v[sel]), 1)),
+        order = mean(v[sel]), is_scale = TRUE, game = game_label,
+        estimate = a["estimate"],
+        lower = a["estimate"] - 1.96 * a["std.err"],
+        upper = a["estimate"] + 1.96 * a["std.err"]
+      )
+    })
+    return(bind_rows(rows))
+  }
+  levs <- if (is_num) sort(unique(v)) else sort(unique(as.character(v)))
+  rows <- lapply(seq_along(levs), function(i) {
+    lev <- levs[i]
+    sel <- if (is_num) v == lev else as.character(v) == lev
+    a <- grf::average_treatment_effect(cf, subset = sel)
+    tibble(
+      mod = mod, level = as.character(lev),
+      order = if (is_num) as.numeric(lev) else i,
+      is_scale = is_num, game = game_label,
+      estimate = a["estimate"],
+      lower = a["estimate"] - 1.96 * a["std.err"],
+      upper = a["estimate"] + 1.96 * a["std.err"]
+    )
+  })
+  bind_rows(rows)
+}
+
+build_comb <- function(mods) {
+  bind_rows(
+    bind_rows(lapply(mods, \(m) cate_one(cf_dict, m_dict, m, "Dictator game"))),
+    bind_rows(lapply(mods, \(m) cate_one(cf_trust, m_trust, m, "Trust game")))
+  ) |>
+    mutate(mod = factor(mod, levels = mods))
+}
+
+plot_comb <- function(df, ncol, title) {
+  d <- df |>
+    arrange(mod, order) |>
+    mutate(key = factor(
+      paste0(mod, "@@", level),
+      levels = unique(paste0(mod, "@@", level))
+    ))
+  ggplot(d, aes(x = key, y = estimate, colour = game, shape = game)) +
+    ref_zero +
+    geom_line(
+      data = dplyr::filter(d, is_scale),
+      aes(group = game, linetype = game),
+      position = dodge
+    ) +
+    geom_linerange(aes(ymin = lower, ymax = upper), position = dodge) +
+    geom_point(position = dodge) +
+    facet_wrap(~mod, scales = "free_x", ncol = ncol) +
+    scale_colour_game() +
+    scale_shape_game() +
+    scale_linetype_game() +
+    scale_x_discrete(labels = \(k) sub(".*@@", "", k)) +
+    labs(title = title, x = NULL, y = yl_cate) +
+    theme_mbeu() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 7))
+}
+```
+
+## Conjoint-round moderators, both games {#sec-combined-prof}
+
+All five conjoint-round (profile-level) moderators on one canvas, Dictator and Trust overlaid.
+`cj_age` is the one ordered scale and so carries a connecting line; the rest are categorical.
+
+```{r}
+#| label: fig-grf-combined-prof
+#| fig-cap: "GRF CATE of the Muslim profile across every conjoint-round moderator, Dictator and Trust games overlaid (colour + shape + linetype). Points are per-level subset ATEs with honest cluster-robust 95% CIs; the ordered scale cj_age carries a connecting line."
+#| dpi: 500
+#| fig-width: 9
+#| fig-height: 6
+comb_prof <- build_comb(prof_mods)
+plot_comb(comb_prof, ncol = 3, title = "CATE by conjoint-round moderator, both games")
+```
+
+## Individual-level moderators, both games {#sec-combined-resp}
+
+All 26 respondent-level moderators, split across two figures so the facets stay legible.
+Ordered numeric scales (the 5- and 7-point items and the two binned continuous measures) carry
+connecting lines; categorical moderators show dodged points and CIs only.
+
+```{r}
+#| label: fig-grf-combined-resp-1
+#| fig-cap: "GRF CATE of the Muslim profile across the first half of the individual-level moderators, Dictator and Trust games overlaid. Per-level subset ATEs with honest cluster-robust 95% CIs; ordered scales carry a connecting line."
+#| dpi: 500
+#| fig-width: 11
+#| fig-height: 11
+resp_half1 <- resp_mods[1:13]
+comb_resp1 <- build_comb(resp_half1)
+plot_comb(comb_resp1, ncol = 4, title = "CATE by individual-level moderator, both games (1 of 2)")
+```
+
+```{r}
+#| label: fig-grf-combined-resp-2
+#| fig-cap: "GRF CATE of the Muslim profile across the second half of the individual-level moderators, Dictator and Trust games overlaid. Per-level subset ATEs with honest cluster-robust 95% CIs; ordered scales carry a connecting line."
+#| dpi: 500
+#| fig-width: 11
+#| fig-height: 11
+resp_half2 <- resp_mods[14:26]
+comb_resp2 <- build_comb(resp_half2)
+plot_comb(comb_resp2, ncol = 4, title = "CATE by individual-level moderator, both games (2 of 2)")
+```
+
 # Session Info {#sec-session-info .appendix .unnumbered}
 
 ```{r}
