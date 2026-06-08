@@ -21,7 +21,7 @@ Yet, less is known about what drives variation in that frequently and robustly o
 Reanalyzing a large scale conjoint survey experiment fielded in 25 European Union member states [@hahm2023divided; @hahm2024divided], we analyze variation in the experimentally identified Muslim penalty to explore 1) what and how other conjoint features and 2) how individual level covariates affect the estimated Muslim bias.
 
 
-{{< embed code/09_main_figs_tables.qmd#fig-diff-in-means >}}
+{{< embed code/09_additional_figs_tables.qmd#fig-diff-in-means >}}
 
 ## Theory {#sec-theory}
 
@@ -184,16 +184,42 @@ Fig 2: moderation by individual level covars
 
 #### Distribution of Outcome Variable {.unnumbered}
 
-{{< embed code/09_main_figs_tables.qmd#fig-outcome-distr >}}
+{{< embed code/09_additional_figs_tables.qmd#fig-outcome-distr >}}
 
 #### Distribution of Profile-level Covariates {.unnumbered}
 
-{{< embed code/09_main_figs_tables.qmd#tbl-balance-round-mods >}}
+{{< embed code/09_additional_figs_tables.qmd#tbl-balance-round-mods >}}
 
 #### Distribution of Respondent-level Covariates {.unnumbered}
 
-{{< embed code/09_main_figs_tables.qmd#tbl-balance-resp-mods >}}
+{{< embed code/09_additional_figs_tables.qmd#tbl-balance-resp-mods >}}
 
 #### Question Wordings and Scales {.unnumbered}
 
-{{< embed code/09_main_figs_tables.qmd#tbl-wordings >}}
+{{< embed code/09_additional_figs_tables.qmd#tbl-wordings >}}
+
+### Appendix B {.unnumbered}
+
+#### TOC / AUTOC Curve {.unnumbered}
+
+{{< embed code/07_postprocess_grf.qmd#fig-grf-combined-toc >}}
+
+#### Best Linear Projection {.unnumbered}
+
+{{< embed code/07_postprocess_grf.qmd#fig-grf-combined-blp >}}
+
+#### Variable Importance {.unnumbered}
+
+{{< embed code/07_postprocess_grf.qmd#fig-grf-combined-vi >}}
+
+### Appendix C {.unnumbered}
+
+#### BCF Moderation by Profile-level Covariates {.unnumbered}
+
+{{< embed code/08_postprocess_bcf.qmd#fig-bcf-combined-prof >}}
+
+#### BCF Moderation by Respondent-level Covariates {.unnumbered}
+
+{{< embed code/08_postprocess_bcf.qmd#fig-bcf-combined-resp-1 >}}
+
+{{< embed code/08_postprocess_bcf.qmd#fig-bcf-combined-resp-2 >}}

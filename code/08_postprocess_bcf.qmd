@@ -36,7 +36,7 @@ intervals; BCF reports **posterior medians** (read off the τ(x) draws from `get
 figures that adds a respondent cluster bootstrap to the posterior SD (see @sec-cluster-bootstrap).
 
 Following the **combined-figure** grammar of `07` (its `# Combined figures` section) and the house
-style of `09_main_figs_tables.qmd`, every figure overlays **both games on one canvas**. The two
+style of `09_additional_figs_tables.qmd`, every figure overlays **both games on one canvas**. The two
 games are the only thing encoded by colour, shape, and linetype, and they are always encoded by all
 three together, so each game is distinguishable in colour, in greyscale print, and under
 colourblindness. Every other distinction (which moderator, which level) is carried by facets and
@@ -181,7 +181,7 @@ game_mods <- function(dat, game) {
 # House style {#sec-house}
 
 The Okabe-Ito game palette with redundant shape and linetype, the three reserved scales, the
-shared theme, and the reference layers — copied from `09_main_figs_tables.qmd` / the combined
+shared theme, and the reference layers — copied from `09_additional_figs_tables.qmd` / the combined
 section of `07_postprocess_grf.qmd` so the BCF figures share the manuscript grammar exactly.
 
 ```{r}

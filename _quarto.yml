@@ -7,20 +7,24 @@ project:
   # post-render:
   #   - code/helper_scripts/copy_figures.R
 
-# manuscript:
-  # notebooks:
-  #   - notebook: code/01_exploration4presentation.qmd
-  #     title: "Code Notebook Test"
-  #   - notebook: code/02_data_prep.qmd
-  #     title: "Data Preparation for Analyses"
-  #   - notebook: code/03_multibart_nested_ri_test.qmd
-  #     title: "Nested Random Intercepts in multibart — Mechanism Test"
-  #   - notebook: code/04_grf_nested_test.qmd
-  #     title: "Nested Structure in grf Causal Forests — Mechanism Test"
-  #   - notebook: code/05_bcf_fit.qmd
-  #     title: "Hierarchical BCF Fits on Real Data (Dictator + Trust)"
-  #   - notebook: code/06_grf_fit.qmd
-  #     title: "Causal-Forest Fits on Real Data (Dictator + Trust)"
+manuscript:
+  notebooks:
+    - notebook: code/02_data_prep.qmd
+      title: "Data Preparation"
+    - notebook: code/03_multibart_nested_ri_test.qmd
+      title: "BCF Estimator Test"
+    - notebook: code/04_grf_nested_test.qmd
+      title: "GRF Estimator Test"
+    - notebook: code/05_bcf_fit.qmd
+      title: "BCF Fits"
+    - notebook: code/06_grf_fit.qmd
+      title: "GRF Fits"
+    - notebook: code/07_postprocess_grf.qmd
+      title: "GRF Post-Processing"
+    - notebook: code/08_postprocess_bcf.qmd
+      title: "BCF Post-Processing"
+    - notebook: code/09_additional_figs_tables.qmd
+      title: "Additional Figures & Tables"
 
 execute: 
   freeze: auto

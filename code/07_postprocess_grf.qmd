@@ -3147,7 +3147,7 @@ ggplot(cate, aes(x = x_pos)) +
 The per-game, per-moderator figures above are the detailed view.
 This section attempts two compact overviews that place every moderator on one canvas and
 overlay both games at once.
-Following the house style of `09_main_figs_tables.qmd`, the two games are the only thing
+Following the house style of `09_additional_figs_tables.qmd`, the two games are the only thing
 encoded by colour, shape, and linetype, and they are always encoded by all three together, so
 each game is distinguishable in colour, in greyscale print, and under colourblindness.
 Every other distinction (which moderator, which level) is carried by facets and axis position.
@@ -3155,7 +3155,7 @@ Every other distinction (which moderator, which level) is carried by facets and 
 ## House style {#sec-combined-house}
 
 The Okabe-Ito game palette with redundant shape and linetype, the three reserved scales, the
-shared theme, and the golden-ratio helper, copied from `09_main_figs_tables.qmd`.
+shared theme, and the golden-ratio helper, copied from `09_additional_figs_tables.qmd`.
 
 ```{r}
 #| label: game-style
