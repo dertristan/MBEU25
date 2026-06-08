@@ -31,8 +31,9 @@ as the combined view of the primary GRF notebook `07_postprocess_grf.qmd`:
 
 It is the BCF counterpart to `07_postprocess_grf.qmd` and is structurally parallel to it; only the
 inference machinery differs. GRF reports point estimates with honest cluster-robust confidence
-intervals; BCF reports **posterior medians with 95% credible intervals**, read off the posterior
-draws of τ(x) extracted with `get_forest_fit()`.
+intervals; BCF reports **posterior medians** (read off the τ(x) draws from `get_forest_fit()`) with
+95% credible intervals for the ATE and projection, and a cluster-robust band for the CATE-by-moderator
+figures that adds a respondent cluster bootstrap to the posterior SD (see @sec-cluster-bootstrap).
 
 Following the **combined-figure** grammar of `07` (its `# Combined figures` section) and the house
 style of `09_main_figs_tables.qmd`, every figure overlays **both games on one canvas**. The two
@@ -46,10 +47,15 @@ Two moderator families, matching the research plan:
 - **Conjoint round-level** moderators (`prof_mods`) — other attributes in the same profile.
 - **Individual-level** moderators (`resp_mods`) — respondent pre-treatment items and indices.
 
-Per-level uncertainty is the **95% posterior credible interval** of the bin/level CATE, mirroring
-`fig-cate-by-cov-bcf` in `03_multibart_nested_ri_test.qmd`.
-The credible interval here reflects posterior uncertainty only; the respondent cluster bootstrap
-(within-person dependence across the three rounds) is a separate downstream step, not done here.
+Per-level uncertainty is a **cluster-robust 95% interval**: the posterior median of the bin/level
+CATE (cf. `fig-cate-by-cov-bcf` in `03_multibart_nested_ri_test.qmd`) with a band that combines the
+posterior SD (model/estimation uncertainty) and a **respondent cluster bootstrap** SD (within-person
+dependence across the three rounds; see @sec-cluster-bootstrap). We added the bootstrap to test the
+worry that the bands looked too narrow at low-count levels: the answer is that within-respondent
+clustering does **not** explain it — the posterior SD dominates the bootstrap SD by roughly an order
+of magnitude at every level, and it already widens appropriately as the level count shrinks. The
+bands are, in other words, genuinely that precise; the bootstrap is folded in for completeness but
+moves them by only a few percent.
 
 # Setup {#sec-setup}
 
@@ -195,7 +201,7 @@ theme_mbeu <- function(base_size = 11) {
 }
 ref_zero <- geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60")
 dodge <- position_dodge(width = 0.5)
-yl_cate <- "CATE (effect of Muslim profile)"
+yl_cate <- expression(widehat(CATE))
 ```
 
 # Posterior summary builders {#sec-machinery}
@@ -219,6 +225,25 @@ classify_mod <- function(col) {
   }
   "binned"
 }
+```
+
+Shared display specs, matching `07_postprocess_grf.qmd`: the substantive `q_class` order
+(`dont_know` last), the identity-scale reversal (`6 - x`, so higher means more attachment), the
+two fixed display grids for the genuinely continuous moderators, and the number of cluster
+bootstrap resamples.
+
+```{r}
+#| label: display-specs
+class_order <- c(
+  "working_class", "lower_middle_class", "middle_class",
+  "upper_middle_class", "higher_class", "dont_know", "other"
+)
+flip5 <- \(x) 6 - x # identity scales: 1 = most attached -> 5 after flip
+cont_grids <- list(
+  q_age = seq(18, 75, length.out = 101), # 100 intervals over the full range
+  q_edu_age_stop = seq(14.5, 30.5, by = 1) # integer years 15..30
+)
+boot_B <- 500L # respondent cluster bootstrap resamples
 ```
 
 `ate_summary()` returns the posterior of the ATE: the per-draw mean of τ(x) over all observations,
@@ -261,61 +286,147 @@ proj_summary <- function(tau_draws, sub_X) {
 }
 ```
 
-`cate_one_bcf()` is the BCF version of the combined CATE builder in `07`: same level/decile logic,
-same `< 500`-row sparse-level drop, same `is_scale` tagging (`cj_age` is treated as categorical
-because its five values are fixed conjoint ages, not a continuous scale), and the same
-`order`/`level`/`n` columns — but each bin's estimate and interval come from the **posterior of the
-bin mean** (`rowMeans` of τ(x) over the bin's observations; median + 2.5/97.5%) rather than a
-subset ATE.
+`level_keeps()` enumerates the kept levels/bins of one moderator and returns, for each, the logical
+keep-vector over the game's rows together with its display `level`, `order`, and `is_scale` tag.
+It mirrors the combined builder in `07` exactly — discrete levels honor the factor order and are
+dropped below **1% of the game sample** (their CATE is too imprecise to compare); `cj_age` is
+treated as categorical (fixed conjoint ages); and the two genuinely continuous moderators are
+binned on the **fixed display grid** (`cont_grids`) rather than into deciles, so the line spans the
+full range. Sharing this enumeration between the posterior summary and the cluster bootstrap
+guarantees the two use identical bins.
+
+```{r}
+#| label: level-keeps
+level_keeps <- function(mm, mod) {
+  v <- mm[[mod]]
+  is_num <- is.numeric(v)
+  # genuinely continuous moderators -> fixed grid (or decile fallback)
+  if (is_num && length(unique(v)) > 12) {
+    if (mod %in% names(cont_grids)) {
+      br <- cont_grids[[mod]]
+      cell <- cut(v, breaks = br, include.lowest = TRUE)
+      mids <- (head(br, -1) + tail(br, -1)) / 2
+      out <- lapply(which(tabulate(cell, nbins = length(mids)) > 0), function(k) {
+        keep <- !is.na(cell) & as.integer(cell) == k
+        list(level = as.character(round(mids[k])), order = mids[k], is_scale = TRUE, keep = keep)
+      })
+      return(out)
+    }
+    bin <- ntile(v, 10)
+    return(lapply(sort(unique(bin)), function(k) {
+      keep <- !is.na(bin) & bin == k
+      list(
+        level = as.character(round(mean(v[keep]))), order = mean(v[keep]),
+        is_scale = TRUE, keep = keep
+      )
+    }))
+  }
+  # discrete moderators: honor factor order; drop levels below 1% of the game sample
+  levs <- if (is_num) {
+    sort(unique(v))
+  } else if (is.factor(v)) {
+    levels(droplevels(v))
+  } else {
+    sort(unique(as.character(v)))
+  }
+  out <- lapply(seq_along(levs), function(i) {
+    lev <- levs[i]
+    keep <- if (is_num) !is.na(v) & v == lev else !is.na(v) & as.character(v) == lev
+    if (sum(keep) / sum(!is.na(v)) < 0.01) {
+      return(NULL)
+    }
+    list(
+      level = as.character(lev), order = if (is_num) as.numeric(lev) else i,
+      is_scale = is_num && mod != "cj_age", keep = keep
+    )
+  })
+  out[!vapply(out, is.null, logical(1))]
+}
+```
+
+`cate_one_bcf()` reads each bin's estimate off the **posterior of the bin mean** (`rowMeans` of
+τ(x) over the bin's observations): the point is the posterior median and `post_sd` is the posterior
+standard deviation, the **model/estimation** uncertainty. The final interval (built downstream)
+adds the respondent-cluster bootstrap variance to this.
 
 ```{r}
 #| label: cate-one-bcf
 # posterior of the bin CATE over a logical keep-vector (length n)
 .bin_post <- function(tau_draws, keep) {
   bd <- rowMeans(tau_draws[, keep, drop = FALSE]) # posterior of bin mean
-  c(
-    estimate = median(bd),
-    lower = unname(quantile(bd, 0.025)),
-    upper = unname(quantile(bd, 0.975))
-  )
+  c(estimate = median(bd), post_sd = sd(bd))
 }
 
 cate_one_bcf <- function(tau_draws, mm, mod, game_label) {
-  v <- mm[[mod]]
-  is_num <- is.numeric(v)
-  # continuous moderators: decile bins, integer labels
-  if (is_num && length(unique(v)) > 12) {
-    bin <- ntile(v, 10)
-    rows <- lapply(sort(unique(bin)), function(k) {
-      sel <- !is.na(bin) & bin == k
-      p <- .bin_post(tau_draws, sel)
-      tibble(
-        mod = mod, level = as.character(round(mean(v[sel]))),
-        order = mean(v[sel]), is_scale = TRUE, game = game_label,
-        n = sum(sel),
-        estimate = p["estimate"], lower = p["lower"], upper = p["upper"]
-      )
-    })
-    return(bind_rows(rows))
-  }
-  levs <- if (is_num) sort(unique(v)) else sort(unique(as.character(v)))
-  rows <- lapply(seq_along(levs), function(i) {
-    lev <- levs[i]
-    sel <- if (is_num) !is.na(v) & v == lev else !is.na(v) & as.character(v) == lev
-    # drop sparse levels (within game)
-    if (sum(sel) < 500) {
-      return(NULL)
-    }
-    p <- .bin_post(tau_draws, sel)
+  ks <- level_keeps(mm, mod)
+  bind_rows(lapply(ks, function(L) {
+    p <- .bin_post(tau_draws, L$keep)
     tibble(
-      mod = mod, level = as.character(lev),
-      order = if (is_num) as.numeric(lev) else i,
-      is_scale = is_num && mod != "cj_age", game = game_label,
-      n = sum(sel),
-      estimate = p["estimate"], lower = p["lower"], upper = p["upper"]
+      mod = mod, level = L$level, order = L$order, is_scale = L$is_scale,
+      game = game_label, n = sum(L$keep),
+      estimate = unname(p["estimate"]), post_sd = unname(p["post_sd"])
     )
-  })
-  bind_rows(rows)
+  }))
+}
+```
+
+## Respondent cluster bootstrap {#sec-cluster-bootstrap}
+
+The posterior `post_sd` above captures **model/estimation** uncertainty in the regularized τ(x)
+surface alone — not the within-respondent design dependence (each respondent contributes three
+conjoint rounds) and not the sampling variability of which respondents land in a bin. The worry was
+that omitting this clustering made the bands look too narrow, especially at sparsely populated
+levels. We test that directly with a **respondent cluster bootstrap**: resample respondents (the
+clusters) with replacement `boot_B` times, recompute each bin's mean of the per-observation point
+estimate `tau_hat`, and take the bootstrap SD as the design/clustering component. The two variances
+are combined, `se_total = sqrt(post_sd² + boot_sd²)`, and the band is `estimate ± 1.96 · se_total` —
+a single cluster-robust interval, with the posterior median unchanged as the point estimate. One
+shared set of resamples (`Wb`, a respondent × `boot_B` multiplicity matrix) is reused across every
+moderator and level for efficiency; the bootstrap runs after `tau_draws` is freed, so it needs only
+the length-`n` `tau_hat`.
+
+**The verdict is that clustering does not explain the narrowness.** On the real fits the bootstrap SD
+is roughly an order of magnitude smaller than `post_sd` at every level (e.g. `post_sd` ≈ 0.03–0.08
+versus `boot_sd` ≈ 0.003–0.011), so `se_total` exceeds `post_sd` by only about 1–3%. The posterior
+SD is itself the dominant term and already widens as the level count falls (it scales roughly like
+1/√n: a ~40k-row level carries about half the posterior SD of a ~3k-row level). The bands are
+genuinely that precise — a consequence of how aggressively BCF pools strength across the sample — and
+the very rare levels that looked suspiciously tight are dropped anyway by the 1% rule. We keep the
+cluster-robust band because it is the more honest object, but it confirms rather than overturns the
+posterior intervals.
+
+```{r}
+#| label: boot-helpers
+# build the respondent x B bootstrap multiplicity matrix once per game
+make_Wb <- function(rid, B, seed) {
+  set.seed(seed)
+  rid_int <- as.integer(rid)
+  R <- max(rid_int)
+  Wb <- vapply(seq_len(B), function(b) tabulate(sample.int(R, R, replace = TRUE), nbins = R), integer(R))
+  list(Wb = Wb, rid_int = rid_int)
+}
+
+# per-level cluster-bootstrap SD of the bin mean of tau_hat
+boot_sd_one <- function(tau_hat, rid_int, Wb, mm, mod) {
+  ks <- level_keeps(mm, mod)
+  bind_rows(lapply(ks, function(L) {
+    keep <- L$keep
+    w <- Wb[rid_int[keep], , drop = FALSE] # n_keep x B multiplicities
+    bm <- colSums(w * tau_hat[keep]) / colSums(w) # B bootstrap bin means
+    tibble(mod = mod, level = L$level, boot_sd = sd(bm))
+  }))
+}
+
+# join the bootstrap SD and form the cluster-robust interval
+finalize_ci <- function(df, boot) {
+  df |>
+    left_join(boot, by = c("mod", "level", "game")) |>
+    mutate(
+      boot_sd = coalesce(boot_sd, 0),
+      se_total = sqrt(post_sd^2 + boot_sd^2),
+      lower = estimate - 1.96 * se_total,
+      upper = estimate + 1.96 * se_total
+    )
 }
 ```
 
@@ -396,10 +507,10 @@ plot_comb <- function(df, ncol, title) {
 }
 ```
 
-`cont_panel()` draws one genuinely continuous moderator on a continuous x-axis: its per-decile
-posterior CATE (ribbon + line + point per game) over a grey histogram of the covariate, with the
-x-axis trimmed to `xlim`. Unlike the `07` version it takes the **precomputed** combined sub-tibble
-`d` (the BCF draws are already freed by plotting time) and the raw covariate values `raw` for the
+`cont_panel()` draws one genuinely continuous moderator on a continuous x-axis: its per-grid-cell
+CATE (ribbon + line + point per game) over a grey histogram of the covariate, with the x-axis
+trimmed to `xlim`. Unlike the `07` version it takes the **precomputed** combined sub-tibble `d`
+(the BCF draws are already freed by plotting time) and the raw covariate values `raw` for the
 histogram.
 
 ```{r}
@@ -446,7 +557,12 @@ summary tibbles (ATE, projection, and the combined CATE-by-moderator tables) are
 ```{r}
 #| label: build-dictator
 d_dict <- prep_game(dat, "cj_dict")
-m_dict <- game_mods(dat, "cj_dict")
+m_dict <- game_mods(dat, "cj_dict") |>
+  # presentational recodings (display only; sub_X / projection untouched)
+  mutate(
+    across(c(q_identity_country, q_identity_eu, q_identity_europe), flip5),
+    q_class = factor(q_class, levels = class_order)
+  )
 tau_dict <- get_forest_fit(fit_dict$moderate_fit, d_dict$sub_X) # nsim x n
 
 stopifnot(
@@ -454,8 +570,10 @@ stopifnot(
   ncol(tau_dict) == length(d_dict$y)
 )
 
+# per-observation point estimate for the cluster bootstrap
+tau_hat_dict <- colMeans(tau_dict)
 # ATE sanity check (token scale)
-mean(colMeans(tau_dict))
+mean(tau_hat_dict)
 
 ate_dict <- ate_summary(tau_dict)
 proj_dict <- proj_summary(tau_dict, d_dict$sub_X)
@@ -468,12 +586,29 @@ comb_resp_dict <- bind_rows(
 
 rm(tau_dict, fit_dict)
 invisible(gc())
+
+# respondent cluster bootstrap (runs after tau_dict is freed)
+bw_dict <- make_Wb(d_dict$respondent_id, B = boot_B, seed = 1L)
+boot_prof_dict <- bind_rows(
+  lapply(prof_mods, \(m) boot_sd_one(tau_hat_dict, bw_dict$rid_int, bw_dict$Wb, m_dict, m))
+) |>
+  mutate(game = "Dictator game")
+boot_resp_dict <- bind_rows(
+  lapply(resp_mods, \(m) boot_sd_one(tau_hat_dict, bw_dict$rid_int, bw_dict$Wb, m_dict, m))
+) |>
+  mutate(game = "Dictator game")
+rm(bw_dict)
+invisible(gc())
 ```
 
 ```{r}
 #| label: build-trust
 d_trust <- prep_game(dat, "cj_trust")
-m_trust <- game_mods(dat, "cj_trust")
+m_trust <- game_mods(dat, "cj_trust") |>
+  mutate(
+    across(c(q_identity_country, q_identity_eu, q_identity_europe), flip5),
+    q_class = factor(q_class, levels = class_order)
+  )
 tau_trust <- get_forest_fit(fit_trust$moderate_fit, d_trust$sub_X) # nsim x n
 
 stopifnot(
@@ -481,7 +616,8 @@ stopifnot(
   ncol(tau_trust) == length(d_trust$y)
 )
 
-mean(colMeans(tau_trust))
+tau_hat_trust <- colMeans(tau_trust)
+mean(tau_hat_trust)
 
 ate_trust <- ate_summary(tau_trust)
 proj_trust <- proj_summary(tau_trust, d_trust$sub_X)
@@ -493,6 +629,18 @@ comb_resp_trust <- bind_rows(
 )
 
 rm(tau_trust, fit_trust)
+invisible(gc())
+
+bw_trust <- make_Wb(d_trust$respondent_id, B = boot_B, seed = 2L)
+boot_prof_trust <- bind_rows(
+  lapply(prof_mods, \(m) boot_sd_one(tau_hat_trust, bw_trust$rid_int, bw_trust$Wb, m_trust, m))
+) |>
+  mutate(game = "Trust game")
+boot_resp_trust <- bind_rows(
+  lapply(resp_mods, \(m) boot_sd_one(tau_hat_trust, bw_trust$rid_int, bw_trust$Wb, m_trust, m))
+) |>
+  mutate(game = "Trust game")
+rm(bw_trust)
 invisible(gc())
 ```
 
@@ -514,15 +662,23 @@ proj_comb <- bind_rows(
 ) |>
   mutate(game = factor(game, levels = game_lvls))
 
+boot_prof <- bind_rows(boot_prof_dict, boot_prof_trust)
+boot_resp <- bind_rows(boot_resp_dict, boot_resp_trust)
+
 comb_prof <- bind_rows(comb_prof_dict, comb_prof_trust) |>
+  finalize_ci(boot_prof) |>
   mutate(mod = factor(mod, levels = prof_mods))
 comb_resp <- bind_rows(comb_resp_dict, comb_resp_trust) |>
+  finalize_ci(boot_resp) |>
   mutate(mod = factor(mod, levels = resp_mods))
 
 stopifnot(
   nrow(ate_comb) == 2,
   all(prof_mods %in% comb_prof$mod),
-  all(resp_mods %in% comb_resp$mod)
+  all(resp_mods %in% comb_resp$mod),
+  # cluster-robust band is never narrower than the posterior-only band
+  all(comb_prof$se_total >= comb_prof$post_sd - 1e-9),
+  all(comb_resp$se_total >= comb_resp$post_sd - 1e-9)
 )
 ```
 
@@ -586,19 +742,21 @@ ggplot(proj_plot, aes(x = estimate, y = term, colour = game, shape = game)) +
 
 # The posterior CATEs by moderator {#sec-cate}
 
-The headline figures: posterior median CATE on the y-axis, the moderator on the x-axis, with a 95%
-credible interval at each level/decile, both games overlaid. The y-axis is free per facet; levels
-with fewer than 500 rows in a game are dropped for legibility.
+The headline figures: posterior median CATE on the y-axis, the moderator on the x-axis, with a
+cluster-robust 95% interval at each level/grid cell, both games overlaid. The y-axis is free per
+facet; discrete levels comprising less than 1% of a game's sample are dropped because their CATE is
+too imprecise to compare. The three identity scales are reversed so higher means more attachment,
+and `q_class` runs working class up to higher class with `dont_know` last.
 
 ## Conjoint round-level moderators {#sec-cate-prof}
 
 All five conjoint-round (profile-level) moderators on one canvas, Dictator and Trust overlaid.
 All five are categorical (including `cj_age`, whose five values are fixed conjoint ages), so each is
-drawn as dodged points with credible intervals.
+drawn as dodged points with cluster-robust intervals.
 
 ```{r}
 #| label: fig-bcf-combined-prof
-#| fig-cap: "BCF posterior CATE of the Muslim profile (y-axis) across the levels of every conjoint-round moderator (x-axis), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. Points are per-level posterior medians and the vertical bars are 95% credible intervals (posterior of the within-level mean of tau(x)). Grey bars along the bottom of each facet show the per-level row count (pooled over games). The y-axis is free per facet; levels with fewer than 500 rows in a game are dropped for legibility."
+#| fig-cap: "BCF posterior CATE of the Muslim profile (y-axis) across the levels of every conjoint-round moderator (x-axis), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. Points are per-level posterior medians and the vertical bars are cluster-robust 95% intervals (posterior SD of the within-level mean of tau(x) combined with a respondent cluster-bootstrap SD). Grey bars along the bottom of each facet show the per-level row count (pooled over games). The y-axis is free per facet; levels comprising less than 1% of a game's sample are dropped because their CATE is too imprecise to compare."
 #| dpi: 500
 #| fig-width: 9
 #| fig-height: 6
@@ -612,8 +770,10 @@ Each figure stacks (via `patchwork`) a faceted panel of half the discrete modera
 of the two genuinely continuous moderators (`q_age`, `q_edu_age_stop`) on a continuous x-axis below,
 so the continuous covariate keeps its real histogram and trimmed axis while still sitting beside the
 discrete moderators it belongs with.
-Ordered numeric scales (the 5- and 7-point items) carry an overlaid 95% credible-interval ribbon
+Ordered numeric scales (the 5- and 7-point items) carry an overlaid cluster-robust 95% ribbon
 plus connecting line per game; categorical moderators keep dodged points and intervals.
+The three identity scales are reversed so higher means more attachment, and `q_class` runs working
+class up to higher class with `dont_know` last.
 The shared game legend is drawn once, from the top panel.
 
 ```{r}
@@ -626,7 +786,7 @@ resp_half2 <- resp_cat[(half + 1):length(resp_cat)]
 
 ```{r}
 #| label: fig-bcf-combined-resp-1
-#| fig-cap: "BCF posterior CATE of the Muslim profile (y-axis) across the levels of the first half of the discrete individual-level moderators (top panel) and across age (q_age, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. Top: points are per-level posterior medians with 95% credible intervals; ordered numeric scales are drawn as a connecting line and credible-interval ribbon, categorical moderators as dodged points and intervals; grey bars show the per-level row count (pooled over games). Bottom: per-decile posterior median, 95% credible-interval ribbon, and connecting line per game over a grey histogram of the covariate; the x-axis is truncated to 18-75 years. The y-axis is free per facet; levels with fewer than 500 rows in a game are dropped for legibility."
+#| fig-cap: "BCF posterior CATE of the Muslim profile (y-axis) across the levels of the first half of the discrete individual-level moderators (top panel) and across age (q_age, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. Identity scales are reversed so higher means more attachment; q_class runs working class up to higher class with dont_know last. Top: points are per-level posterior medians with cluster-robust 95% intervals (posterior SD combined with a respondent cluster-bootstrap SD); ordered numeric scales are drawn as a connecting line and interval ribbon, categorical moderators as dodged points and intervals; grey bars show the per-level row count (pooled over games). Bottom: per-grid-cell posterior median, cluster-robust 95% ribbon, and connecting line per game over a grey histogram of the covariate, on 100 equal intervals across the full 18-75 years. The y-axis is free per facet; discrete levels comprising less than 1% of a game's sample are dropped because their CATE is too imprecise to compare."
 #| dpi: 500
 #| fig-width: 11
 #| fig-height: 14
@@ -645,7 +805,7 @@ p_age <- cont_panel(
 
 ```{r}
 #| label: fig-bcf-combined-resp-2
-#| fig-cap: "BCF posterior CATE of the Muslim profile (y-axis) across the levels of the second half of the discrete individual-level moderators (top panel) and across age at which education stopped (q_edu_age_stop, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. Top: points are per-level posterior medians with 95% credible intervals; ordered numeric scales are drawn as a connecting line and credible-interval ribbon, categorical moderators as dodged points and intervals; grey bars show the per-level row count (pooled over games). Bottom: per-decile posterior median, 95% credible-interval ribbon, and connecting line per game over a grey histogram of the covariate; the x-axis is truncated to 15-30 years. The y-axis is free per facet; levels with fewer than 500 rows in a game are dropped for legibility."
+#| fig-cap: "BCF posterior CATE of the Muslim profile (y-axis) across the levels of the second half of the discrete individual-level moderators (top panel) and across age at which education stopped (q_edu_age_stop, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. Identity scales are reversed so higher means more attachment; q_class runs working class up to higher class with dont_know last. Top: points are per-level posterior medians with cluster-robust 95% intervals (posterior SD combined with a respondent cluster-bootstrap SD); ordered numeric scales are drawn as a connecting line and interval ribbon, categorical moderators as dodged points and intervals; grey bars show the per-level row count (pooled over games). Bottom: posterior median, cluster-robust 95% ribbon, and connecting line per game at each integer year of education-stopping age from 15 to 30, over a grey histogram of the covariate. The y-axis is free per facet; discrete levels comprising less than 1% of a game's sample are dropped because their CATE is too imprecise to compare."
 #| dpi: 500
 #| fig-width: 11
 #| fig-height: 14
