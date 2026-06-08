@@ -1,6 +1,6 @@
 ---
 subtitle: |
-  BCF Post-Processing — CATE by Moderator (Dictator + Trust)
+  BCF Post-Processing — ATE, Posterior Projection, and CATE by Moderator (Dictator + Trust)
 date: last-modified
 date-format: MMMM D, YYYY
 format:
@@ -19,14 +19,27 @@ execute:
 # Purpose {#sec-purpose}
 
 This notebook post-processes the **robustness** estimator — the saved hierarchical BCF fits
-(`data/03_final/bcf_{dictator,trust}.rds`) — into Green (2012)–style figures: estimated CATE on
-the y-axis, a moderator on the x-axis.
-It is the BCF counterpart to `07_postprocess_grf.qmd` and is structurally parallel to it; only the
-τ̂ extraction and the per-level uncertainty differ.
+(`data/03_final/bcf_{dictator,trust}.rds`) — into the same three quantities, in the same order,
+as the combined view of the primary GRF notebook `07_postprocess_grf.qmd`:
 
-This is the first, *exploratory* pass.
-For each moderator we build a **standalone `ggplot` object** (kept in a named list), not the final
-composed/faceted figure; paneling is decided later.
+1. **Average treatment effect (ATE)** — the posterior of the ATE for each game.
+2. **Posterior linear projection** — the Bayesian counterpart to GRF's best linear projection
+   (`woody2021model`): each posterior draw of τ(x) is projected onto the moderator design, giving
+   a posterior distribution of projection coefficients. Appendix-style linear summary.
+3. **CATE by moderator** — the headline figures: estimated CATE on the y-axis, a moderator on the
+   x-axis.
+
+It is the BCF counterpart to `07_postprocess_grf.qmd` and is structurally parallel to it; only the
+inference machinery differs. GRF reports point estimates with honest cluster-robust confidence
+intervals; BCF reports **posterior medians with 95% credible intervals**, read off the posterior
+draws of τ(x) extracted with `get_forest_fit()`.
+
+Following the **combined-figure** grammar of `07` (its `# Combined figures` section) and the house
+style of `09_main_figs_tables.qmd`, every figure overlays **both games on one canvas**. The two
+games are the only thing encoded by colour, shape, and linetype, and they are always encoded by all
+three together, so each game is distinguishable in colour, in greyscale print, and under
+colourblindness. Every other distinction (which moderator, which level) is carried by facets and
+axis position.
 
 Two moderator families, matching the research plan:
 
@@ -37,8 +50,6 @@ Per-level uncertainty is the **95% posterior credible interval** of the bin/leve
 `fig-cate-by-cov-bcf` in `03_multibart_nested_ri_test.qmd`.
 The credible interval here reflects posterior uncertainty only; the respondent cluster bootstrap
 (within-person dependence across the three rounds) is a separate downstream step, not done here.
-The covariate distribution is shown in every panel (rug for binned numerics, per-level count bars
-for discrete moderators).
 
 # Setup {#sec-setup}
 
@@ -57,7 +68,7 @@ p_required <- c(
   "tidyverse", # dplyr, ggplot2, tidyr, purrr
   "here", # relative paths
   "ggpubr", # theme_pubr
-  "patchwork", # later composition
+  "patchwork", # combined-figure composition
   "sessioninfo", # session docs
 
   # multibart dependencies -----------------------------------------------------
@@ -102,7 +113,7 @@ fit_trust <- readRDS(here::here("data", "03_final", "bcf_trust.rds"))
 # Variable definitions {#sec-vars}
 
 The frozen moderator list and `prep_game()` are reused verbatim from `05_bcf_fit.qmd` so the
-reconstructed moderate design matches fit-time row order and columns exactly.
+reconstructed moderator design matches fit-time row order and columns exactly.
 
 ```{r}
 #| label: moderators
@@ -161,7 +172,38 @@ game_mods <- function(dat, game) {
 }
 ```
 
-# CATE-by-moderator machinery {#sec-machinery}
+# House style {#sec-house}
+
+The Okabe-Ito game palette with redundant shape and linetype, the three reserved scales, the
+shared theme, and the reference layers — copied from `09_main_figs_tables.qmd` / the combined
+section of `07_postprocess_grf.qmd` so the BCF figures share the manuscript grammar exactly.
+
+```{r}
+#| label: game-style
+game_labs <- c(cj_dict = "Dictator game", cj_trust = "Trust game")
+game_cols <- c("Dictator game" = "#0072B2", "Trust game" = "#D55E00")
+game_shapes <- c("Dictator game" = 16, "Trust game" = 17) # circle / triangle
+game_ltys <- c("Dictator game" = "solid", "Trust game" = "longdash")
+
+scale_colour_game <- function() scale_colour_manual(values = game_cols, name = NULL)
+scale_shape_game <- function() scale_shape_manual(values = game_shapes, name = NULL)
+scale_linetype_game <- function() scale_linetype_manual(values = game_ltys, name = NULL)
+
+theme_mbeu <- function(base_size = 11) {
+  ggpubr::theme_pubr(base_size = base_size) +
+    theme(legend.position = "top")
+}
+ref_zero <- geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60")
+dodge <- position_dodge(width = 0.5)
+yl_cate <- "CATE (effect of Muslim profile)"
+```
+
+# Posterior summary builders {#sec-machinery}
+
+Every quantity below is read off `tau_draws`, the `nsim × n` posterior matrix returned by
+`get_forest_fit()` (rows index posterior draws, columns index observations). All three builders
+operate on a single game's `tau_draws`, so they run inside the per-game block and the large matrix
+is freed before the next game.
 
 A moderator is **discrete** (factor, or numeric with ≤ 10 distinct values: Likert items) or
 **binned** (higher-cardinality numeric → 10 quantile bins).
@@ -179,117 +221,230 @@ classify_mod <- function(col) {
 }
 ```
 
-For each moderator level / bin, the posterior of the bin CATE is the within-draw mean of τ(x) over
-the bin's observations; we summarize with the median and a 95% credible interval.
-`tau_draws` is the `nsim × n` posterior matrix from `get_forest_fit()`; columns index observations.
+`ate_summary()` returns the posterior of the ATE: the per-draw mean of τ(x) over all observations,
+summarised by its median and a 95% credible interval.
 
 ```{r}
-#| label: bcf-summary
-bcf_summary <- function(tau_draws, col, name) {
-  kind <- classify_mod(col)
-  # posterior of the bin CATE over a logical keep-vector (length n)
-  post <- function(keep) {
-    bd <- rowMeans(tau_draws[, keep, drop = FALSE]) # posterior of bin mean
-    tibble(
-      estimate = median(bd),
-      lower = unname(quantile(bd, 0.025)),
-      upper = unname(quantile(bd, 0.975))
-    )
-  }
-  if (kind == "discrete") {
-    levs <- if (is.factor(col)) levels(col) else sort(unique(col))
-    out <- map(levs, function(v) {
-      keep <- !is.na(col) & col == v
-      post(keep) |>
-        mutate(x_lab = as.character(v), x_pos = NA_real_, n = sum(keep))
-    })
-  } else {
-    b <- ntile(col, 10)
-    out <- map(sort(unique(b[!is.na(b)])), function(bb) {
-      keep <- !is.na(b) & b == bb
-      post(keep) |>
-        mutate(x_lab = NA_character_, x_pos = mean(col[keep]), n = sum(keep))
-    })
-  }
-  list_rbind(out) |> mutate(moderator = name, kind = kind)
-}
-```
-
-The plot helpers draw blue estimates + credible interval and the covariate distribution.
-
-```{r}
-#| label: plot-helpers
-.cate_col <- "#0072B2"
-
-# discrete: pointrange per level + grey count bars (categorical distribution)
-plot_discrete <- function(summ, name, ylab) {
-  summ <- summ |>
-    filter(!is.na(estimate)) |>
-    mutate(x = factor(x_lab, levels = x_lab))
-  yr <- range(c(summ$lower, summ$upper), na.rm = TRUE)
-  pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
-  floor_y <- yr[1] - pad
-  span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
-  summ <- summ |> mutate(bar_top = floor_y + (n / max(n)) * span)
-
-  ggplot(summ, aes(x = x)) +
-    geom_segment(
-      aes(xend = x, y = floor_y, yend = bar_top),
-      colour = "grey80", linewidth = 4
-    ) +
-    geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
-    geom_linerange(aes(ymin = lower, ymax = upper), colour = .cate_col) +
-    geom_point(aes(y = estimate), colour = .cate_col, size = 2) +
-    labs(title = paste0("CATE by ", name), x = name, y = ylab) +
-    ggpubr::theme_pubr() +
-    theme(axis.text.x = element_text(angle = 30, hjust = 1))
-}
-
-# binned: ribbon + line + rug of raw values (continuous distribution)
-plot_binned <- function(summ, raw, name, ylab) {
-  rug <- tibble(value = raw)
-  ggplot(summ, aes(x = x_pos)) +
-    geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
-    geom_ribbon(aes(ymin = lower, ymax = upper), alpha = 0.2, fill = .cate_col) +
-    geom_line(aes(y = estimate), colour = .cate_col, linewidth = 0.8) +
-    geom_point(aes(y = estimate), colour = .cate_col, size = 1.5) +
-    geom_rug(
-      data = rug, aes(x = value), sides = "b",
-      alpha = 0.15, colour = .cate_col, inherit.aes = FALSE
-    ) +
-    labs(title = paste0("CATE by ", name), x = name, y = ylab) +
-    ggpubr::theme_pubr()
-}
-
-plot_mod <- function(summ, raw, name, ylab) {
-  if (summ$kind[1] == "discrete") {
-    plot_discrete(summ, name, ylab)
-  } else {
-    plot_binned(summ, raw, name, ylab)
-  }
-}
-
-# build one named list of plots over a set of moderators
-build_bcf_plots <- function(tau_draws, mvals, mods, ylab) {
-  setNames(
-    lapply(mods, function(m) {
-      col <- mvals[[m]]
-      plot_mod(bcf_summary(tau_draws, col, m), col, m, ylab)
-    }),
-    mods
+#| label: ate-summary
+ate_summary <- function(tau_draws) {
+  bd <- rowMeans(tau_draws) # posterior of the ATE
+  tibble(
+    estimate = median(bd),
+    lower = unname(quantile(bd, 0.025)),
+    upper = unname(quantile(bd, 0.975))
   )
 }
 ```
 
-# Build plots {#sec-build}
+`proj_summary()` is the Bayesian posterior projection (`woody2021model`), the BCF counterpart to
+GRF's `best_linear_projection`. For each posterior draw `d`, the coefficient vector is
+$\beta_d = (X'X)^{-1} X' \tau_d$; we stack these into a posterior and summarise each term by its
+median and 95% credible interval.
+The design `sub_X` is `model.matrix(~ . - 1, ...)`, which is full rank (only the first factor is
+fully expanded; the rest are contrast-coded), so `crossprod(sub_X)` inverts directly — no added
+intercept, no ridge. It is the same column basis as GRF's `X_dict`, so the terms are comparable.
+The only large multiply (`tau_draws %*% sub_X`) returns a small `nsim × p` matrix, so the step is
+memory-safe.
 
-`tau_draws` is large (`nsim × n`); we extract it one game at a time and free it once the plots
-(which retain only their summary tibbles) are built.
+```{r}
+#| label: proj-summary
+proj_summary <- function(tau_draws, sub_X) {
+  xtx <- crossprod(sub_X) # p x p
+  m <- tau_draws %*% sub_X # nsim x p  (= tau_d' X per draw)
+  beta <- solve(xtx, t(m)) # p x nsim  = (X'X)^{-1} X' tau_d
+  tibble(
+    term = colnames(sub_X),
+    estimate = apply(beta, 1, median),
+    lower = apply(beta, 1, quantile, 0.025),
+    upper = apply(beta, 1, quantile, 0.975)
+  )
+}
+```
+
+`cate_one_bcf()` is the BCF version of the combined CATE builder in `07`: same level/decile logic,
+same `< 500`-row sparse-level drop, same `is_scale` tagging (`cj_age` is treated as categorical
+because its five values are fixed conjoint ages, not a continuous scale), and the same
+`order`/`level`/`n` columns — but each bin's estimate and interval come from the **posterior of the
+bin mean** (`rowMeans` of τ(x) over the bin's observations; median + 2.5/97.5%) rather than a
+subset ATE.
+
+```{r}
+#| label: cate-one-bcf
+# posterior of the bin CATE over a logical keep-vector (length n)
+.bin_post <- function(tau_draws, keep) {
+  bd <- rowMeans(tau_draws[, keep, drop = FALSE]) # posterior of bin mean
+  c(
+    estimate = median(bd),
+    lower = unname(quantile(bd, 0.025)),
+    upper = unname(quantile(bd, 0.975))
+  )
+}
+
+cate_one_bcf <- function(tau_draws, mm, mod, game_label) {
+  v <- mm[[mod]]
+  is_num <- is.numeric(v)
+  # continuous moderators: decile bins, integer labels
+  if (is_num && length(unique(v)) > 12) {
+    bin <- ntile(v, 10)
+    rows <- lapply(sort(unique(bin)), function(k) {
+      sel <- !is.na(bin) & bin == k
+      p <- .bin_post(tau_draws, sel)
+      tibble(
+        mod = mod, level = as.character(round(mean(v[sel]))),
+        order = mean(v[sel]), is_scale = TRUE, game = game_label,
+        n = sum(sel),
+        estimate = p["estimate"], lower = p["lower"], upper = p["upper"]
+      )
+    })
+    return(bind_rows(rows))
+  }
+  levs <- if (is_num) sort(unique(v)) else sort(unique(as.character(v)))
+  rows <- lapply(seq_along(levs), function(i) {
+    lev <- levs[i]
+    sel <- if (is_num) !is.na(v) & v == lev else !is.na(v) & as.character(v) == lev
+    # drop sparse levels (within game)
+    if (sum(sel) < 500) {
+      return(NULL)
+    }
+    p <- .bin_post(tau_draws, sel)
+    tibble(
+      mod = mod, level = as.character(lev),
+      order = if (is_num) as.numeric(lev) else i,
+      is_scale = is_num && mod != "cj_age", game = game_label,
+      n = sum(sel),
+      estimate = p["estimate"], lower = p["lower"], upper = p["upper"]
+    )
+  })
+  bind_rows(rows)
+}
+```
+
+# Combined plotters {#sec-plotters}
+
+`plot_comb()` draws the faceted overview with a free y-axis per facet: grey per-level count bars
+(pooled over games) along the bottom, posterior medians and credible intervals dodged by game
+everywhere, plus a connecting line and ribbon on the ordered-scale facets only.
+It is reused verbatim from the combined section of `07` (it reads only the summary columns the BCF
+builders produce, so the posterior intervals slot straight in).
+
+```{r}
+#| label: plot-comb
+plot_comb <- function(df, ncol, title) {
+  d <- df |>
+    arrange(mod, order) |>
+    mutate(key = factor(
+      paste0(mod, "@@", level),
+      levels = unique(paste0(mod, "@@", level))
+    ))
+  # per-facet grey count bars (pooled over games shown)
+  band <- d |>
+    summarise(cnt = sum(n), .by = c(mod, key)) |>
+    left_join(
+      d |>
+        summarise(
+          floor_y = min(lower) - 0.12 * (max(upper) - min(lower)),
+          span = 0.20 * (max(upper) - min(lower)),
+          .by = mod
+        ),
+      by = "mod"
+    ) |>
+    mutate(bar_top = floor_y + (cnt / max(cnt)) * span, .by = mod)
+  d_scale <- dplyr::filter(d, is_scale)
+  d_cat <- dplyr::filter(d, !is_scale)
+  p <- ggplot(d, aes(x = key, y = estimate, colour = game, shape = game)) +
+    geom_segment(
+      data = band,
+      aes(x = key, xend = key, y = floor_y, yend = bar_top),
+      colour = "grey80",
+      linewidth = 3,
+      inherit.aes = FALSE
+    ) +
+    ref_zero
+  # ordered scales: overlaid ribbon + line + point (continuous-style)
+  if (nrow(d_scale) > 0) {
+    p <- p +
+      geom_ribbon(
+        data = d_scale,
+        aes(ymin = lower, ymax = upper, fill = game, group = game),
+        alpha = 0.15,
+        colour = NA
+      ) +
+      geom_line(data = d_scale, aes(group = game, linetype = game)) +
+      geom_point(data = d_scale) +
+      scale_linetype_game() +
+      scale_fill_manual(values = game_cols, name = NULL)
+  }
+  # categorical: dodged credible interval + point
+  if (nrow(d_cat) > 0) {
+    p <- p +
+      geom_linerange(
+        data = d_cat,
+        aes(ymin = lower, ymax = upper),
+        position = dodge
+      ) +
+      geom_point(data = d_cat, position = dodge)
+  }
+  p +
+    facet_wrap(~mod, scales = "free", ncol = ncol) +
+    scale_colour_game() +
+    scale_shape_game() +
+    scale_x_discrete(labels = \(k) sub(".*@@", "", k)) +
+    labs(title = title, x = NULL, y = yl_cate) +
+    guides(fill = "none", linetype = "none") +
+    theme_mbeu() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 7))
+}
+```
+
+`cont_panel()` draws one genuinely continuous moderator on a continuous x-axis: its per-decile
+posterior CATE (ribbon + line + point per game) over a grey histogram of the covariate, with the
+x-axis trimmed to `xlim`. Unlike the `07` version it takes the **precomputed** combined sub-tibble
+`d` (the BCF draws are already freed by plotting time) and the raw covariate values `raw` for the
+histogram.
+
+```{r}
+#| label: cont-panel
+cont_panel <- function(d, raw, mod, xlim) {
+  # covariate distribution within the visible range
+  v <- raw[!is.na(raw) & raw >= xlim[1] & raw <= xlim[2]]
+  h <- hist(v, breaks = 30, plot = FALSE)
+  floor_y <- min(d$lower) - 0.12 * (max(d$upper) - min(d$lower))
+  span <- 0.20 * (max(d$upper) - min(d$lower))
+  hd <- tibble(mid = h$mids, w = diff(h$breaks)[1], cnt = h$counts) |>
+    mutate(bar_top = floor_y + (cnt / max(cnt)) * span)
+  ggplot(d, aes(x = order, y = estimate, colour = game, shape = game)) +
+    geom_rect(
+      data = hd,
+      aes(xmin = mid - w / 2, xmax = mid + w / 2, ymin = floor_y, ymax = bar_top),
+      fill = "grey80",
+      inherit.aes = FALSE
+    ) +
+    ref_zero +
+    geom_ribbon(
+      aes(ymin = lower, ymax = upper, fill = game, group = game),
+      alpha = 0.15,
+      colour = NA
+    ) +
+    geom_line(aes(group = game, linetype = game)) +
+    geom_point() +
+    scale_colour_game() +
+    scale_shape_game() +
+    scale_linetype_game() +
+    scale_fill_manual(values = game_cols, name = NULL) +
+    scale_x_continuous(breaks = scales::breaks_pretty(6)) +
+    coord_cartesian(xlim = xlim) +
+    labs(title = mod, x = "Covariate value (years)", y = yl_cate) +
+    theme_mbeu()
+}
+```
+
+# Build summaries {#sec-build}
+
+`tau_draws` is large (`nsim × n`); we extract it one game at a time and free it once the small
+summary tibbles (ATE, projection, and the combined CATE-by-moderator tables) are built.
 
 ```{r}
 #| label: build-dictator
-yl <- "CATE (effect of Muslim profile)"
-
 d_dict <- prep_game(dat, "cj_dict")
 m_dict <- game_mods(dat, "cj_dict")
 tau_dict <- get_forest_fit(fit_dict$moderate_fit, d_dict$sub_X) # nsim x n
@@ -302,8 +457,14 @@ stopifnot(
 # ATE sanity check (token scale)
 mean(colMeans(tau_dict))
 
-p_dict_prof <- build_bcf_plots(tau_dict, m_dict, prof_mods, yl)
-p_dict_resp <- build_bcf_plots(tau_dict, m_dict, resp_mods, yl)
+ate_dict <- ate_summary(tau_dict)
+proj_dict <- proj_summary(tau_dict, d_dict$sub_X)
+comb_prof_dict <- bind_rows(
+  lapply(prof_mods, \(m) cate_one_bcf(tau_dict, m_dict, m, "Dictator game"))
+)
+comb_resp_dict <- bind_rows(
+  lapply(resp_mods, \(m) cate_one_bcf(tau_dict, m_dict, m, "Dictator game"))
+)
 
 rm(tau_dict, fit_dict)
 invisible(gc())
@@ -322,66 +483,183 @@ stopifnot(
 
 mean(colMeans(tau_trust))
 
-p_trust_prof <- build_bcf_plots(tau_trust, m_trust, prof_mods, yl)
-p_trust_resp <- build_bcf_plots(tau_trust, m_trust, resp_mods, yl)
+ate_trust <- ate_summary(tau_trust)
+proj_trust <- proj_summary(tau_trust, d_trust$sub_X)
+comb_prof_trust <- bind_rows(
+  lapply(prof_mods, \(m) cate_one_bcf(tau_trust, m_trust, m, "Trust game"))
+)
+comb_resp_trust <- bind_rows(
+  lapply(resp_mods, \(m) cate_one_bcf(tau_trust, m_trust, m, "Trust game"))
+)
 
 rm(tau_trust, fit_trust)
 invisible(gc())
+```
+
+The combined tables, with both games stacked and `mod` ordered for faceting.
+
+```{r}
+#| label: combine
+game_lvls <- c("Dictator game", "Trust game")
+
+ate_comb <- bind_rows(
+  ate_dict |> mutate(game = "Dictator game"),
+  ate_trust |> mutate(game = "Trust game")
+) |>
+  mutate(game = factor(game, levels = game_lvls))
+
+proj_comb <- bind_rows(
+  proj_dict |> mutate(game = "Dictator game"),
+  proj_trust |> mutate(game = "Trust game")
+) |>
+  mutate(game = factor(game, levels = game_lvls))
+
+comb_prof <- bind_rows(comb_prof_dict, comb_prof_trust) |>
+  mutate(mod = factor(mod, levels = prof_mods))
+comb_resp <- bind_rows(comb_resp_dict, comb_resp_trust) |>
+  mutate(mod = factor(mod, levels = resp_mods))
 
 stopifnot(
-  length(p_dict_prof) == length(prof_mods),
-  length(p_dict_resp) == length(resp_mods),
-  length(p_trust_prof) == length(prof_mods),
-  length(p_trust_resp) == length(resp_mods)
+  nrow(ate_comb) == 2,
+  all(prof_mods %in% comb_prof$mod),
+  all(resp_mods %in% comb_resp$mod)
 )
 ```
 
-# Dictator game {#sec-dictator}
+# The recovered ATEs {#sec-ate}
 
-## Conjoint round-level moderators {#sec-dict-prof}
+The posterior ATE — the per-draw average of τ(x) over all observations — for each game, with its
+95% credible interval.
 
 ```{r}
-#| label: fig-bcf-dict-prof
-#| fig-cap: "BCF: CATE of the Muslim profile attribute by conjoint round-level moderator (Dictator game). Blue: posterior median + 95% credible interval; grey bars: per-level counts."
+#| label: fig-bcf-combined-ate
+#| fig-cap: "BCF posterior ATE of the Muslim profile, both games. Points are posterior medians and bars are 95% credible intervals (per-draw average of tau(x) over all observations). Games distinguished jointly by colour and shape."
 #| dpi: 500
 #| fig-width: 6.5
 #| fig-height: 4
-walk(p_dict_prof, print)
+ate_comb |>
+  ggplot(aes(x = game, y = estimate, colour = game, shape = game)) +
+  ref_zero +
+  geom_pointrange(aes(ymin = lower, ymax = upper), linewidth = 0.8, size = 0.9) +
+  scale_colour_game() +
+  scale_shape_game() +
+  labs(
+    title = "Posterior ATE of the Muslim profile, both games",
+    x = NULL,
+    y = yl_cate
+  ) +
+  theme_mbeu()
 ```
 
-## Individual-level moderators {#sec-dict-resp}
+# The posterior linear projections {#sec-proj}
+
+The posterior projection of τ(x) onto the moderator design: a linear summary of which moderators
+shift the treatment effect, the Bayesian counterpart to GRF's best linear projection
+(`woody2021model`).
+This is an appendix/robustness summary, not a headline. Terms are ordered by their mean posterior
+coefficient across the two games.
 
 ```{r}
-#| label: fig-bcf-dict-resp
-#| fig-cap: "BCF: CATE of the Muslim profile attribute by respondent-level moderator (Dictator game). Blue: posterior median + 95% credible interval; grey bars / rug: covariate distribution."
+#| label: fig-bcf-combined-proj
+#| fig-cap: "BCF posterior linear projection of the CATE onto the moderator set, both games overlaid, with 95% credible intervals (dodged by game). Each coefficient is the posterior of (X'X)^{-1} X' tau_d. Terms are ordered by their mean coefficient across the two games. Appendix-style linear summary of effect modification."
 #| dpi: 500
 #| fig-width: 6.5
-#| fig-height: 4
-walk(p_dict_resp, print)
+#| fig-height: 9
+proj_ord <- proj_comb |>
+  summarise(m = mean(estimate), .by = term) |>
+  arrange(m) |>
+  pull(term)
+proj_plot <- proj_comb |> mutate(term = factor(term, levels = proj_ord))
+
+ggplot(proj_plot, aes(x = estimate, y = term, colour = game, shape = game)) +
+  geom_vline(xintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_pointrange(aes(xmin = lower, xmax = upper), position = dodge) +
+  scale_colour_game() +
+  scale_shape_game() +
+  labs(
+    title = "Posterior linear projection of the CATE, both games",
+    x = "Projection coefficient",
+    y = NULL
+  ) +
+  theme_mbeu()
 ```
 
-# Trust game {#sec-trust}
+# The posterior CATEs by moderator {#sec-cate}
 
-## Conjoint round-level moderators {#sec-trust-prof}
+The headline figures: posterior median CATE on the y-axis, the moderator on the x-axis, with a 95%
+credible interval at each level/decile, both games overlaid. The y-axis is free per facet; levels
+with fewer than 500 rows in a game are dropped for legibility.
+
+## Conjoint round-level moderators {#sec-cate-prof}
+
+All five conjoint-round (profile-level) moderators on one canvas, Dictator and Trust overlaid.
+All five are categorical (including `cj_age`, whose five values are fixed conjoint ages), so each is
+drawn as dodged points with credible intervals.
 
 ```{r}
-#| label: fig-bcf-trust-prof
-#| fig-cap: "BCF: CATE of the Muslim profile attribute by conjoint round-level moderator (Trust game). Blue: posterior median + 95% credible interval; grey bars: per-level counts."
+#| label: fig-bcf-combined-prof
+#| fig-cap: "BCF posterior CATE of the Muslim profile (y-axis) across the levels of every conjoint-round moderator (x-axis), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. Points are per-level posterior medians and the vertical bars are 95% credible intervals (posterior of the within-level mean of tau(x)). Grey bars along the bottom of each facet show the per-level row count (pooled over games). The y-axis is free per facet; levels with fewer than 500 rows in a game are dropped for legibility."
 #| dpi: 500
-#| fig-width: 6.5
-#| fig-height: 4
-walk(p_trust_prof, print)
+#| fig-width: 9
+#| fig-height: 6
+plot_comb(comb_prof, ncol = 3, title = "CATE by conjoint-round moderator, both games")
 ```
 
-## Individual-level moderators {#sec-trust-resp}
+## Individual-level moderators {#sec-cate-resp}
+
+The respondent-level moderators on two figures so the facets stay legible.
+Each figure stacks (via `patchwork`) a faceted panel of half the discrete moderators on top with one
+of the two genuinely continuous moderators (`q_age`, `q_edu_age_stop`) on a continuous x-axis below,
+so the continuous covariate keeps its real histogram and trimmed axis while still sitting beside the
+discrete moderators it belongs with.
+Ordered numeric scales (the 5- and 7-point items) carry an overlaid 95% credible-interval ribbon
+plus connecting line per game; categorical moderators keep dodged points and intervals.
+The shared game legend is drawn once, from the top panel.
 
 ```{r}
-#| label: fig-bcf-trust-resp
-#| fig-cap: "BCF: CATE of the Muslim profile attribute by respondent-level moderator (Trust game). Blue: posterior median + 95% credible interval; grey bars / rug: covariate distribution."
+#| label: resp-split
+resp_cat <- setdiff(resp_mods, c("q_age", "q_edu_age_stop"))
+half <- ceiling(length(resp_cat) / 2)
+resp_half1 <- resp_cat[1:half]
+resp_half2 <- resp_cat[(half + 1):length(resp_cat)]
+```
+
+```{r}
+#| label: fig-bcf-combined-resp-1
+#| fig-cap: "BCF posterior CATE of the Muslim profile (y-axis) across the levels of the first half of the discrete individual-level moderators (top panel) and across age (q_age, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. Top: points are per-level posterior medians with 95% credible intervals; ordered numeric scales are drawn as a connecting line and credible-interval ribbon, categorical moderators as dodged points and intervals; grey bars show the per-level row count (pooled over games). Bottom: per-decile posterior median, 95% credible-interval ribbon, and connecting line per game over a grey histogram of the covariate; the x-axis is truncated to 18-75 years. The y-axis is free per facet; levels with fewer than 500 rows in a game are dropped for legibility."
 #| dpi: 500
-#| fig-width: 6.5
-#| fig-height: 4
-walk(p_trust_resp, print)
+#| fig-width: 11
+#| fig-height: 14
+p_resp1 <- plot_comb(
+  comb_resp |> filter(mod %in% resp_half1) |> mutate(mod = factor(mod, levels = resp_half1)),
+  ncol = 4,
+  title = "CATE by individual-level moderator, both games (1 of 2)"
+)
+p_age <- cont_panel(
+  comb_resp |> filter(mod == "q_age"),
+  m_dict[["q_age"]], "q_age", c(18, 75)
+) +
+  guides(colour = "none", shape = "none", fill = "none", linetype = "none")
+(p_resp1 / p_age) + plot_layout(heights = c(3, 1))
+```
+
+```{r}
+#| label: fig-bcf-combined-resp-2
+#| fig-cap: "BCF posterior CATE of the Muslim profile (y-axis) across the levels of the second half of the discrete individual-level moderators (top panel) and across age at which education stopped (q_edu_age_stop, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. Top: points are per-level posterior medians with 95% credible intervals; ordered numeric scales are drawn as a connecting line and credible-interval ribbon, categorical moderators as dodged points and intervals; grey bars show the per-level row count (pooled over games). Bottom: per-decile posterior median, 95% credible-interval ribbon, and connecting line per game over a grey histogram of the covariate; the x-axis is truncated to 15-30 years. The y-axis is free per facet; levels with fewer than 500 rows in a game are dropped for legibility."
+#| dpi: 500
+#| fig-width: 11
+#| fig-height: 14
+p_resp2 <- plot_comb(
+  comb_resp |> filter(mod %in% resp_half2) |> mutate(mod = factor(mod, levels = resp_half2)),
+  ncol = 4,
+  title = "CATE by individual-level moderator, both games (2 of 2)"
+)
+p_edu <- cont_panel(
+  comb_resp |> filter(mod == "q_edu_age_stop"),
+  m_dict[["q_edu_age_stop"]], "q_edu_age_stop", c(15, 30)
+) +
+  guides(colour = "none", shape = "none", fill = "none", linetype = "none")
+(p_resp2 / p_edu) + plot_layout(heights = c(3, 1))
 ```
 
 # Session Info {#sec-session-info .appendix .unnumbered}
