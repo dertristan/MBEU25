@@ -1,0 +1,285 @@
+---
+subtitle: |
+  Main Figures and Tables
+date: last-modified
+date-format: MMMM D, YYYY
+format:
+  html:
+    toc: true
+    code-fold: true
+    code-tools: true
+execute:
+  echo: true
+  warning: true
+  eval: true
+  message: true
+---
+
+# Setup {#sec-setup}
+
+```{r}
+#| label: setup
+#| include: false
+# execution time
+start_time <- Sys.time()
+# console width
+options(width = 80)
+# packages
+p_required <- c(
+  "tidyverse", # dplyr, ggplot2, tidyr
+  "here", # relative paths
+  "ggpubr", # theme_pubr
+  "patchwork", # multi-panel composition
+  "sessioninfo" # session docs
+)
+packages <- rownames(installed.packages())
+p_to_install <- p_required[!(p_required %in% packages)]
+if (length(p_to_install) > 0) {
+  install.packages(p_to_install)
+}
+sapply(p_required, require, character.only = TRUE)
+rm(p_required, p_to_install, packages)
+```
+
+# Load long format data {#sec-code-1}
+
+```{r}
+#| label: load-dat
+eu25_long <- read_rds(
+  here(
+    "data",
+    "02_processed",
+    "eu25_long.rds"
+  )
+)
+```
+
+# House style {#sec-house}
+
+The shared visual grammar for every figure in this notebook.
+The two games are the only thing encoded by colour, shape, and linetype, and they are always
+encoded by all three at once, so each game is distinguishable in colour, in greyscale print,
+and under colourblindness.
+Any other categorical distinction (moderator family, estimator, treatment level) is carried by
+facets, panels, or axis position — never by reusing a game channel.
+
+```{r}
+#| label: game-style
+# game identity: Okabe-Ito blue / orange, redundant shape + linetype
+game_labs <- c(cj_dict = "Dictator game", cj_trust = "Trust game")
+game_cols <- c("Dictator game" = "#0072B2", "Trust game" = "#D55E00")
+game_shapes <- c("Dictator game" = 16, "Trust game" = 17) # circle / triangle
+game_ltys <- c("Dictator game" = "solid", "Trust game" = "longdash")
+
+# raw cj_game_type -> ordered, human-readable factor
+lab_game <- function(x) {
+  factor(unname(game_labs[as.character(x)]), levels = unname(game_labs))
+}
+```
+
+The three reserved scales are always added together so the legend collapses to one key.
+
+```{r}
+#| label: game-scales
+scale_colour_game <- function() {
+  scale_colour_manual(values = game_cols, name = NULL)
+}
+scale_shape_game <- function() {
+  scale_shape_manual(values = game_shapes, name = NULL)
+}
+scale_linetype_game <- function() {
+  scale_linetype_manual(values = game_ltys, name = NULL)
+}
+```
+
+Shared theme, reference layers, dodge width, and the common CATE y-axis label.
+
+```{r}
+#| label: house-theme
+theme_mbeu <- function(base_size = 11) {
+  ggpubr::theme_pubr(base_size = base_size) +
+    theme(legend.position = "top")
+}
+# dashed null line for effect figures
+ref_zero <- geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60")
+# side-by-side offset for two-game overlays
+dodge <- position_dodge(width = 0.5)
+# shared axis label for CATE-by-moderator figures
+yl_cate <- "CATE (effect of Muslim profile)"
+```
+
+The golden ratio is the default figure aspect (width : height ≈ 1.618 : 1).
+Set chunk `fig-width`/`fig-height` from `golden` so single-panel figures share one proportion;
+do not apply it to faceted small multiples or auto-sized contexts.
+
+```{r}
+#| label: golden-ratio
+golden <- (1 + sqrt(5)) / 2 # ~1.618
+# figure height (in) for a given width at golden proportion
+golden_h <- function(width) width / golden
+```
+
+# Token allocation to Muslim profiles {#sec-diff-means}
+
+The motivating descriptive: how many tokens does a profile receive when it is
+labelled Muslim versus everything else, in each game.
+We summarise this two ways — a per-game Welch two-sample t-test on the raw
+difference in means (the sample average treatment effect, SATE), and a
+slope/dumbbell figure of the two group means with 95% confidence intervals.
+The test is intentionally simple and descriptive: respondent clustering is left
+to the heterogeneity models that follow.
+
+```{r}
+#| label: diff-in-means-test
+# analysis frame: muslim vs all-else, readable game
+dim_dat <- eu25_long |>
+  mutate(
+    treat = factor(
+      if_else(cj_rel == "muslim", "Muslim", "Non-Muslim"),
+      levels = c("Non-Muslim", "Muslim")
+    ),
+    game = lab_game(cj_game_type)
+  )
+
+# welch t-test per game, muslim - non-muslim
+dim_test_one <- function(df) {
+  tt <- t.test(cj_pl2 ~ treat, data = df) # non-muslim - muslim
+  tibble(
+    mean_nonmuslim = unname(tt$estimate[1]),
+    mean_muslim = unname(tt$estimate[2]),
+    diff = mean_muslim - mean_nonmuslim,
+    conf_low = -tt$conf.int[2],
+    conf_high = -tt$conf.int[1],
+    t = -unname(tt$statistic),
+    df = unname(tt$parameter),
+    p = tt$p.value
+  )
+}
+
+dim_tests <- dim_dat |>
+  group_by(game) |>
+  group_modify(~ dim_test_one(.x)) |>
+  ungroup()
+
+dim_tests
+```
+
+Read the SATE numbers off `dim_tests` above and fill the placeholders in the
+figure caption.
+
+```{r}
+#| label: fig-diff-in-means
+#| fig-cap: "Mean tokens allocated to a profile by the Muslim label, by game. The outcome (y-axis) is the number of tokens the respondent allocates to the displayed profile. X-axis contrasts profiles labelled Muslim against all other religions pooled. Points are group means and error bars are 95% confidence intervals. The slope of each line is the sample average treatment effect (SATE) of the Muslim label, estimated by a per-game Welch two-sample difference-in-means t-test: $\\widehat{\\text{SATE}}_\\text{Dictator} = -0.57\\ [-0.61, -0.53]$, $\\widehat{\\text{SATE}}_\\text{Trust} = -0.64\\ [-0.68, -0.61]$."
+#| fig-dpi: 500
+#| fig-width: 5.5
+#| fig-height: 3.4
+# group means + 95% ci
+dim_means <- dim_dat |>
+  group_by(game, treat) |>
+  summarise(
+    mean_tok = mean(cj_pl2),
+    se = sd(cj_pl2) / sqrt(n()),
+    ci = qt(0.975, n() - 1) * se,
+    .groups = "drop"
+  )
+
+dim_means |>
+  ggplot(aes(
+    x = treat,
+    y = mean_tok,
+    colour = game,
+    shape = game,
+    linetype = game,
+    group = game
+  )) +
+  geom_line(position = dodge, linewidth = 0.7) +
+  geom_errorbar(
+    aes(ymin = mean_tok - ci, ymax = mean_tok + ci),
+    position = dodge,
+    width = 0.08,
+    linewidth = 0.4,
+    linetype = "solid"
+  ) +
+  geom_point(position = dodge, size = 3) +
+  scale_colour_game() +
+  scale_shape_game() +
+  scale_linetype_game() +
+  labs(
+    title = "Muslim profiles receive fewer tokens in both games",
+    x = NULL,
+    y = "Mean tokens allocated"
+  ) +
+  theme_mbeu()
+```
+
+
+# Outcome Distribution
+
+The distribution of the raw outcome — tokens allocated to the displayed profile,
+an integer from 0 to 10 — in each game.
+Both games are drawn together with the reserved colour/shape/linetype grammar applied at
+once, and shown as within-game proportions so the two games are comparable despite differing
+numbers of decisions.
+
+```{r}
+#| label: fig-outcome-distr
+#| fig-cap: "Distribution of outcomes (tokens allocated to the displayed profile) by game. Height of bars are the within-game share of decisions at each integer token value, connected within game."
+#| fig-dpi: 500
+#| fig-width: 5.5
+#| fig-height: 3.4
+# within-game share at each integer token value
+outcome_distr <- eu25_long |>
+  mutate(game = lab_game(cj_game_type)) |>
+  count(game, cj_pl2) |>
+  group_by(game) |>
+  mutate(prop = n / sum(n)) |>
+  ungroup()
+
+outcome_distr |>
+  ggplot(aes(
+    x = cj_pl2,
+    y = prop,
+    colour = game,
+    shape = game,
+    linetype = game,
+    group = game
+  )) +
+  geom_line(linewidth = 0.7) +
+  geom_point(size = 2.5) +
+  scale_colour_game() +
+  scale_shape_game() +
+  scale_linetype_game() +
+  scale_x_continuous(breaks = 0:10) +
+  scale_y_continuous(labels = scales::label_percent()) +
+  labs(
+    title = "Token allocations cluster at the endpoints in both games",
+    x = "Tokens allocated to profile",
+    y = "Share of decisions"
+  ) +
+  theme_mbeu()
+```
+
+# Session Info {#sec-session-info .appendix .unnumbered}
+
+```{r}
+#| label: session-info
+#| eval: true
+#| echo: true
+session_info()
+```
+
+# Execution Time {#sec-exec-time .appendix .unnumbered}
+
+```{r}
+#| label: exec-time
+#| eval: true
+#| echo: true
+#| include: true
+end_time <- Sys.time()
+exec_time <- end_time - start_time
+cat(paste(
+  "R code execution time:",
+  round(as.numeric(exec_time, units = "secs"), 2),
+  "seconds."
+))
+```
