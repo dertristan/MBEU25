@@ -157,7 +157,7 @@ What is shown, how, why, how are intervals constructed
 ## Empirical Analysis {#sec-analysis}
 
 
-CF recovered an estimated SATE of -0.42 [-0.4569, -0.3860] in the dictator and -0.49 [-0.5234, -0.4465] in the trust game, which is less than the difference in means estimates presented earlier, but mirrors the same pattern: the penalty is slightly larger in the trust game.
+CF recovered an estimated SATE of -0.5641  (SE 0.0190);  95% CI [-0.6013, -0.5268] in the dictator and Trust ATE: -0.6419  (SE 0.0205);  95% CI [-0.6820, -0.6018] in the trust game, which corresponds to the diff-in-means presented earlier.
 
 Fig 1: moderation by round level cj_covars
 
