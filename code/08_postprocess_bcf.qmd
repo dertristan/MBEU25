@@ -268,8 +268,9 @@ classify_mod <- function(col) {
 ```
 
 Shared display specs, matching `07_postprocess_grf.qmd`: the substantive `q_class` order
-(`dont_know` last), the identity-scale reversal (`6 - x`, so higher means more attachment), the
-two fixed display grids for the genuinely continuous moderators, and the number of cluster
+(`dont_know` last), the 5-point-scale reversal (`6 - x`) applied to the identity scales (so higher
+means more attachment) and to the "EU effect on" items (so higher means a more positive evaluation),
+the two fixed display grids for the genuinely continuous moderators, and the number of cluster
 bootstrap resamples.
 
 ```{r}
@@ -283,7 +284,7 @@ class_order <- c(
   "dont_know",
   "other"
 )
-flip5 <- \(x) 6 - x # identity scales: 1 = most attached -> 5 after flip
+flip5 <- \(x) 6 - x # 5-point scales: reverse so higher = more of the construct
 cont_grids <- list(
   q_age = seq(18, 75, length.out = 101), # 100 intervals over the full range
   q_edu_age_stop = seq(14.5, 30.5, by = 1) # integer years 15..30
@@ -642,7 +643,13 @@ d_dict <- prep_game(dat, "cj_dict")
 m_dict <- game_mods(dat, "cj_dict") |>
   # presentational recodings (display only; sub_X / projection untouched)
   mutate(
-    across(c(q_identity_country, q_identity_eu, q_identity_europe), flip5),
+    across(
+      c(
+        q_identity_country, q_identity_eu, q_identity_europe,
+        q_eu_imp_nat_econ, q_eu_imp_nat_cul, q_eu_imp_nat_pol
+      ),
+      flip5
+    ),
     q_class = factor(q_class, levels = class_order),
     q_rural_urban = factor(
       q_rural_urban,
@@ -696,7 +703,13 @@ invisible(gc())
 d_trust <- prep_game(dat, "cj_trust")
 m_trust <- game_mods(dat, "cj_trust") |>
   mutate(
-    across(c(q_identity_country, q_identity_eu, q_identity_europe), flip5),
+    across(
+      c(
+        q_identity_country, q_identity_eu, q_identity_europe,
+        q_eu_imp_nat_econ, q_eu_imp_nat_cul, q_eu_imp_nat_pol
+      ),
+      flip5
+    ),
     q_class = factor(q_class, levels = class_order),
     q_rural_urban = factor(
       q_rural_urban,
@@ -782,31 +795,21 @@ stopifnot(
 
 # The recovered ATEs {#sec-ate}
 
-The posterior ATE — the per-draw average of τ(x) over all observations — for each game, with its
-95% credible interval.
+The posterior ATE — the per-draw average of τ(x) over all observations — for each game, reported as
+the posterior median and 95% credible interval (the manuscript quotes these numbers in a footnote
+alongside the GRF SATEs).
 
 ```{r}
-#| label: fig-bcf-combined-ate
-#| fig-cap: "BCF posterior ATE of the Muslim profile, both games. Points are posterior medians and bars are 95% credible intervals (per-draw average of tau(x) over all observations). Games distinguished jointly by colour and shape."
-#| dpi: 500
-#| fig-width: 6.5
-#| fig-height: 4
-ate_comb |>
-  ggplot(aes(x = game, y = estimate, colour = game, shape = game)) +
-  ref_zero +
-  geom_pointrange(
-    aes(ymin = lower, ymax = upper),
-    linewidth = 0.8,
-    size = 0.9
-  ) +
-  scale_colour_game() +
-  scale_shape_game() +
-  labs(
-    title = "Posterior ATE of the Muslim profile, both games",
-    x = NULL,
-    y = yl_cate
-  ) +
-  theme_mbeu()
+#| label: ate-bcf-numbers
+for (i in seq_len(nrow(ate_comb))) {
+  cat(sprintf(
+    "%s BCF ATE (posterior median): %.4f;  95%% CrI [%.4f, %.4f]\n",
+    ate_comb$game[i],
+    ate_comb$estimate[i],
+    ate_comb$lower[i],
+    ate_comb$upper[i]
+  ))
+}
 ```
 
 # The posterior linear projections {#sec-proj}
@@ -848,7 +851,8 @@ The headline figures: posterior median CATE on the y-axis, the moderator on the 
 cluster-robust 95% interval at each level/grid cell, both games overlaid. The y-axis is free per
 facet; discrete levels comprising less than 1% of a game's sample are dropped because their CATE is
 too imprecise to compare. The three identity scales are reversed so higher means more attachment,
-and `q_class` runs working class up to higher class with `dont_know` last.
+the three "EU effect on" items are reversed so higher means a more positive evaluation, and
+`q_class` runs working class up to higher class with `dont_know` last.
 
 ## Conjoint round-level moderators {#sec-cate-prof}
 
@@ -865,7 +869,7 @@ drawn as dodged points with cluster-robust intervals.
 plot_comb(
   comb_prof,
   ncol = 3,
-  title = "CATE by conjoint-round moderator, both games",
+  title = bquote("CATE by conjoint-round moderator, both games" ~ (hat(tau)[ric])),
   ylab = yl_ric
 )
 ```
@@ -879,8 +883,9 @@ so the continuous covariate keeps its real histogram and trimmed axis while stil
 discrete moderators it belongs with.
 Ordered numeric scales (the 5- and 7-point items) carry an overlaid cluster-robust 95% ribbon
 plus connecting line per game; categorical moderators keep dodged points and intervals.
-The three identity scales are reversed so higher means more attachment, and `q_class` runs working
-class up to higher class with `dont_know` last.
+The three identity scales are reversed so higher means more attachment, the three "EU effect on"
+items are reversed so higher means a more positive evaluation, and `q_class` runs working class up
+to higher class with `dont_know` last.
 The shared game legend is drawn once, from the top panel.
 
 ```{r}
@@ -895,7 +900,7 @@ resp_half2 <- resp_cat[(half + 1):length(resp_cat)]
 
 ```{r}
 #| label: fig-bcf-combined-resp-1
-#| fig-cap: "BCF posterior estimates of the respondent-level CATE of the Muslim profile across the levels of the first half of the discrete individual-level moderators (top panel) and across age (q_age, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis ($\\hat{\\tau}_i$) is the respondent-level CATE on the token-allocation scale. Identity scales are reversed so higher means more attachment; q_class runs working class up to higher class with dont_know last. Top: points are per-level posterior medians with cluster-robust 95% intervals (posterior SD combined with a respondent cluster-bootstrap SD); ordered numeric scales are drawn as a connecting line and interval ribbon, categorical moderators as dodged points and intervals; grey bars show the per-level row count (pooled over games). Bottom: per-grid-cell posterior median, cluster-robust 95% ribbon, and connecting line per game over a grey histogram of the covariate, on 100 equal intervals across the full 18-75 years. The y-axis is free per facet; discrete levels comprising less than 1% of a game's sample are dropped because their CATE is too imprecise to compare."
+#| fig-cap: "BCF posterior estimates of the respondent-level CATE of the Muslim profile across the levels of the first half of the discrete individual-level moderators (top panel) and across age (q_age, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis ($\\hat{\\tau}_i$) is the respondent-level CATE on the token-allocation scale. Identity scales are reversed so higher means more attachment; the EU-effect items are reversed so higher means a more positive evaluation; q_class runs working class up to higher class with dont_know last. Top: points are per-level posterior medians with cluster-robust 95% intervals (posterior SD combined with a respondent cluster-bootstrap SD); ordered numeric scales are drawn as a connecting line and interval ribbon, categorical moderators as dodged points and intervals; grey bars show the per-level row count (pooled over games). Bottom: per-grid-cell posterior median, cluster-robust 95% ribbon, and connecting line per game over a grey histogram of the covariate, on 100 equal intervals across the full 18-75 years. The y-axis is free per facet; discrete levels comprising less than 1% of a game's sample are dropped because their CATE is too imprecise to compare."
 #| dpi: 500
 #| fig-width: 11
 #| fig-height: 14
@@ -904,7 +909,9 @@ p_resp1 <- plot_comb(
     filter(mod %in% resp_half1) |>
     mutate(mod = factor(mod, levels = resp_half1)),
   ncol = 4,
-  title = "CATE by individual-level moderator, both games (1 of 2)"
+  title = bquote(
+    "CATE by individual-level moderator, both games (1 of 2)" ~ (hat(tau)[ic])
+  )
 )
 p_age <- cont_panel(
   comb_resp |> filter(mod == "q_age"),
@@ -918,7 +925,7 @@ p_age <- cont_panel(
 
 ```{r}
 #| label: fig-bcf-combined-resp-2
-#| fig-cap: "BCF posterior estimates of the respondent-level CATE of the Muslim profile across the levels of the second half of the discrete individual-level moderators (top panel) and across age at which education stopped (q_edu_age_stop, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis ($\\hat{\\tau}_i$) is the respondent-level CATE on the token-allocation scale. Identity scales are reversed so higher means more attachment; q_class runs working class up to higher class with dont_know last. Top: points are per-level posterior medians with cluster-robust 95% intervals (posterior SD combined with a respondent cluster-bootstrap SD); ordered numeric scales are drawn as a connecting line and interval ribbon, categorical moderators as dodged points and intervals; grey bars show the per-level row count (pooled over games). Bottom: posterior median, cluster-robust 95% ribbon, and connecting line per game at each integer year of education-stopping age from 15 to 30, over a grey histogram of the covariate. The y-axis is free per facet; discrete levels comprising less than 1% of a game's sample are dropped because their CATE is too imprecise to compare."
+#| fig-cap: "BCF posterior estimates of the respondent-level CATE of the Muslim profile across the levels of the second half of the discrete individual-level moderators (top panel) and across age at which education stopped (q_edu_age_stop, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis ($\\hat{\\tau}_i$) is the respondent-level CATE on the token-allocation scale. Identity scales are reversed so higher means more attachment; the EU-effect items are reversed so higher means a more positive evaluation; q_class runs working class up to higher class with dont_know last. Top: points are per-level posterior medians with cluster-robust 95% intervals (posterior SD combined with a respondent cluster-bootstrap SD); ordered numeric scales are drawn as a connecting line and interval ribbon, categorical moderators as dodged points and intervals; grey bars show the per-level row count (pooled over games). Bottom: posterior median, cluster-robust 95% ribbon, and connecting line per game at each integer year of education-stopping age from 15 to 30, over a grey histogram of the covariate. The y-axis is free per facet; discrete levels comprising less than 1% of a game's sample are dropped because their CATE is too imprecise to compare."
 #| dpi: 500
 #| fig-width: 11
 #| fig-height: 14
@@ -927,7 +934,9 @@ p_resp2 <- plot_comb(
     filter(mod %in% resp_half2) |>
     mutate(mod = factor(mod, levels = resp_half2)),
   ncol = 4,
-  title = "CATE by individual-level moderator, both games (2 of 2)"
+  title = bquote(
+    "CATE by individual-level moderator, both games (2 of 2)" ~ (hat(tau)[ic])
+  )
 )
 p_edu <- cont_panel(
   comb_resp |> filter(mod == "q_edu_age_stop"),

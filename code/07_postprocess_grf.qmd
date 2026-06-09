@@ -3290,6 +3290,9 @@ below see these.
 The three identity scales run `1` (most attached) to `5` (least attached); we reverse them to
 `6 - x` so that, like every other panel, moving right means *more* of the construct (more
 attachment).
+The three "EU effect on" items (`q_eu_imp_nat_econ`, `q_eu_imp_nat_cul`, `q_eu_imp_nat_pol`) run
+`1` (very positive) to `5` (very negative); we reverse them the same way so moving right means a
+*more positive* evaluation of the EU's effect.
 `q_class` is reordered from working class up to higher class, with the non-substantive
 `dont_know` last, so the facet reads as a status gradient rather than alphabetically.
 
@@ -3299,12 +3302,15 @@ class_order <- c(
   "working_class", "lower_middle_class", "middle_class",
   "upper_middle_class", "higher_class", "dont_know", "other"
 )
-flip5 <- \(x) 6 - x # identity scales: 1 = most attached -> 5 after flip
+flip5 <- \(x) 6 - x # 5-point scales: reverse so higher = more of the construct
 for (nm in c("m_dict", "m_trust")) {
   assign(nm, get(nm) |>
     mutate(
       across(
-        c(q_identity_country, q_identity_eu, q_identity_europe),
+        c(
+          q_identity_country, q_identity_eu, q_identity_europe,
+          q_eu_imp_nat_econ, q_eu_imp_nat_cul, q_eu_imp_nat_pol
+        ),
         flip5
       ),
       q_class = factor(q_class, levels = class_order),
@@ -3540,7 +3546,7 @@ comb_prof <- build_comb(prof_mods)
 plot_comb(
   comb_prof,
   ncol = 3,
-  title = "CATE by conjoint-round moderator, both games",
+  title = bquote("CATE by conjoint-round moderator, both games" ~ (hat(tau)[ric])),
   ylab = yl_ric
 )
 ```
@@ -3556,8 +3562,10 @@ Ordered numeric scales (the 5- and 7-point items) now carry the same ribbon styl
 continuous panels — an overlaid 95% CI band plus connecting line per game; categorical moderators
 keep dodged points and CIs.
 The three identity scales (`q_identity_country`, `q_identity_eu`, `q_identity_europe`) are reversed
-for display so higher on the x-axis means *more* attachment, and `q_class` is ordered from working
-class up to higher class with `dont_know` last.
+for display so higher on the x-axis means *more* attachment, the three "EU effect on" items
+(`q_eu_imp_nat_econ`, `q_eu_imp_nat_cul`, `q_eu_imp_nat_pol`) are reversed so higher means a *more
+positive* evaluation, and `q_class` is ordered from working class up to higher class with
+`dont_know` last.
 The shared game legend is drawn once, from the top panel.
 
 ```{r}
@@ -3572,7 +3580,7 @@ resp_half2 <- resp_cat[(half + 1):length(resp_cat)]
 
 ```{r}
 #| label: fig-grf-combined-resp-1
-#| fig-cap: "CF estimates of the respondent-level CATE of the Muslim profile across the levels of the first half of the discrete individual-level moderators (top panel) and across age (q_age, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis ($\\hat{\\tau}_i$) is the respondent-level CATE on the token-allocation scale. Identity scales are reversed so higher means more attachment; q_class runs working class up to higher class with dont_know last. Top: points are per-level doubly-robust subset estimates with honest cluster-robust 95% confidence intervals (each a separate cluster-robust estimate on that subset, clustered by respondent); ordered numeric scales are drawn as a connecting line and 95% CI ribbon, categorical moderators as dodged points and CIs; grey bars show the per-level row count (pooled over games). Bottom: per-grid-cell subset estimate, 95% CI ribbon, and connecting line per game over a grey histogram of the covariate, on 100 equal intervals across the full 18–75 years. The y-axis is free per facet; discrete levels comprising less than 1% of a game's sample are dropped because their subset estimate is too imprecise to compare."
+#| fig-cap: "CF estimates of the respondent-level CATE of the Muslim profile across the levels of the first half of the discrete individual-level moderators (top panel) and across age (q_age, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis ($\\hat{\\tau}_i$) is the respondent-level CATE on the token-allocation scale. Identity scales are reversed so higher means more attachment; the EU-effect items are reversed so higher means a more positive evaluation; q_class runs working class up to higher class with dont_know last. Top: points are per-level doubly-robust subset estimates with honest cluster-robust 95% confidence intervals (each a separate cluster-robust estimate on that subset, clustered by respondent); ordered numeric scales are drawn as a connecting line and 95% CI ribbon, categorical moderators as dodged points and CIs; grey bars show the per-level row count (pooled over games). Bottom: per-grid-cell subset estimate, 95% CI ribbon, and connecting line per game over a grey histogram of the covariate, on 100 equal intervals across the full 18–75 years. The y-axis is free per facet; discrete levels comprising less than 1% of a game's sample are dropped because their subset estimate is too imprecise to compare."
 #| dpi: 500
 #| fig-width: 11
 #| fig-height: 14
@@ -3580,7 +3588,9 @@ comb_resp1 <- build_comb(resp_half1)
 p_resp1 <- plot_comb(
   comb_resp1,
   ncol = 4,
-  title = "CATE by individual-level moderator, both games (1 of 2)"
+  title = bquote(
+    "CATE by individual-level moderator, both games (1 of 2)" ~ (hat(tau)[ic])
+  )
 )
 p_age <- cont_panel("q_age", c(18, 75)) +
   guides(colour = "none", shape = "none", fill = "none", linetype = "none")
@@ -3589,7 +3599,7 @@ p_age <- cont_panel("q_age", c(18, 75)) +
 
 ```{r}
 #| label: fig-grf-combined-resp-2
-#| fig-cap: "CF estimates of the respondent-level CATE of the Muslim profile across the levels of the second half of the discrete individual-level moderators (top panel) and across age at which education stopped (q_edu_age_stop, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis ($\\hat{\\tau}_i$) is the respondent-level CATE on the token-allocation scale. Identity scales are reversed so higher means more attachment; q_class runs working class up to higher class with dont_know last. Top: points are per-level doubly-robust subset estimates with honest cluster-robust 95% confidence intervals (each a separate cluster-robust estimate on that subset, clustered by respondent); ordered numeric scales are drawn as a connecting line and 95% CI ribbon, categorical moderators as dodged points and CIs; grey bars show the per-level row count (pooled over games). Bottom: subset estimate, 95% CI ribbon, and connecting line per game at each integer year of education-stopping age from 15 to 30, over a grey histogram of the covariate. The y-axis is free per facet; discrete levels comprising less than 1% of a game's sample are dropped because their subset estimate is too imprecise to compare."
+#| fig-cap: "CF estimates of the respondent-level CATE of the Muslim profile across the levels of the second half of the discrete individual-level moderators (top panel) and across age at which education stopped (q_edu_age_stop, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis ($\\hat{\\tau}_i$) is the respondent-level CATE on the token-allocation scale. Identity scales are reversed so higher means more attachment; the EU-effect items are reversed so higher means a more positive evaluation; q_class runs working class up to higher class with dont_know last. Top: points are per-level doubly-robust subset estimates with honest cluster-robust 95% confidence intervals (each a separate cluster-robust estimate on that subset, clustered by respondent); ordered numeric scales are drawn as a connecting line and 95% CI ribbon, categorical moderators as dodged points and CIs; grey bars show the per-level row count (pooled over games). Bottom: subset estimate, 95% CI ribbon, and connecting line per game at each integer year of education-stopping age from 15 to 30, over a grey histogram of the covariate. The y-axis is free per facet; discrete levels comprising less than 1% of a game's sample are dropped because their subset estimate is too imprecise to compare."
 #| dpi: 500
 #| fig-width: 11
 #| fig-height: 14
@@ -3597,7 +3607,9 @@ comb_resp2 <- build_comb(resp_half2)
 p_resp2 <- plot_comb(
   comb_resp2,
   ncol = 4,
-  title = "CATE by individual-level moderator, both games (2 of 2)"
+  title = bquote(
+    "CATE by individual-level moderator, both games (2 of 2)" ~ (hat(tau)[ic])
+  )
 )
 p_edu <- cont_panel("q_edu_age_stop", c(15, 30)) +
   guides(colour = "none", shape = "none", fill = "none", linetype = "none")
