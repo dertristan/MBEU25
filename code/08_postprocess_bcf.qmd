@@ -234,7 +234,7 @@ ref_zero <- geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60")
 dodge <- position_dodge(width = 0.5)
 yl_cate <- expression(widehat(CATE))
 yl_ric <- expression(hat(tau)[ric]) # profile-level CATE
-yl_i <- expression(hat(tau)[i]) # respondent-level CATE
+yl_i <- expression(hat(tau)[ic]) # respondent-level CATE
 ```
 
 # Posterior summary builders {#sec-machinery}
