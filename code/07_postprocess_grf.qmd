@@ -3168,6 +3168,9 @@ scale_colour_game <- function() scale_colour_manual(values = game_cols, name = N
 scale_shape_game <- function() scale_shape_manual(values = game_shapes, name = NULL)
 scale_linetype_game <- function() scale_linetype_manual(values = game_ltys, name = NULL)
 
+# shared moderator labels + categorical-first ordering for the facets
+source(here::here("code", "helper_scripts", "moderator_labels.R"))
+
 theme_mbeu <- function(base_size = 11) {
   ggpubr::theme_pubr(base_size = base_size) +
     theme(legend.position = "top")
@@ -3369,10 +3372,10 @@ plot_comb <- function(df, ncol, title) {
       geom_point(data = d_cat, position = dodge)
   }
   p +
-    facet_wrap(~mod, scales = "free", ncol = ncol) +
+    facet_wrap(~mod, scales = "free", ncol = ncol, labeller = labeller(mod = mod_strip)) +
     scale_colour_game() +
     scale_shape_game() +
-    scale_x_discrete(labels = \(k) sub(".*@@", "", k)) +
+    scale_x_discrete(labels = relabel_key) +
     labs(title = title, x = NULL, y = yl_cate) +
     guides(fill = "none", linetype = "none") +
     theme_mbeu() +
@@ -3411,7 +3414,7 @@ cont_panel <- function(mod, xlim) {
     scale_fill_manual(values = game_cols, name = NULL) +
     scale_x_continuous(breaks = scales::breaks_pretty(6)) +
     coord_cartesian(xlim = xlim) +
-    labs(title = mod, x = "Covariate value (years)", y = yl_cate) +
+    labs(title = mod_labels[[mod]], x = "Covariate value (years)", y = yl_cate) +
     theme_mbeu()
 }
 ```
@@ -3450,6 +3453,8 @@ The shared game legend is drawn once, from the top panel.
 ```{r}
 #| label: resp-split
 resp_cat <- setdiff(resp_mods, c("q_age", "q_edu_age_stop"))
+# categorical moderators first, then the ordered scales
+resp_cat <- c(intersect(cat_mods, resp_cat), setdiff(resp_cat, cat_mods))
 half <- ceiling(length(resp_cat) / 2)
 resp_half1 <- resp_cat[1:half]
 resp_half2 <- resp_cat[(half + 1):length(resp_cat)]
