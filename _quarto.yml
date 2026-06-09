@@ -28,6 +28,7 @@ manuscript:
 
 execute: 
   freeze: auto
+  cache: true
 
 author:
   - name: Tristan Muno
