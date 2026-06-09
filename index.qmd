@@ -136,6 +136,30 @@ These quantities are linked through the law of iterated expectations, which ensu
 
 ### Estimation Strategy
 
+- one paragraph (at most) on history/development of non-parametric approaches to treatment heterogeneity analysis/causal inference
+    - random forest approach
+        - one "branch" developed RF into BARTs and later BCF
+        - another "branch" used sample splitting ML technique (double machine learning)
+        - recent advances in treat. hetero. analyses also in political science and conjoint specifically: 
+            - @robinson2024detect use BARTs which suffer from general BART limitations [@hahn2020bayesian]
+            - @goplerud2025estimating Bayesian mixture of regularized logistic regressions for multi-dimensional treatment 
+                - not used as we are theoretically interested in Muslim penalty, not full multidimensional treatment, and their method is made for bernoulli family forced choice (classical) conjoint outcomes, which differs from @hahm2024divided's setting
+        - pro's and con's of each: cite @ratkovic2021subgroup for direct comparison of sample splitting ML and BARTs
+            - under randomization, both perform relatively equal
+            - without (i.e. with non-random treatment), sample splitting approach superior (although @hahn2020bayesian's addresses the first concern stated by @ratkovic2021subgroup, namely that BARTs "[do] not model the treatment as a function of the covariates", the second concern [using the full sample for both model and outcome estimation] remains real in the BCA extension) 
+        
+
+- our approach: @athey2019generalized Causal Forest primary and Bayesian Causal Forest for robustness
+    - initial problem: inherent hierarchical data structure violates IID assumptions
+    - CF allows for clustered SEs, BCF for random intercepts -> neither for nested multiple levels
+    - on the other hand, we are not interested in comparative country comparisons, just want to account for the sample characteristics
+    - idea: CF with respondent clustered SEs (to account for multiple rows per respondent) and country fixed effects in the covariate matrix (to account for multiple countries in sample), and BCF with nested random intercepts (building upon code used by @yeager2022synergistic)
+    - tested both estimators with synthetic data (with similar hierarchical structure): CF slightly more precise in test data, BCF correctly recovered random intercepts
+    - but nested RI structure unfeasable on whole sample due to computational / temporal limitations (add footnote explaining technical reasons), hence BCF for robustness only fitted with country RI (and respondent uncertainty incorporated in post-fitting stage via bootstrapping)
+    - Hence: present CF results, BCF in appendix as robustness
+
+
+--- OLD
 Given the hierarchical data structure, causal forest [@wager2018estimation; @athey2019estimating] approaches are not optimal, as they assume iid observations and thus potentially return narrower standard errors than appropriate.
 Simulation by @ratkovic2021subgroup revealed BART and GRF perform comparable under random treatment assignment.
 We therefore implement Bayesian causal forests (BCT) with randomc intercepts for account for the nested structure in our data. 
@@ -160,19 +184,23 @@ Consequently, we retreive four main models, BCF and CF for the dictator and trus
 - We also do not run Robinson and Duch's `cjbart` [@robinson2024detect] as an estimator: it is conceptually aligned, and we borrow its nested-estimand vocabulary (observation-, round-, and individual-level marginal component effects) to organize profile-level versus respondent-level heterogeneity, but its BART-then-aggregate construction is exactly the RIC-prone approach BCF improves on, so it is not a third fit.
 - A terminology clarification: in this literature "nested" usually denotes nested *estimands* [@robinson2024detect], whereas our random intercepts address the nested *sampling structure* — a separate concern.
 - The conjoint design supplies a known treatment propensity that is passed directly to the estimators; throughout, the analysis is descriptive and exploratory, with no causal claims beyond CATE estimation.
+--- OLDEND
+
+The CF recovered an overall estimated SATE of -0.5641  (SE 0.0190);  95% CI [-0.6013, -0.5268] in the dictator and Trust ATE: -0.6419  (SE 0.0205);  95% CI [-0.6820, -0.6018] in the trust game.
+As this corresponds to the simple difference in means presented in the beginning, we interpret this as a first "passed" check, as the forest recover the the correct overall SATEs.(Footnote on BCF SATE estimates)
+@fig-grf-combined-toc in the appendix shows the targeting operator characeristic (TOC) curves for our causal forest fits of both games.
+Both indicate presence of heterogenous treatment effects in our data, with the area under the curve (AUTOC) being significantly larger than 0.
 
 
-Paragraph on results presentation scheme
-varying y axes!
-
-What is shown, how, why, how are intervals constructed
+We present our main results by using the visual strategy employed by @green2012modeling, i.e., estimated CATEs as a function of our moderator variables @woody2021model.
+This allows us to determine how changes in one moderator, holding others constant (CHECK IF THATS CORRECT), affect the Muslim penalty in our games.
+Should there be non-linear trends, the Causal Forest should recover this.
+For categorical variables, we estimate the point interval and honest 95% confidence intervals for each level, plotted as shapes and line segments, respectively.
+For continuous (including scale ratings), we obtain point estimates and 95% confidence intervals for each value of the scale (for age and year of education we chose a prespecified number of "bins" for which to obtain the estimates) and connect those, yielding line and ribbons to visualize trends.
+As we estimate separate models for the two types of games, we present each with different coloring within the same plot -- divergences would indicate different hetergoeneity effects across both games.
 
 ## Empirical Analysis {#sec-analysis}
 
-
-CF recovered an estimated SATE of -0.5641  (SE 0.0190);  95% CI [-0.6013, -0.5268] in the dictator and Trust ATE: -0.6419  (SE 0.0205);  95% CI [-0.6820, -0.6018] in the trust game, which corresponds to the diff-in-means presented earlier.
-
-Fig 1: moderation by round level cj_covars
 
 {{< embed code/07_postprocess_grf.qmd#fig-grf-combined-prof >}}
 
@@ -184,7 +212,6 @@ Fig 1: moderation by round level cj_covars
         - though interestingly this difference arises more from an upwards shift of the Dictator non-eu estimate
     - across both games, Muslim profiles presented as upper class are penalized slightly less
 
-Fig 2: moderation by individual level covars
 
 {{< embed code/07_postprocess_grf.qmd#fig-grf-combined-resp-1 >}}
 
@@ -201,7 +228,7 @@ Fig 2: moderation by individual level covars
     - Good vs evil: seems to be negative trend from 3 to 6 but it seems also to bounce off / turn flat toward end of scale, unlike pop_reps
     - Compromise is selling out: again clear negative trend, the more agreement, the larger the Muslim penalty
     - Compromise is important: if at all, more agreement associated with slightly less penalty, but overall strong levels of agreement in sample (hence few observations with <= 4)
-    - Age: for younger respondents (<30 years) uncertainty intervals "scratch" zero (no Muslim bias) more often, then distance between upper bound and zero seems to increase, indicating a negative trend up to age 65, where the upper bounds seem to rise again. This might indicate a U shape relationship betwen age and Muslim penalty, but it might also mechanically arise from the smaller sample size for 65+ (and thus increased uncertainty bands)
+    - Age: for younger respondents (<30 years) uncertainty intervals "scratch" zero (no Muslim bias) more often and for youngest age (18) the point estimates even surpass zero, the only instance where we observe that happen, then distance between upper bound and zero seems to increase, indicating a negative trend up to age 65, where the upper bounds seem to rise again. This might indicate a U shape relationship betwen age and Muslim penalty, but it might also mechanically arise from the smaller sample size for 65+ (and thus increased uncertainty bands)
 
 {{< embed code/07_postprocess_grf.qmd#fig-grf-combined-resp-2 >}}
 
@@ -221,9 +248,19 @@ Fig 2: moderation by individual level covars
     - Age left education: pretty flat trend
 
 - Overall: Overall we find substantial heterogeneity across respondent subgroups, demographics and pre-treatment attitudes, but with very few exception these heterogeneities relate to the extend of anit-Muslim bias, not the presence of it. Even in those very few exceptions, it is only the upper uncertainty bounds that just scratch the zero line, no (single) moderator seems to credibly nullify, let alone reverse, the (negative) Muslim effect on token allocation. 
-Strongest moderation heterogeneity is found across EU evaluations/attitudes, where the pattern in the data generally suggest that respondents against EU integration or with negative evaluations of the EU show systematically higher levels of anti-Muslim bias than those favoring / positively evaluating the EU and its effects. Still, even in the pro-European sides of the scales, robust Muslim penalties persist, albeit at lower levels.  
+Strongest moderation heterogeneity is found across EU evaluations/attitudes, where the pattern in the data generally suggest that respondents against EU integration or with negative evaluations of the EU show systematically higher levels of anti-Muslim bias than those favoring / positively evaluating the EU and its effects. Still, even in the pro-European sides of the scales, robust Muslim penalties persist, albeit at lower levels. 
+This impression is supported by the variable importance plot in the appendix (@fig-grf-combined-vi), which identifies the mentioned EU items as 4 of the 5 most "important" variables.
 
 ## Robustness {#sec-robustness}
+
+The results based on the Bayesian Causal Forest [@hahn2020bayesian] yield identical patterns for the conjoint profile level moderators (@fig-bcf-combined-prof in the appendix).
+
+The same picture appears for the individual level covariates. 
+Although uncertainty bounds appear smaller for small-N levels / values, possibly a consequence of the "lack" of "honest" sample splitting approach, the substantive trends described in the results section seem to replicate.
+At most, the moderation effects of continuous survey items appear more "smooth" in the BCF estimates, but direction and trends remain -- Muslim penalty is overall robust, there appears a small gender gap (though less so in the trust game estimates), EU related items show strongest heterogeneity differences across scales, and the same  populism items as described above are associated with differing magnitudes of Muslim penalty.
+The only notable disagreement appears in the recovered heterogeneity of respondents' age.
+In the BCF results there is no "touching" the zero effect visible for younger respondents, neither does the trend approach zero in larger values of age as described in the lose u turn interpretation above.
+
 
 ## Limitations {#sec-limits}
 
@@ -265,21 +302,21 @@ This led us to exclude theoretically / potentially interesting variables such as
 
 {{< embed code/09_additional_figs_tables.qmd#tbl-wordings >}}
 
-### Appendix B {.unnumbered}
+### Appendix B Additional CF Figures {.unnumbered}
 
 #### TOC / AUTOC Curve {.unnumbered}
 
 {{< embed code/07_postprocess_grf.qmd#fig-grf-combined-toc >}}
 
-#### Best Linear Projection {.unnumbered}
+<!-- #### Best Linear Projection {.unnumbered} -->
 
-{{< embed code/07_postprocess_grf.qmd#fig-grf-combined-blp >}}
+<!-- {{< embed code/07_postprocess_grf.qmd#fig-grf-combined-blp >}} -->
 
 #### Variable Importance {.unnumbered}
 
 {{< embed code/07_postprocess_grf.qmd#fig-grf-combined-vi >}}
 
-### Appendix C {.unnumbered}
+### Appendix C Main Results from BCF Method {.unnumbered}
 
 #### BCF Moderation by Profile-level Covariates {.unnumbered}
 
