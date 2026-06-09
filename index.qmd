@@ -90,7 +90,10 @@ Y_{ric}^{g,\text{obs}} =
 T_{ric} \cdot Y_{ric}^{g}(1) + (1 - T_{ric}) \cdot Y_{ric}^{g}(0)
 $$ {#eq-observed}
 
-Since both games reflect different types of discrimination, we estimate separate models for each game $g \in \{D, TR\}$, where $D$ denotes the dictator game and $TR$ the trust game. Our baseline estimand for each game is the Average Treatment Effect (ATE):\text{ATE}^{g} = \mathbb{E}\!\left[Y_{ric}^{g}(1) - Y_{ric}^{g}(0)\right]
+Since both games reflect different types of discrimination, we estimate separate models for each game $g \in \{D, TR\}$, where $D$ denotes the dictator game and $TR$ the trust game. Our baseline estimand for each game is the Average Treatment Effect (ATE):
+
+$$
+\text{ATE}^{g} = \mathbb{E}\!\left[Y_{ric}^{g}(1) - Y_{ric}^{g}(0)\right]
 $${#eq-ate}
 
 \noindent where $Y_{ric}^{g}(t)$ is the number of tokens allocated by respondent $i$ in country $c$ during round $r$ of game $g$ under treatment assignment $t$.
@@ -153,39 +156,51 @@ These quantities are linked through the law of iterated expectations, which ensu
 
 ### Estimation Strategy
 
-Estimating how a treatment effect varies across units, rather than estimating its average, is a harder problem than prediction, and the nonparametric tools now used for it descend from two distinct lineages.
-The first is Bayesian.
-Bayesian Additive Regression Trees [BART; @chipman2006bayesian; @chipman2010bart] model an outcome as a regularized sum of trees, and @hill2011bayesian adapt them to causal inference by fitting the response surface and differencing the predicted potential outcomes.
-@hahn2020bayesian refine this into Bayesian Causal Forests (BCF), which give the treatment surface its own prior and regularization, separating it from the prognostic surface and so guarding against the regularization-induced confounding that affects the BART-then-difference approach.
-The second lineage is frequentist and built on sample splitting.
-@athey2019estimating introduce "honest" causal trees that select splits and estimate effects on separate subsamples, @wager2018estimation aggregate these into causal forests with asymptotically valid confidence intervals, and @athey2019generalized generalize the construction to arbitrary moment conditions, connecting it to the orthogonalization and cross-fitting logic of double machine learning [@chernozhukov2018double].
-Both families have recently entered the study of treatment-effect heterogeneity in political science, and in conjoint experiments specifically: @robinson2024detect estimate respondent-level effects with BART, while @goplerud2025estimating model heterogeneity through a Bayesian mixture of regularized multinomial regressions.
-We do not adopt the latter, as it is built for the full multidimensional treatment of forced-choice conjoints with a Bernoulli outcome, whereas we study a single collapsed Muslim indicator with a continuous token-allocation outcome [@hahm2024divided].
-The choice between the two lineages is informed by @ratkovic2021subgroup, who compares them directly: under randomized treatment they perform comparably, but absent randomization the split-sample approach is markedly less biased and yields confidence intervals with substantially better coverage.
-He raises two objections to using BART for subgroup analysis -- that it does not model the treatment as a function of the covariates, and that it uses the full sample both to fit the model and to estimate and test effects -- and while @hahn2020bayesian's separate treatment prior answers the first, the second persists in the BCF extension.
+Estimating how a treatment effect varies across units is a different problem from predicting an outcome, and a harder one.
+The signal of interest, the variation in the effect, is typically an order of magnitude smaller than the variation in the outcome itself, so a method tuned to predict the outcome spends most of its capacity on strong confounding structure and little on the effect [@imai2013estimating].
+The modern tools for this task grew out of regression trees and random forests, which partition the covariate space into regions and average within them, learning flexible response surfaces without a pre-specified functional form.
+Two developments adapted this machinery to treatment effects, and they differ less in statistical philosophy than in where they place their corrections.
+The first keeps the tree ensemble but disciplines it with a prior.
+Bayesian Additive Regression Trees model the outcome as a regularised sum of trees [BART, @chipman2006bayesian; @chipman2010bart; @hill2020bayesian], and were carried into causal inference by fitting the response surface and differencing predicted potential outcomes [@hill2011bayesian; @carnegie2019examining].
+Bayesian Causal Forests refine this by giving the treatment surface its own prior and its own regularisation, separate from the prognostic surface, which guards against the regularisation-induced confounding that arises when a single prior shrinks both [@hahn2020bayesian], an idea since sharpened with shrinkage and sparsity refinements [@caron2022shrinkage; @caron2022estimating].
+The second development corrects the data instead of the prior.
+Causal trees and forests split the sample so that the partition is learned on one part and the effects are estimated on another, a property their authors call honesty, which restores valid confidence intervals on the recovered effects [@athey2019estimating; @wager2018estimation; @jawadekar2023practical].
+Generalised random forests extend this to a broad class of estimands and orthogonalise the nuisance structure away from the target, the logic that also underpins double machine learning [@athey2019generalized; @chernozhukov2018double; @ratkovic2023relaxing], and the approach has become a workhorse for heterogeneous-effect analysis in applied work and in political science [@davis2017using; @zheng2023estimating].
+The two families have been compared directly by @ratkovic2021subgroup.
+Under randomised treatment they perform comparably, but absent randomisation the sample-splitting approach is markedly less biased and yields confidence intervals with substantially better coverage.
+That comparison raises two concerns about using BART for this task, that it does not model the treatment as a function of the covariates and that it uses the full sample both to fit the model and to estimate and test the effects.
+The separate treatment prior of Bayesian Causal Forests answers the first concern, but the second, the absence of sample splitting, remains in the Bayesian branch.
 
-We therefore take a causal forest [@athey2019generalized] as our primary estimator and hierarchical BCF [@hahn2020bayesian] as a robustness check.
-The central complication is that our observations are not independent: rounds are nested within respondents, who are nested within countries, and ignoring this dependence understates uncertainty.
-The causal forest accommodates the structure through respondent-clustered standard errors and country fixed effects in the covariate matrix, whereas BCF accommodates it through random intercepts, extending the implementation of @yeager2022synergistic and @yeager2019national.
-We treat country and respondent variation as a nuisance to absorb rather than a quantity to interpret, consistent with our interest in within-sample heterogeneity rather than cross-national comparison.
-We validated both estimators on synthetic data sharing this hierarchical structure: the causal forest was slightly more precise, and BCF recovered the planted random intercepts correctly.
-Fully nested random intercepts proved computationally infeasible at our sample size, so the robustness BCF carries country random intercepts only, with respondent-level dependence handled by a cluster bootstrap; the primary causal forest absorbs that dependence directly through respondent clustering.[^nested-ri]
-We report the causal-forest results in the main text and place the BCF results in the appendix.
+Our design follows from this comparison and from the structure of our data.
+We observe each respondent over three conjoint rounds, and respondents are themselves grouped within 25 countries, so the observations are clustered at two levels and treating them as independent would understate our uncertainty.
+Our first instinct was to let the data structure drive the model and to fit a Bayesian Causal Forest with nested random intercepts, respondent within country, on the prognostic surface.
+That choice was attractive for three reasons.
+It targets the treatment surface directly and returns credible intervals on any summary of it, it absorbs the clustered structure through partial pooling rather than discarding it, and it has a clear lineage in applications that add random intercepts to BCF for multisite and clustered trials [@yeager2019national; @yeager2022synergistic], with recent extensions formalising BCF for hierarchical and longitudinal data [@thal2024aggregate; @prevot2025hierarchical].
+We implemented the nested extension and confirmed on synthetic data with the same two-level structure that it recovers the planted random intercepts and treatment surface correctly.
+At full scale, however, the nested fit proved computationally infeasible.[^nested-ri]
+We therefore made the generalised random forest our primary estimator and kept the Bayesian Causal Forest as a robustness check.
+The causal forest suits our case because it absorbs the within-respondent dependence directly through respondent-level clusters, accommodates the countries as fixed effects in the covariate matrix, and delivers the honest, cluster-robust intervals that the Ratkovic comparison favours.
+On the same synthetic data it was in fact slightly more precise than the Bayesian fit.
+The robustness Bayesian Causal Forest is fit with country random intercepts only, and the within-respondent dependence it can no longer model directly is handled afterwards by a respondent cluster bootstrap.
+Throughout, we treat the country and respondent variation as a nuisance to absorb rather than a quantity to interpret, in keeping with our interest in heterogeneity within the sample rather than comparison across countries.
 
-[^nested-ri]: The sampler forms the random-effects precision matrix densely and Cholesky-solves it at every Gibbs sweep, an $O(q^3)$ operation in the total number of random-effect levels $q$.
-With both country and respondent intercepts, $q$ runs into the tens of thousands, dominated by the respondent dummies, which makes the full nested fit prohibitive within the project window; country-only intercepts shrink the random-effects block to a trivial $25 \times 25$ solve.
+[^nested-ri]: The sampler forms the random-effects precision matrix densely and solves it by Cholesky decomposition at every Gibbs sweep, a cost that grows with the cube of the number of random-effect levels.
+With both country and respondent intercepts that number runs into the tens of thousands, dominated by the respondent dummies, which puts the full nested fit beyond reach within the project window.
+Restricting the random effects to countries reduces that block to a trivial $25 \times 25$ solve.
 
-The causal forest recovers a sample average treatment effect of $-0.5641$ (SE $0.0190$; 95% CI $[-0.6013, -0.5268]$) in the Dictator game and $-0.6419$ (SE $0.0205$; 95% CI $[-0.6820, -0.6018]$) in the Trust game.
-Both reproduce the difference in means reported above (@fig-diff-in-means), a first check that the forest recovers the correct averages before we interrogate it for heterogeneity.[^bcf-sate]
-The targeting operator characteristic curves (@fig-grf-combined-toc, appendix) place the area under the curve well above zero in both games, evidence that the heterogeneity in the Muslim penalty is targetable rather than noise.
+Before turning to heterogeneity, we confirm that the forest recovers the average effect.
+The causal forest estimates a sample average treatment effect of $-0.5641$ (SE $0.0190$, 95% CI $[-0.6013, -0.5268]$) in the Dictator game and $-0.6419$ (SE $0.0205$, 95% CI $[-0.6820, -0.6018]$) in the Trust game.
+Both reproduce the difference in means reported above (@fig-diff-in-means), a first sign that the forest behaves as it should before we ask it about heterogeneity.[^bcf-sate]
+We then test whether that heterogeneity is real with the targeting operator characteristic curve (@fig-grf-combined-toc, appendix), whose area lies well above zero in both games.
+This indicates that the variation in the Muslim penalty is targetable rather than noise, which motivates the moderator-by-moderator analysis that follows.
 
-[^bcf-sate]: The BCF posterior means for the same quantity agree with the causal-forest estimates.
+[^bcf-sate]: The Bayesian Causal Forest posterior means for the same quantity agree with these estimates.
 
-We present the main results following the visual grammar of @green2012modeling, plotting the estimated CATE as a function of each moderator [@woody2021model].
-Each panel shows the average CATE within a level or bin of one moderator, marginalizing over the remaining covariates; it traces how the Muslim penalty varies with that moderator, not a partial effect with all others held fixed.
+We present the results in the visual grammar of @green2012modeling, plotting the estimated conditional effect as a function of each moderator [@woody2021model].
+Each panel shows the average effect within a level or bin of one moderator, taken over the distribution of the remaining covariates, so it describes how the Muslim penalty varies with that moderator rather than a partial effect with everything else held fixed.
 For categorical moderators we plot the point estimate and an honest 95% confidence interval at each level, drawn as a shape and a line segment.
-For continuous moderators and scale items we estimate the point and interval at each value -- binning age and years of education into a pre-specified number of bins -- and connect them into a line with a ribbon, which lets the forest surface any non-linear trend.
-We overlay the two games within a single panel by colour, so that divergences between them read directly as game-specific heterogeneity.
+For continuous moderators and rating scales we estimate the point and interval at each value, binning age and years of education into a pre-specified number of bins, and connect them into a line with a ribbon, which lets the forest reveal any non-linear trend.
+We overlay the two games within a single panel by colour, so that any divergence between them reads directly as a game-specific difference in heterogeneity.
 
 ## Empirical Analysis {#sec-analysis}
 
