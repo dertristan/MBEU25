@@ -205,6 +205,8 @@ theme_mbeu <- function(base_size = 11) {
 ref_zero <- geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60")
 dodge <- position_dodge(width = 0.5)
 yl_cate <- expression(widehat(CATE))
+yl_ric <- expression(hat(tau)[ric]) # profile-level CATE
+yl_i <- expression(hat(tau)[i]) # respondent-level CATE
 ```
 
 # Posterior summary builders {#sec-machinery}
@@ -443,7 +445,7 @@ builders produce, so the posterior intervals slot straight in).
 
 ```{r}
 #| label: plot-comb
-plot_comb <- function(df, ncol, title) {
+plot_comb <- function(df, ncol, title, ylab = yl_i) {
   d <- df |>
     arrange(mod, order) |>
     mutate(key = factor(
@@ -503,7 +505,7 @@ plot_comb <- function(df, ncol, title) {
     scale_colour_game() +
     scale_shape_game() +
     scale_x_discrete(labels = relabel_key) +
-    labs(title = title, x = NULL, y = yl_cate) +
+    labs(title = title, x = NULL, y = ylab) +
     guides(fill = "none", linetype = "none") +
     theme_mbeu() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 7))
@@ -518,7 +520,7 @@ histogram.
 
 ```{r}
 #| label: cont-panel
-cont_panel <- function(d, raw, mod, xlim) {
+cont_panel <- function(d, raw, mod, xlim, ylab = yl_i) {
   # covariate distribution within the visible range
   v <- raw[!is.na(raw) & raw >= xlim[1] & raw <= xlim[2]]
   h <- hist(v, breaks = 30, plot = FALSE)
@@ -547,7 +549,7 @@ cont_panel <- function(d, raw, mod, xlim) {
     scale_fill_manual(values = game_cols, name = NULL) +
     scale_x_continuous(breaks = scales::breaks_pretty(6)) +
     coord_cartesian(xlim = xlim) +
-    labs(title = mod_labels[[mod]], x = "Covariate value (years)", y = yl_cate) +
+    labs(title = mod_labels[[mod]], x = "Covariate value (years)", y = ylab) +
     theme_mbeu()
 }
 ```
@@ -767,11 +769,16 @@ drawn as dodged points with cluster-robust intervals.
 
 ```{r}
 #| label: fig-bcf-combined-prof
-#| fig-cap: "BCF posterior CATE of the Muslim profile (y-axis) across the levels of every conjoint-round moderator (x-axis), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. Points are per-level posterior medians and the vertical bars are cluster-robust 95% intervals (posterior SD of the within-level mean of tau(x) combined with a respondent cluster-bootstrap SD). Grey bars along the bottom of each facet show the per-level row count (pooled over games). The y-axis is free per facet; levels comprising less than 1% of a game's sample are dropped because their CATE is too imprecise to compare."
+#| fig-cap: "BCF posterior estimates of the profile-level CATE of the Muslim profile across the levels of every conjoint-round moderator (x-axis), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis ($\\hat{\\tau}_{ric}$) is the profile-level CATE on the token-allocation scale. Points are per-level posterior medians and the vertical bars are cluster-robust 95% intervals (posterior SD of the within-level mean of the CATE combined with a respondent cluster-bootstrap SD). Grey bars along the bottom of each facet show the per-level row count (pooled over games). The y-axis is free per facet; levels comprising less than 1% of a game's sample are dropped because their CATE is too imprecise to compare."
 #| dpi: 500
 #| fig-width: 9
 #| fig-height: 6
-plot_comb(comb_prof, ncol = 3, title = "CATE by conjoint-round moderator, both games")
+plot_comb(
+  comb_prof,
+  ncol = 3,
+  title = "CATE by conjoint-round moderator, both games",
+  ylab = yl_ric
+)
 ```
 
 ## Individual-level moderators {#sec-cate-resp}
@@ -799,7 +806,7 @@ resp_half2 <- resp_cat[(half + 1):length(resp_cat)]
 
 ```{r}
 #| label: fig-bcf-combined-resp-1
-#| fig-cap: "BCF posterior CATE of the Muslim profile (y-axis) across the levels of the first half of the discrete individual-level moderators (top panel) and across age (q_age, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. Identity scales are reversed so higher means more attachment; q_class runs working class up to higher class with dont_know last. Top: points are per-level posterior medians with cluster-robust 95% intervals (posterior SD combined with a respondent cluster-bootstrap SD); ordered numeric scales are drawn as a connecting line and interval ribbon, categorical moderators as dodged points and intervals; grey bars show the per-level row count (pooled over games). Bottom: per-grid-cell posterior median, cluster-robust 95% ribbon, and connecting line per game over a grey histogram of the covariate, on 100 equal intervals across the full 18-75 years. The y-axis is free per facet; discrete levels comprising less than 1% of a game's sample are dropped because their CATE is too imprecise to compare."
+#| fig-cap: "BCF posterior estimates of the respondent-level CATE of the Muslim profile across the levels of the first half of the discrete individual-level moderators (top panel) and across age (q_age, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis ($\\hat{\\tau}_i$) is the respondent-level CATE on the token-allocation scale. Identity scales are reversed so higher means more attachment; q_class runs working class up to higher class with dont_know last. Top: points are per-level posterior medians with cluster-robust 95% intervals (posterior SD combined with a respondent cluster-bootstrap SD); ordered numeric scales are drawn as a connecting line and interval ribbon, categorical moderators as dodged points and intervals; grey bars show the per-level row count (pooled over games). Bottom: per-grid-cell posterior median, cluster-robust 95% ribbon, and connecting line per game over a grey histogram of the covariate, on 100 equal intervals across the full 18-75 years. The y-axis is free per facet; discrete levels comprising less than 1% of a game's sample are dropped because their CATE is too imprecise to compare."
 #| dpi: 500
 #| fig-width: 11
 #| fig-height: 14
@@ -818,7 +825,7 @@ p_age <- cont_panel(
 
 ```{r}
 #| label: fig-bcf-combined-resp-2
-#| fig-cap: "BCF posterior CATE of the Muslim profile (y-axis) across the levels of the second half of the discrete individual-level moderators (top panel) and across age at which education stopped (q_edu_age_stop, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. Identity scales are reversed so higher means more attachment; q_class runs working class up to higher class with dont_know last. Top: points are per-level posterior medians with cluster-robust 95% intervals (posterior SD combined with a respondent cluster-bootstrap SD); ordered numeric scales are drawn as a connecting line and interval ribbon, categorical moderators as dodged points and intervals; grey bars show the per-level row count (pooled over games). Bottom: posterior median, cluster-robust 95% ribbon, and connecting line per game at each integer year of education-stopping age from 15 to 30, over a grey histogram of the covariate. The y-axis is free per facet; discrete levels comprising less than 1% of a game's sample are dropped because their CATE is too imprecise to compare."
+#| fig-cap: "BCF posterior estimates of the respondent-level CATE of the Muslim profile across the levels of the second half of the discrete individual-level moderators (top panel) and across age at which education stopped (q_edu_age_stop, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis ($\\hat{\\tau}_i$) is the respondent-level CATE on the token-allocation scale. Identity scales are reversed so higher means more attachment; q_class runs working class up to higher class with dont_know last. Top: points are per-level posterior medians with cluster-robust 95% intervals (posterior SD combined with a respondent cluster-bootstrap SD); ordered numeric scales are drawn as a connecting line and interval ribbon, categorical moderators as dodged points and intervals; grey bars show the per-level row count (pooled over games). Bottom: posterior median, cluster-robust 95% ribbon, and connecting line per game at each integer year of education-stopping age from 15 to 30, over a grey histogram of the covariate. The y-axis is free per facet; discrete levels comprising less than 1% of a game's sample are dropped because their CATE is too imprecise to compare."
 #| dpi: 500
 #| fig-width: 11
 #| fig-height: 14

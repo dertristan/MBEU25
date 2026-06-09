@@ -3178,6 +3178,8 @@ theme_mbeu <- function(base_size = 11) {
 ref_zero <- geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60")
 dodge <- position_dodge(width = 0.5)
 yl_cate <- expression(widehat(CATE))
+yl_ric <- expression(hat(tau)[ric]) # profile-level CATE
+yl_i <- expression(hat(tau)[i]) # respondent-level CATE
 ```
 
 ## Presentational moderator transforms {#sec-combined-transforms}
@@ -3320,7 +3322,7 @@ build_comb <- function(mods) {
     mutate(mod = factor(mod, levels = mods))
 }
 
-plot_comb <- function(df, ncol, title) {
+plot_comb <- function(df, ncol, title, ylab = yl_i) {
   d <- df |>
     arrange(mod, order) |>
     mutate(key = factor(
@@ -3380,14 +3382,14 @@ plot_comb <- function(df, ncol, title) {
     scale_colour_game() +
     scale_shape_game() +
     scale_x_discrete(labels = relabel_key) +
-    labs(title = title, x = NULL, y = yl_cate) +
+    labs(title = title, x = NULL, y = ylab) +
     guides(fill = "none", linetype = "none") +
     theme_mbeu() +
     theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 7))
 }
 
 # one continuous moderator: fixed-grid CATE ribbon + real histogram, x trimmed to xlim
-cont_panel <- function(mod, xlim) {
+cont_panel <- function(mod, xlim, ylab = yl_i) {
   d <- build_comb(mod)
   # covariate distribution within the visible range
   v <- m_dict[[mod]]
@@ -3418,7 +3420,7 @@ cont_panel <- function(mod, xlim) {
     scale_fill_manual(values = game_cols, name = NULL) +
     scale_x_continuous(breaks = scales::breaks_pretty(6)) +
     coord_cartesian(xlim = xlim) +
-    labs(title = mod_labels[[mod]], x = "Covariate value (years)", y = yl_cate) +
+    labs(title = mod_labels[[mod]], x = "Covariate value (years)", y = ylab) +
     theme_mbeu()
 }
 ```
@@ -3431,12 +3433,17 @@ is drawn as dodged points only.
 
 ```{r}
 #| label: fig-grf-combined-prof
-#| fig-cap: "GRF CATE of the Muslim profile (y-axis) across the levels of every conjoint-round moderator (x-axis), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. Points are per-level doubly-robust subset ATEs and the vertical bars are honest cluster-robust 95% confidence intervals (each a separate average_treatment_effect() call on that subset, clustered by respondent). Grey bars along the bottom of each facet show the per-level row count (pooled over games). The y-axis is free per facet; levels comprising less than 1% of a game's sample are dropped because their subset CATE is too imprecise to compare."
+#| fig-cap: "CF estimates of the profile-level CATE of the Muslim profile across the levels of every conjoint-round moderator (x-axis), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis ($\\hat{\\tau}_{ric}$) is the profile-level CATE on the token-allocation scale. Points are per-level doubly-robust subset estimates and the vertical bars are honest cluster-robust 95% confidence intervals (each a separate cluster-robust estimate on that subset, clustered by respondent). Grey bars along the bottom of each facet show the per-level row count (pooled over games). The y-axis is free per facet; levels comprising less than 1% of a game's sample are dropped because their subset estimate is too imprecise to compare."
 #| dpi: 500
 #| fig-width: 9
 #| fig-height: 6
 comb_prof <- build_comb(prof_mods)
-plot_comb(comb_prof, ncol = 3, title = "CATE by conjoint-round moderator, both games")
+plot_comb(
+  comb_prof,
+  ncol = 3,
+  title = "CATE by conjoint-round moderator, both games",
+  ylab = yl_ric
+)
 ```
 
 ## Individual-level moderators, both games {#sec-combined-resp}
@@ -3466,7 +3473,7 @@ resp_half2 <- resp_cat[(half + 1):length(resp_cat)]
 
 ```{r}
 #| label: fig-grf-combined-resp-1
-#| fig-cap: "GRF CATE of the Muslim profile (y-axis) across the levels of the first half of the discrete individual-level moderators (top panel) and across age (q_age, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. Identity scales are reversed so higher means more attachment; q_class runs working class up to higher class with dont_know last. Top: points are per-level doubly-robust subset ATEs with honest cluster-robust 95% confidence intervals (each a separate average_treatment_effect() call on that subset, clustered by respondent); ordered numeric scales are drawn as a connecting line and 95% CI ribbon, categorical moderators as dodged points and CIs; grey bars show the per-level row count (pooled over games). Bottom: per-grid-cell subset ATE, 95% CI ribbon, and connecting line per game over a grey histogram of the covariate, on 100 equal intervals across the full 18–75 years. The y-axis is free per facet; discrete levels comprising less than 1% of a game's sample are dropped because their subset CATE is too imprecise to compare."
+#| fig-cap: "CF estimates of the respondent-level CATE of the Muslim profile across the levels of the first half of the discrete individual-level moderators (top panel) and across age (q_age, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis ($\\hat{\\tau}_i$) is the respondent-level CATE on the token-allocation scale. Identity scales are reversed so higher means more attachment; q_class runs working class up to higher class with dont_know last. Top: points are per-level doubly-robust subset estimates with honest cluster-robust 95% confidence intervals (each a separate cluster-robust estimate on that subset, clustered by respondent); ordered numeric scales are drawn as a connecting line and 95% CI ribbon, categorical moderators as dodged points and CIs; grey bars show the per-level row count (pooled over games). Bottom: per-grid-cell subset estimate, 95% CI ribbon, and connecting line per game over a grey histogram of the covariate, on 100 equal intervals across the full 18–75 years. The y-axis is free per facet; discrete levels comprising less than 1% of a game's sample are dropped because their subset estimate is too imprecise to compare."
 #| dpi: 500
 #| fig-width: 11
 #| fig-height: 14
@@ -3483,7 +3490,7 @@ p_age <- cont_panel("q_age", c(18, 75)) +
 
 ```{r}
 #| label: fig-grf-combined-resp-2
-#| fig-cap: "GRF CATE of the Muslim profile (y-axis) across the levels of the second half of the discrete individual-level moderators (top panel) and across age at which education stopped (q_edu_age_stop, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. Identity scales are reversed so higher means more attachment; q_class runs working class up to higher class with dont_know last. Top: points are per-level doubly-robust subset ATEs with honest cluster-robust 95% confidence intervals (each a separate average_treatment_effect() call on that subset, clustered by respondent); ordered numeric scales are drawn as a connecting line and 95% CI ribbon, categorical moderators as dodged points and CIs; grey bars show the per-level row count (pooled over games). Bottom: subset ATE, 95% CI ribbon, and connecting line per game at each integer year of education-stopping age from 15 to 30, over a grey histogram of the covariate. The y-axis is free per facet; discrete levels comprising less than 1% of a game's sample are dropped because their subset CATE is too imprecise to compare."
+#| fig-cap: "CF estimates of the respondent-level CATE of the Muslim profile across the levels of the second half of the discrete individual-level moderators (top panel) and across age at which education stopped (q_edu_age_stop, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis ($\\hat{\\tau}_i$) is the respondent-level CATE on the token-allocation scale. Identity scales are reversed so higher means more attachment; q_class runs working class up to higher class with dont_know last. Top: points are per-level doubly-robust subset estimates with honest cluster-robust 95% confidence intervals (each a separate cluster-robust estimate on that subset, clustered by respondent); ordered numeric scales are drawn as a connecting line and 95% CI ribbon, categorical moderators as dodged points and CIs; grey bars show the per-level row count (pooled over games). Bottom: subset estimate, 95% CI ribbon, and connecting line per game at each integer year of education-stopping age from 15 to 30, over a grey histogram of the covariate. The y-axis is free per facet; discrete levels comprising less than 1% of a game's sample are dropped because their subset estimate is too imprecise to compare."
 #| dpi: 500
 #| fig-width: 11
 #| fig-height: 14
@@ -3508,7 +3515,7 @@ distinction is carried by axis position or facet.
 
 ```{r}
 #| label: fig-grf-combined-toc
-#| fig-cap: "GRF Targeting Operator Characteristic curve, both games overlaid: ATE among the top-q fraction by predicted CATE minus the overall ATE, with 95% CI ribbon. The area under each curve is the AUTOC, reported in the title."
+#| fig-cap: "CF Targeting Operator Characteristic curve, both games overlaid: ATE among the top-q fraction by predicted CATE minus the overall ATE, with 95% CI ribbon. The area under each curve is the AUTOC, reported in the title."
 #| dpi: 500
 #| fig-width: 6.5
 #| fig-height: 4
@@ -3544,7 +3551,7 @@ ggplot(toc_comb, aes(x = q, y = estimate, colour = game)) +
 
 ```{r}
 #| label: fig-grf-combined-blp
-#| fig-cap: "GRF best linear projection of the CATE onto the moderator set, both games overlaid, with 95% CIs (dodged by game). Terms are ordered by their mean coefficient across the two games. Appendix-style linear summary of effect modification."
+#| fig-cap: "CF best linear projection of the CATE onto the moderator set, both games overlaid, with 95% CIs (dodged by game). Terms are ordered by their mean coefficient across the two games. Appendix-style linear summary of effect modification."
 #| dpi: 500
 #| fig-width: 6.5
 #| fig-height: 9
@@ -3574,7 +3581,7 @@ ggplot(blp_comb, aes(x = estimate, y = term, colour = game, shape = game)) +
 
 ```{r}
 #| label: fig-grf-combined-vi
-#| fig-cap: "GRF variable importance aggregated to the original moderators, both games overlaid (dodged bars by game). Profile-level and respondent-level moderators are separated into facets; within each facet moderators are ordered by their mean importance across the two games. Country fixed-effect columns excluded."
+#| fig-cap: "CF variable importance aggregated to the original moderators, both games overlaid (dodged bars by game). Profile-level and respondent-level moderators are separated into facets; within each facet moderators are ordered by their mean importance across the two games. Country fixed-effect columns excluded."
 #| dpi: 500
 #| fig-width: 7
 #| fig-height: 9
