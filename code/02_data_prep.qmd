@@ -468,6 +468,7 @@ eu25games2019_clean_selected <- eu25games2019_clean2 |>
     meta_pid,
     all_of(vars_pre_game),
     starts_with("cj_attr"),
+    starts_with("cj_treatment"),
     starts_with("cj_dict"),
     starts_with("cj_trust"),
     # postgame demographic vars only
@@ -605,6 +606,7 @@ eu25_long <- eu25games2019_clean_selected_final |>
       starts_with("meta_"),
       starts_with("q_"),
       starts_with("cj_attr"),
+      starts_with("cj_treatment"),
       contains("_instr_")
     ),
     names_to = c("game_type", "round", ".value"),
@@ -617,9 +619,87 @@ eu25_long <- eu25games2019_clean_selected_final |>
       starts_with("meta_"),
       starts_with("q_"),
       starts_with("cj_attr"),
+      starts_with("cj_treatment"),
       contains("_instr_")
     )
   )
+```
+
+# Display-aware profile covariates
+
+The four treatment conditions in `cj_treatment` govern *which* profile features were
+actually shown to the respondent.
+EU stance was displayed only in conditions whose name contains `eustance` (treatments 1
+and 3); partisan affiliation was displayed only in conditions whose name contains
+`partisan` (treatments 1 and 2).
+The raw conjoint columns `cj_eupos` and `cj_party_raw` carry a behind-the-scenes value
+in *every* condition, including those where the feature was never displayed, so the
+displayed contrast has to be reconstructed from `cj_treatment`.
+
+We therefore derive two display-aware profile covariates with the `der_cj_` prefix.
+`der_cj_eu_identity` collapses to three levels: the shown EU-citizen contrast where EU
+stance was displayed, and a single `not_displayed` level otherwise.
+`der_cj_partisanship` contrasts conational profiles where party was shown (`shown`,
+treatments 1 and 2) against the apples-to-apples conational profile where party was
+suppressed (`not_shown`, treatment 4 with the drawn nationality equal to the
+respondent's country, i.e. `cj_nat == "own_country"`); every other profile is
+`not_applicable`.
+
+```{r}
+#| label: display-aware-covariates
+eu25_long <- eu25_long |>
+  mutate(
+    # eu stance shown -> 1,3
+    der_cj_eu_identity = case_when(
+      grepl("eustance", cj_treatment) & cj_eupos == "eu_citizen" ~ "eu_citizen",
+      grepl("eustance", cj_treatment) & cj_eupos == "not_eu_citizen" ~
+        "not_eu_citizen",
+      !grepl("eustance", cj_treatment) ~ "not_displayed"
+    ),
+    # party shown -> 1,2; conational suppressed -> 4 & own_country
+    der_cj_partisanship = case_when(
+      grepl("partisan", cj_treatment) ~ "shown",
+      cj_treatment == "4_somenat" & cj_nat == "own_country" ~ "not_shown",
+      .default = "not_applicable"
+    )
+  )
+```
+
+The cross-tabs below confirm the display logic: `der_cj_eu_identity` is `not_displayed`
+in exactly the two no-`eustance` conditions, and `der_cj_partisanship` separates the
+shown-party conationals from the treatment-4 suppressed conationals.
+
+```{r}
+#| label: tbl-display-aware-check
+count(eu25_long, cj_treatment, der_cj_eu_identity) |>
+  kable(caption = "der_cj_eu_identity by treatment condition.")
+
+count(eu25_long, cj_treatment, cj_nat, der_cj_partisanship) |>
+  kable(caption = "der_cj_partisanship by treatment condition and drawn nationality.")
+```
+
+```{r}
+#| label: verify-display-aware
+stopifnot(
+  # no missingness introduced
+  !anyNA(eu25_long$der_cj_eu_identity),
+  !anyNA(eu25_long$der_cj_partisanship),
+  # not_displayed iff eu stance not shown
+  all(
+    (eu25_long$der_cj_eu_identity == "not_displayed") ==
+      !grepl("eustance", eu25_long$cj_treatment)
+  ),
+  # shown iff party displayed condition
+  all(
+    (eu25_long$der_cj_partisanship == "shown") ==
+      grepl("partisan", eu25_long$cj_treatment)
+  ),
+  # not_shown is exactly the suppressed conational counterfactual
+  all(
+    (eu25_long$der_cj_partisanship == "not_shown") ==
+      (eu25_long$cj_treatment == "4_somenat" & eu25_long$cj_nat == "own_country")
+  )
+)
 ```
 
 # Descriptives
