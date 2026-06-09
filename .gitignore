@@ -11,7 +11,6 @@ Thumbs.db
 # --- Quarto Internal ---
 # Working directory, metadata, and freeze cache (computed results)
 .quarto/
-_freeze/
 # Local publishing credentials
 _publish.yml
 
