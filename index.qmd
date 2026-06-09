@@ -27,7 +27,7 @@ Reanalyzing a large scale conjoint survey experiment fielded in 25 European Unio
 
 ## Research Design {#sec-design}
 
-### Data
+### Data and Experimental Setting
 
 Our data structure is inherently hierarchical.
 Each respondent played three rounds of a Dictator (or Solidarity) game and a Trust game, the latter introduced announced reciprocity in the instructions.
@@ -54,9 +54,16 @@ This choice is motivated by our substantive interest in studying heterogeneity i
 ### Causal Estimand
 
 While our analysis builds on the conjoint survey experiment fielded by
-[@hahm2023divided; @hahm2024divided], our research question differs from theirs. Original study focuses on the identity side of the story and how six different attributes of it, including religion, affect token allocations. Since we focus exclusively on the Muslim penalty and ask what drives variation in it across individuals and contexts, it also changes the quantities of interest. The conventional estimand in conjoint experiments is the Average Marginal Component Effect [AMCE, for definition see @hainmueller2014causal]. However, since it by definition is the average, it conceals the heterogeneity in how different respondents respond to the same treatment, which is exactly what we are interested in. Therefore, following @robinson2024detect, we adopt the idea of nested causal quantities.
+[@hahm2023divided; @hahm2024divided], our research question differs from theirs.
+Original study focuses on the identity side of the story and how six different attributes of it, including religion, affect token allocations.
+Since we focus exclusively on the Muslim penalty and ask what drives variation in it across individuals and contexts, it also changes the quantities of interest.
+The conventional estimand in conjoint experiments is the Average Marginal Component Effect [AMCE, for definition see @hainmueller2014causal].
+However, since it by definition is the average, it conceals the heterogeneity in how different respondents respond to the same treatment, which is exactly what we are interested in. Therefore, following @robinson2024detect, we adopt the idea of nested causal quantities.
 
-Firstly, as discussed above, we simplify the religion attribute. After this simplification, our treatment variable is binary: $T_{ric} \in \{0,1\}$, where $T_{ric} = 1$ if the profile is displayed as Muslim and 0 otherwise. This change shifts our estimand from the AMCE framework to a standard average treatment effect logic. We observe only the realized outcome, which can be represented in potential outcomes notation as following:
+Firstly, as discussed above, we simplify the religion attribute.
+After this simplification, our treatment variable is binary: $T_{ric} \in \{0,1\}$, where $T_{ric} = 1$ if the profile is displayed as Muslim and 0 otherwise.
+This change shifts our estimand from the AMCE framework to a standard average treatment effect logic.
+We observe only the realized outcome, which can be represented in potential outcomes notation as following:
 
 $$
     Y_{ric}^{g,\text{obs}} =
@@ -69,7 +76,9 @@ $$
     \text{ATE}^{g} = \mathbb{E}\!\left[Y_{ric}^{g}(1) - Y_{ric}^{g}(0)\right]
 $${#eq-ate}
 
-\noindent where $Y_{ric}^{g}(t)$ is the number of tokens allocated by respondent $i$ in country $c$ during round $r$ of game $g$ under treatment assignment $t$. This quantity captures the average Muslim penalty in the target population. Since the religion attribute is randomly assigned by design, $\{Y_{ric}^{g}(1),\, Y_{ric}^{g}(0)\}  \perp T_{ric}$. However, as the sample was recruited to be representative of national populations only in terms of age and gender [@hahm2024divided, p. 73], we adopt the more conservative Sample ATE (SATE), which conditions on the observed sample rather than making broader claims about the target population:[^2]
+\noindent where $Y_{ric}^{g}(t)$ is the number of tokens allocated by respondent $i$ in country $c$ during round $r$ of game $g$ under treatment assignment $t$.
+This quantity captures the average Muslim penalty in the target population. Since the religion attribute is randomly assigned by design, $\{Y_{ric}^{g}(1),\, Y_{ric}^{g}(0)\}  \perp T_{ric}$.
+However, as the sample was recruited to be representative of national populations only in terms of age and gender [@hahm2024divided, p. 73], we adopt the more conservative Sample ATE (SATE), which conditions on the observed sample rather than making broader claims about the target population:[^2]
 
 $$
     \text{SATE}^{g} =
@@ -88,9 +97,12 @@ $$
         \right]
 $${#eq-cate1}
 
-\noindent where $X_{ic}$ denotes time-invariant respondent-level covariates, which includes HERE NEED TO ADD WHICH PRE-TREATMENT VARIABLES WE USE, and $A_{ric}$ denotes the remaining profile attributes displayed in round $r$, namely gender, age, social class, party affiliation and nationality. Importantly, we do not treat these profile attributes as separate treatments as in the AMCE approach, but as potential moderators of the Muslim penalty.
+\noindent where $X_{ic}$ denotes time-invariant respondent-level covariates, which includes HERE NEED TO ADD WHICH PRE-TREATMENT VARIABLES WE USE, and $A_{ric}$ denotes the remaining profile attributes displayed in round $r$, namely gender, age, social class, party affiliation and nationality.
+Importantly, we do not treat these profile attributes as separate treatments as in the AMCE approach, but as potential moderators of the Muslim penalty.
 
-This single CATE function captures two different sources of heterogeneity. First, we are interested in *causal moderation*, namely whether and how respondent-level characteristics shape the size of the Muslim penalty. Disaggregating to the individual level  by averaging over rounds, we define the respondent-level CATE:
+This single CATE function captures two different sources of heterogeneity.
+First, we are interested in *causal moderation*, namely whether and how respondent-level characteristics shape the size of the Muslim penalty.
+Disaggregating to the individual level by averaging over rounds, we define the respondent-level CATE:
 
 $$
     \tau_{ic}^{g}
@@ -102,7 +114,8 @@ $$
           \right]
 $${#eq-cate-respondent}
 
-Second, we are interested in *causal interaction*: whether other profile attributes change the Muslim penalty. Disaggregating to the profile level by averaging over respondents, we define the profile-level CATE:[^3]
+Second, we are interested in *causal interaction*: whether other profile attributes change the Muslim penalty.
+Disaggregating to the profile level by averaging over respondents, we define the profile-level CATE:[^3]
 
 $$
     \tau_{ric}^{g}
