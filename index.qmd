@@ -149,21 +149,75 @@ Consequently, we retreive four main models, BCF and CF for the dictator and trus
 - The conjoint design supplies a known treatment propensity that is passed directly to the estimators; throughout, the analysis is descriptive and exploratory, with no causal claims beyond CATE estimation.
 
 
+Paragraph on results presentation scheme
+varying y axes!
+
+What is shown, how, why, how are intervals constructed
+
 ## Empirical Analysis {#sec-analysis}
 
-Mention: recovered ATEs
 
-CF recovered an estimated ATE of -0.42 [-0.4569, -0.3860] in the dictator and -0.49 [-0.5234, -0.4465] in the trust game, which is less than the difference in means estimates presented earlier, but mirrors the same pattern: the penalty is slightly larger in the trust game.
+CF recovered an estimated SATE of -0.42 [-0.4569, -0.3860] in the dictator and -0.49 [-0.5234, -0.4465] in the trust game, which is less than the difference in means estimates presented earlier, but mirrors the same pattern: the penalty is slightly larger in the trust game.
 
 Fig 1: moderation by round level cj_covars
 
 {{< embed code/07_postprocess_grf.qmd#fig-grf-combined-prof >}}
 
+- Interpretations: 
+    - overall, Muslim penalty remains stable with regards to other profile attributes
+    - e.g. age, sex, and eu position
+    - across all attribute dimensions trust game yields consistently lower CATE point estimates, but intervals overlap with those from dictator game.
+        - only exception: Muslim profiles presented as non Eu nationals receive significantly fewer (i.e. the penatly is significantly larger) in trust game
+        - though interestingly this difference arises more from an upwards shift of the Dictator non-eu estimate
+    - across both games, Muslim profiles presented as upper class are penalized slightly less
+
 Fig 2: moderation by individual level covars
 
 {{< embed code/07_postprocess_grf.qmd#fig-grf-combined-resp-1 >}}
 
+- Interpretations:
+    - Gender: males penaluze more than female respondents across both games, but gender gap only significant in Dictator game
+    - Religion: strongest bias from catholic and protestant respondents, weakest bias (judged by point estimates) by orthodox respondents
+    - class: dont-know respondents show smallest bias across both games (but also widest intervals), significant difference between solidarity and trust for upper middle class respondents, point estimates suggest slighly lower penalty for working class in dictator, but not systematic
+    - Residence type: slightly larger penalty from respondents in rural areas compared to large city folks, difference more systematic in trust game, small/mid town in between
+    - Attachement to country: seems negatively related, although hard to judge as very few denied attachement in the first place (hence the super wide intervals)
+    - attachement to EU: almost linearly associated with reduction in Muslim bias
+    - attachement to Europe: less clear than EU attachement, uncertainty bands allow weakly positive (dictator) or flat (trust) trend interpretation
+    - Can understand EU politics: no indication of moderation
+    - Officials talk, not act: more agreement, more bias across both games
+    - Good vs evil: seems to be negative trend from 3 to 6 but it seems also to bounce off / turn flat toward end of scale, unlike pop_reps
+    - Compromise is selling out: again clear negative trend, the more agreement, the larger the Muslim penalty
+    - Compromise is important: if at all, more agreement associated with slightly less penalty, but overall strong levels of agreement in sample (hence few observations with <= 4)
+    - Age: for younger respondents (<30 years) uncertainty intervals "scratch" zero (no Muslim bias) more often, then distance between upper bound and zero seems to increase, indicating a negative trend up to age 65, where the upper bounds seem to rise again. This might indicate a U shape relationship betwen age and Muslim penalty, but it might also mechanically arise from the smaller sample size for 65+ (and thus increased uncertainty bands)
+
 {{< embed code/07_postprocess_grf.qmd#fig-grf-combined-resp-2 >}}
+
+- Interpretations:
+    - listen to other groups: same as "Compromise is important", maybe for the right/upper half of the scale even slighlty stronger positive trend
+    - Leave decisions to experts: for values <=3 very few obs, in range 4 to 7 negative trend in trust game, less so in dictator
+    - leaders above ordinary citizens: as previous item, at most small increase (trust more visible) in bias with higher agreement, very few observations <=3
+    - parties do more harm: across both games, more agreement -> larger bias
+    - ordinary people dont know: pretty close to "stable" effect here
+    - EU should pursue long term goals: more agreement, less bias across both games, though slope flattens the from 5 to 7
+    - Eu should heed the people: more agreement, more bias
+    - EU effect on economy (x axis to be flipped): the more negative the evaluation, the higher the Muslim penalty
+    - EU effeect on culture/identity: the more negative the evaluation, the larger Muslim penalty
+    - EU effect on political status: again more negative evaluations more Muslim bias
+    - better to abolish EU: higher agreement, larger Muslim penalty
+    - satisfaction with EU: the reverse, higher agrement yields lower Muslim penalty 
+    - Age left education: pretty flat trend
+
+- Overall: Overall we find substantial heterogeneity across respondent subgroups, demographics and pre-treatment attitudes, but with very few exception these heterogeneities relate to the extend of anit-Muslim bias, not the presence of it. Even in those very few exceptions, it is only the upper uncertainty bounds that just scratch the zero line, no (single) moderator seems to credibly nullify, let alone reverse, the (negative) Muslim effect on token allocation. 
+Strongest moderation heterogeneity is found across EU evaluations/attitudes, where the pattern in the data generally suggest that respondents against EU integration or with negative evaluations of the EU show systematically higher levels of anti-Muslim bias than those favoring / positively evaluating the EU and its effects. Still, even in the pro-European sides of the scales, robust Muslim penalties persist, albeit at lower levels.  
+
+## Robustness {#sec-robustness}
+
+## Limitations {#sec-limits}
+
+Only looked at within covariate moderating heterogeneity, not cross-covariate interactions.
+Focused on Muslim penalty, implicitly assuming this is primary signal respondents perceive in experiment, this might not be the case in reality.
+To avoid potential post-treatment biases, we only focuses on pre-treatment covariates (expection being years of education and residence type). 
+This led us to exclude theoretically / potentially interesting variables such as general left right placement, EU integration placement, nativist attitudes and more which future endeaouvors might shed more light on, incorporating systematic ways to assess these as well. 
 
 ## Conclusion {#sec-conclusion}
 
