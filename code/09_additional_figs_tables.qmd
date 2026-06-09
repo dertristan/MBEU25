@@ -377,17 +377,18 @@ eu25_long |>
 tibble::tribble(
   ~Variable, ~`Question wording`, ~`Scale coding`,
   "`q_gender`", "Please indicate your gender.", "Categorical",
-  "`q_age`", "How old are you?", "Age in years",
+  "`q_religion`", "Do you consider yourself to be…?", "Categorical",
+  "`q_class`", "Do you see yourself and your household belonging to...?", "Categorical",
+  "`q_rural_urban`", "Would you say you live in a…?", "Categorical",
   "`q_identity_country`", "Please tell me how attached you feel to... - [SURVEY COUNTRY]", "1 (very attached) to 5 (not at all attached)",
   "`q_identity_eu`", "Please tell me how attached you feel to... - The European Union (EU)", "1 (very attached) to 5 (not at all attached)",
   "`q_identity_europe`", "Please tell me how attached you feel to... - Europe", "1 (very attached) to 5 (not at all attached)",
-  "`q_religion`", "Do you consider yourself to be…?", "Categorical",
-  "`q_class`", "Do you see yourself and your household belonging to...?", "Categorical",
   "`q_eu_efficacy_understand`", "Please tell me to what extent you agree or disagree with each of the following statements. - I can understand and evaluate important political questions about the EU", "1 (strongly disagree) to 7 (strongly agree)",
   "`q_pop_reps`", "Please indicate how much you agree with each of the following statements. - Elected officials talk too much and take too little action.", "1 (strongly disagree) to 7 (strongly agree)",
   "`q_pop_goodevil`", "Please indicate how much you agree with each of the following statements. - Politics is ultimately a struggle between good and evil.", "1 (strongly disagree) to 7 (strongly agree)",
   "`q_pop_compromise`", "Please indicate how much you agree with each of the following statements. - What people call \"compromise\" in politics is really just selling out on one's principles.", "1 (strongly disagree) to 7 (strongly agree)",
   "`q_dem_compromise`", "Please indicate how much you agree with each of the following statements. - In a democracy it is important to make compromises among differing viewpoints.", "1 (strongly disagree) to 7 (strongly agree)",
+  "`q_age`", "How old are you?", "Age in years",
   "`q_dem_listen`", "Please indicate how much you agree with each of the following statements. - It is important to listen to the opinion of other groups.", "1 (strongly disagree) to 7 (strongly agree)",
   "`q_tech_experts`", "Please indicate how much you agree with each of the following statements. - Our country would run better if political decisions were left up to experts instead of politicians and citizens.", "1 (strongly disagree) to 7 (strongly agree)",
   "`q_tech_leaders`", "Please indicate how much you agree with each of the following statements. - The leaders of our country should be more educated and skilled than ordinary citizens.", "1 (strongly disagree) to 7 (strongly agree)",
@@ -400,8 +401,7 @@ tibble::tribble(
   "`q_eu_imp_nat_pol`", "Could you tell me whether you think that the EU has a rather positive or rather negative effect on each of the following domains? - UK's political status and influence", "1 (very positive) to 5 (very negative)",
   "`q_eu_abolish`", "Please tell me to what extent you agree or disagree with each of the following statements. - If the EU started making a lot of decisions that most people disagreed with, it might be better to do away with the EU altogether", "1 (strongly disagree) to 7 (strongly agree)",
   "`q_eu_satisfaction`", "Please tell me to what extent you agree or disagree with each of the following statements. - I am satisfied with the performance of the EU", "1 (strongly disagree) to 7 (strongly agree)",
-  "`q_edu_age_stop`", "How old were you when you stopped full-time education?", "Years",
-  "`q_rural_urban`", "Would you say you live in a…?", "Categorical"
+  "`q_edu_age_stop`", "How old were you when you stopped full-time education?", "Years"
 ) |>
   knitr::kable()
 ```
