@@ -6,7 +6,8 @@
 # Reference table in 09_additional_figs_tables.qmd#tbl-wordings.
 mod_labels <- c(
   cj_nat                   = "Profile nationality",
-  cj_eupos                 = "Profile EU citizenship",
+  der_cj_eu_identity       = "EU identity",
+  der_cj_partisanship      = "Partisanship",
   cj_age                   = "Profile age",
   cj_sex                   = "Profile gender",
   cj_class                 = "Profile social class",
@@ -41,7 +42,8 @@ mod_labels <- c(
 # Categorical moderators (push these facets first). cj_age is numeric-but-
 # discrete (fixed conjoint ages, numeric ticks), so it carries no value relabel.
 cat_mods <- c(
-  "cj_nat", "cj_eupos", "cj_age", "cj_sex", "cj_class",
+  "cj_nat", "der_cj_eu_identity", "der_cj_partisanship",
+  "cj_age", "cj_sex", "cj_class",
   "q_gender", "q_religion", "q_class", "q_rural_urban"
 )
 
@@ -53,7 +55,16 @@ value_labels <- list(
   ),
   cj_sex = c(female = "Female", male = "Male"),
   cj_class = c(lower = "Lower", middle = "Middle", upper = "Upper"),
-  cj_eupos = c(eu_citizen = "EU citizen", not_eu_citizen = "Not EU citizen"),
+  der_cj_eu_identity = c(
+    eu_citizen = "sees herself as EU citizen",
+    not_eu_citizen = "does not see herself as EU citizen",
+    not_displayed = "not displayed"
+  ),
+  der_cj_partisanship = c(
+    shown = "partisanship shown",
+    not_shown = "partisanship not shown",
+    not_applicable = "not applicable"
+  ),
   q_gender = c(female = "Female", male = "Male", other = "Other"),
   q_religion = c(
     catholic = "Catholic", protestant = "Protestant", orthodox = "Orthodox",

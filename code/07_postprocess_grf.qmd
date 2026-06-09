@@ -102,7 +102,14 @@ The frozen moderator list, copied verbatim from `06_grf_fit.qmd`.
 
 ```{r}
 #| label: moderators
-prof_mods <- c("cj_nat", "cj_eupos", "cj_age", "cj_sex", "cj_class")
+prof_mods <- c(
+  "cj_nat",
+  "der_cj_eu_identity",
+  "der_cj_partisanship",
+  "cj_age",
+  "cj_sex",
+  "cj_class"
+)
 resp_mods <- c(
   "q_gender",
   "q_age",
@@ -367,15 +374,61 @@ ggplot(cate, aes(x = level)) +
   theme(axis.text.x = element_text(angle = 30, hjust = 1))
 ```
 
-### cj_eupos {#sec-dict-cj-eupos}
+### der_cj_eu_identity {#sec-dict-der-cj-eu-identity}
 
 ```{r}
-#| label: fig-grf-dict-cj-eupos
-#| fig-cap: "GRF CATE of the Muslim profile by cj_eupos (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| label: fig-grf-dict-der-cj-eu-identity
+#| fig-cap: "GRF CATE of the Muslim profile by der_cj_eu_identity (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
 #| dpi: 500
 #| fig-width: 6.5
 #| fig-height: 4
-mod <- "cj_eupos"
+mod <- "der_cj_eu_identity"
+levs <- sort(unique(m_dict[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_dict[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_dict, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### der_cj_partisanship {#sec-dict-der-cj-partisanship}
+
+```{r}
+#| label: fig-grf-dict-der-cj-partisanship
+#| fig-cap: "GRF CATE of the Muslim profile by der_cj_partisanship (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "der_cj_partisanship"
 levs <- sort(unique(m_dict[[mod]]))
 rows <- list()
 for (lev in levs) {
@@ -1842,15 +1895,61 @@ ggplot(cate, aes(x = level)) +
   theme(axis.text.x = element_text(angle = 30, hjust = 1))
 ```
 
-### cj_eupos {#sec-trust-cj-eupos}
+### der_cj_eu_identity {#sec-trust-der-cj-eu-identity}
 
 ```{r}
-#| label: fig-grf-trust-cj-eupos
-#| fig-cap: "GRF CATE of the Muslim profile by cj_eupos (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| label: fig-grf-trust-der-cj-eu-identity
+#| fig-cap: "GRF CATE of the Muslim profile by der_cj_eu_identity (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
 #| dpi: 500
 #| fig-width: 6.5
 #| fig-height: 4
-mod <- "cj_eupos"
+mod <- "der_cj_eu_identity"
+levs <- sort(unique(m_trust[[mod]]))
+rows <- list()
+for (lev in levs) {
+  sel <- m_trust[[mod]] == lev
+  a <- grf::average_treatment_effect(cf_trust, subset = sel)
+  rows[[as.character(lev)]] <- tibble(
+    level = as.character(lev),
+    n = sum(sel),
+    estimate = a["estimate"],
+    se = a["std.err"]
+  )
+}
+cate <- bind_rows(rows) |>
+  mutate(
+    level = factor(level, levels = as.character(levs)),
+    lower = estimate - 1.96 * se,
+    upper = estimate + 1.96 * se
+  )
+yr <- range(c(cate$lower, cate$upper))
+pad <- if (diff(yr) > 0) 0.12 * diff(yr) else 0.5
+floor_y <- yr[1] - pad
+span <- if (diff(yr) > 0) 0.20 * diff(yr) else 0.5
+cate <- cate |> mutate(bar_top = floor_y + (n / max(n)) * span)
+ggplot(cate, aes(x = level)) +
+  geom_segment(
+    aes(xend = level, y = floor_y, yend = bar_top),
+    colour = "grey80",
+    linewidth = 4
+  ) +
+  geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(aes(ymin = lower, ymax = upper), colour = "#0072B2") +
+  geom_point(aes(y = estimate), colour = "#0072B2", size = 2) +
+  labs(title = paste0("CATE by ", mod), x = mod, y = yl) +
+  ggpubr::theme_pubr() +
+  theme(axis.text.x = element_text(angle = 30, hjust = 1))
+```
+
+### der_cj_partisanship {#sec-trust-der-cj-partisanship}
+
+```{r}
+#| label: fig-grf-trust-der-cj-partisanship
+#| fig-cap: "GRF CATE of the Muslim profile by der_cj_partisanship (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| dpi: 500
+#| fig-width: 6.5
+#| fig-height: 4
+mod <- "der_cj_partisanship"
 levs <- sort(unique(m_trust[[mod]]))
 rows <- list()
 for (lev in levs) {
