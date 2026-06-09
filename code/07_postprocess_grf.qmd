@@ -3206,7 +3206,11 @@ for (nm in c("m_dict", "m_trust")) {
         c(q_identity_country, q_identity_eu, q_identity_europe),
         flip5
       ),
-      q_class = factor(q_class, levels = class_order)
+      q_class = factor(q_class, levels = class_order),
+      q_rural_urban = factor(
+        q_rural_urban,
+        levels = c("rural", "small_med_town", "large_city")
+      )
     ))
 }
 ```

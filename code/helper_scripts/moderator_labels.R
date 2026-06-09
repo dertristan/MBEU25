@@ -34,7 +34,7 @@ mod_labels <- c(
   q_eu_imp_nat_pol         = "EU effect on political status",
   q_eu_abolish             = "Better to abolish EU",
   q_eu_satisfaction        = "Satisfied with EU",
-  q_rural_urban            = "Area type",
+  q_rural_urban            = "Residence type",
   q_edu_age_stop           = "Age left education"
 )
 

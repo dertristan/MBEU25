@@ -564,7 +564,11 @@ m_dict <- game_mods(dat, "cj_dict") |>
   # presentational recodings (display only; sub_X / projection untouched)
   mutate(
     across(c(q_identity_country, q_identity_eu, q_identity_europe), flip5),
-    q_class = factor(q_class, levels = class_order)
+    q_class = factor(q_class, levels = class_order),
+    q_rural_urban = factor(
+      q_rural_urban,
+      levels = c("rural", "small_med_town", "large_city")
+    )
   )
 tau_dict <- get_forest_fit(fit_dict$moderate_fit, d_dict$sub_X) # nsim x n
 
@@ -610,7 +614,11 @@ d_trust <- prep_game(dat, "cj_trust")
 m_trust <- game_mods(dat, "cj_trust") |>
   mutate(
     across(c(q_identity_country, q_identity_eu, q_identity_europe), flip5),
-    q_class = factor(q_class, levels = class_order)
+    q_class = factor(q_class, levels = class_order),
+    q_rural_urban = factor(
+      q_rural_urban,
+      levels = c("rural", "small_med_town", "large_city")
+    )
   )
 tau_trust <- get_forest_fit(fit_trust$moderate_fit, d_trust$sub_X) # nsim x n
 
