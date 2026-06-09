@@ -64,7 +64,14 @@ The frozen moderator list: profile-level conjoint attributes plus respondent-lev
 
 ```{r}
 #| label: moderators
-prof_mods <- c("cj_nat", "cj_eupos", "cj_age", "cj_sex", "cj_class")
+prof_mods <- c(
+  "cj_nat",
+  "der_cj_eu_identity",
+  "der_cj_partisanship",
+  "cj_age",
+  "cj_sex",
+  "cj_class"
+)
 resp_mods <- c(
   "q_gender",
   "q_age",
