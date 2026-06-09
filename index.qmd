@@ -151,7 +151,7 @@ These quantities are linked through the law of iterated expectations, which ensu
 
 [^2]: Since we are interested in treatment effect heterogeneity and not the average penalty itself, the choice between ATE and SATE is inconsequential for the main analysis.
 
-[^3]:The subscripts $r, i, c$ reflect the hierarchical structure of the outcome $Y_{ric}^g$ (round $r$, nested in respondent $i$, nested in country $c$) and not the conditioning set in the expectation. We apply the same convention to the covariates and the disaggregated CATEs: $X_{ic}$ carries the country index because respondent $i$ is nested in country $c$ (so $c$ is determined by $i$), even though country is not part of the conditioning set; likewise $\tau_{ric}^g$ retains $i$ after marginalizing over respondents. After marginalizing over respondents, only $A_{ric}$ remains as the conditioning argument; after marginalizing over rounds, only $X_{ic}$ remains.
+[^3]:The subscripts $r, i, c$ reflect the hierarchical structure of the outcome $Y_{ric}^g$ (round $r$, nested in respondent $i$, nested in country $c$) and not the conditioning set in the expectation. We apply the same convention to the covariates and the disaggregated CATEs: $X_{ic}$ carries the country index because respondent $i$ is nested in country $c$ (so $c$ is determined by $i$), even though country is not part of the conditioning set. Likewise, $\tau_{ric}^g$ retains $i$ after marginalizing over respondents. After marginalizing over respondents, only $A_{ric}$ remains as the conditioning argument. After marginalizing over rounds, only $X_{ic}$ remains.
 
 
 ### Estimation Strategy
