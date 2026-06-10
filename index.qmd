@@ -174,8 +174,8 @@ The second concern, the absence of sample splitting, remains in the Bayesian bra
 
 Our design follows from this comparison and from the structure of our data.
 We observe each respondent over three conjoint rounds, and respondents are themselves grouped within 25 countries, so the observations are clustered at two levels and treating them as independent would understate our uncertainty.
-To respect that structure we first turned to the Bayesian branch, where recent work formalises BCF for hierarchical and longitudinal data [@thal2024aggregate; @prevot2025hierarchical] and where the Yeager applications add a random intercept to the prognostic surface for multisite and clustered trials [@yeager2019national; @yeager2022synergistic].
-Their implementation carries a single level of random intercepts, so we extended it ourselves to the two nested levels our data require, respondent within country, in the same partial-pooling logic.[^nested-extension]
+To respect that structure we first turned to the Bayesian branch, where an active literature extends BCF to hierarchical and longitudinal settings through random effects and partial pooling [@thal2024aggregate; @prevot2025hierarchical], and where a working implementation already places a random intercept on the prognostic surface for clustered, multisite trials [@yeager2019national; @yeager2022synergistic].
+That implementation carries only a single level of random intercepts, so we extended it to the two nested levels our data require, respondent within country, under the same partial-pooling logic.[^nested-extension]
 We then tested the estimators on synthetic data built with the same two-level structure.
 The nested BCF recovered the planted random intercepts and treatment surface correctly, but at full scale the nested fit proved computationally infeasible.[^nested-ri]
 On the same synthetic data the Causal Forest (CF) recovered the average effects and the heterogeneity almost exactly, using respondent-level clusters for the within-respondent dependence and country fixed effects in the covariate matrix.
@@ -183,7 +183,7 @@ We therefore adopted the CF as our primary estimator for the main analysis, sinc
 We keep the BCF as a robustness check, fit with country random intercepts only, and handle the within-respondent dependence it can no longer model directly with a respondent cluster bootstrap.
 Throughout, we treat the country and respondent variation as a nuisance to absorb rather than a quantity to interpret, in keeping with our interest in heterogeneity within the sample rather than comparison across countries.
 
-[^nested-extension]: The C++ sampler underlying the Yeager implementation already accommodates an arbitrary random-effects design, so moving from a single level of random intercepts to nested intercepts required only a minor adaptation of the high-level R helper that assembles that design, not a change to the sampler itself.
+[^nested-extension]: @yeager2019national fit their hierarchical BCF with the `multibart` package [@murray2021multibart], whose C++ sampler already accommodates an arbitrary random-effects design. Moving from a single level of random intercepts to nested intercepts therefore required only a minor adaptation of the high-level R helper that assembles that design, not a change to the sampler itself.
 
 [^nested-ri]: The sampler forms the random-effects precision matrix densely and solves it by Cholesky decomposition at every Gibbs sweep, a cost that grows with the cube of the number of random-effect levels.
 With both country and respondent intercepts that number runs into the tens of thousands, dominated by the respondent dummies, which puts the full nested fit beyond reach within the project window.
