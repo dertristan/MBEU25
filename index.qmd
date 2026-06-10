@@ -33,10 +33,7 @@ The first concerns whether the remaining attributes of the displayed Muslim prof
 The second, and substantively more consequential, concerns whether individual-level characteristics of respondents, in particular their populist predispositions and their orientations towards European integration, account for who discriminates more strongly.
 That the penalty is unlikely to constitute a single, undifferentiated response is suggested both by evidence that hostility towards Muslims is driven less by nominal religious affiliation than by perceived religiosity [@helbling2020islamophobia; @helbling2022muslim] and by the contextual, social-identity logic underlying the original study [@hahm2024divided].
 
-Methodologically, the study employs Bayesian Causal Forests with nested random intercepts [@hahn2020bayesian] to recover heterogeneous treatment effects in a data-driven manner, cross-validated against a frequentist generalised random forest [@athey2019generalized].
-Our results suggest that there is substantial heterogeneity in the depth of the penalty, but almost none in its presence.
-With barely any exceptions, the demographics, attitudes and profile attributes of respondents shift the magnitude of anti-Muslim bias without nullifying or even reversing it.
-The strongest moderation is found across orientations towards European integration, where respondents opposed to or sceptical of the EU display systematically larger penalties than their pro-European counterparts, although a clear penalty persists even among the latter.
+
 
 In a broader context, the study promotes a more nuanced understanding of anti-Muslim discrimination in Europe.
 By situating the variation in penalties within the cosmopolitan–populist divide that defines contemporary European politics, it suggests that the bias is less an isolated individual disposition than a politically driven phenomenon.
@@ -47,7 +44,7 @@ Understanding the conditions that amplify this bias is crucial for grasping the 
 
 ## Research Design {#sec-design}
 
-### Data and Experimental Setting
+### Data and Experiment
 
 Our data structure is inherently hierarchical.
 Each respondent played three rounds of a Dictator (or Solidarity) game and a Trust game, the latter introduced announced reciprocity in the instructions.
