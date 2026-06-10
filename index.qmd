@@ -126,7 +126,7 @@ $$
         \right]
 $${#eq-cate1}
 
-\noindent where $X_{ic}$ denotes time-invariant respondent-level covariates, which includes HERE NEED TO ADD WHICH PRE-TREATMENT VARIABLES WE USE, and $A_{ric}$ denotes the remaining profile attributes displayed in round $r$, namely gender, age, social class, party affiliation and nationality.
+\noindent where $X_{ic}$ denotes time-invariant respondent-level covariates (demographic questions, several EU-related items, democratic, populist, and technocratic items, see @tbl-wordings in appendix for the full list), and $A_{ric}$ denotes the remaining profile attributes displayed in round $r$, namely gender, age, social class, party affiliation and nationality.
 Importantly, we do not treat these profile attributes as separate treatments as in the AMCE approach, but as potential moderators of the Muslim penalty.
 
 This single CATE function captures two different sources of heterogeneity.
