@@ -1,4 +1,5 @@
 ---
+title: "BCF Post-Processing"
 subtitle: |
   BCF Post-Processing — ATE, Posterior Projection, and CATE by Moderator (Dictator + Trust)
 date: last-modified
