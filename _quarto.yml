@@ -91,7 +91,7 @@ format:
       text:
         <meta name="robots" content="noindex">
   pdf:
-    code-links: false
+    code-links: true
     toc: false
     toc-depth: 3
     include-in-header:
@@ -99,8 +99,6 @@ format:
         \usepackage{setspace}
         \setlength{\parindent}{15pt}
         \usepackage[font=scriptsize]{caption}
-    thanks: |
-      Do not share without consent.
     papersize: a4
     fontsize: 10pt
     linestretch: 1

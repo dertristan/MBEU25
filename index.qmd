@@ -247,9 +247,6 @@ Whether a profile identifies as an EU citizen or rejects that identity makes no 
 Profile age produces only a minor, non-systematic dip at thirty, with intervals overlapping across the age range, and male and female profiles are penalized alike.
 As a general pattern the Trust-game point estimates sit slightly below their Dictator-game counterparts, but the two games rarely diverge in a way the intervals can distinguish.
 
-
-{{< embed code/07_postprocess_grf.qmd#fig-grf-combined-resp-1 >}}
-
 @fig-grf-combined-resp-1 and @fig-grf-combined-resp-2 turn to causal moderation, the respondent-level characteristics that govern who penalizes more, which the introduction flagged as the substantively more consequential source of variation.
 These characteristics display more heterogeneity than the profile attributes above.
 Among the categorical respondent characteristics, the sharpest contrast is by gender, as men penalize Muslim profiles more than women in both games, though only in the Dictator game do the intervals separate.
@@ -257,6 +254,7 @@ Respondents' own religion orders the penalty as well, with Catholics and Protest
 Place of residence matters at the margin, rural respondents penalizing somewhat more than those in large cities and smaller towns falling in between, a gradient that is firmer in the Trust game.
 Subjective class is largely flat, its main features being the wide intervals and smallest penalty of respondents who decline to place themselves and a slightly but not systematically lower penalty among the working class compared to lower-middle and middle class respondents in the Dictator game.
 The upper middle class is the interesting exception, drawing the smallest penalty of any class in the Dictator game but the largest in the Trust game by their point estimates, a between-game difference that is systematic.
+
 The attitudinal scales reveal more structure.
 The strongest single gradient is attachment to the European Union, which is associated with an almost linear reduction in the penalty.
 Attachment to one's own country runs the other way and appears to deepen the penalty, though the scarcity of respondents at the unattached end leaves that pattern uncertain.
@@ -268,8 +266,6 @@ Valuing compromise, its mirror image, is associated with a marginally smaller pe
 Respondent age closes the figure and hints at a U-shaped relationship.
 Among the youngest respondents the intervals brush the zero line repeatedly, and at the very youngest ages the point estimates briefly cross it, the only place in the analysis where the penalty appears to vanish.
 The penalty then deepens through middle age and lifts again past sixty-five, though that upturn coincides with the thinning of the sample at older ages and may be an artifact of the wider intervals there.
-
-{{< embed code/07_postprocess_grf.qmd#fig-grf-combined-resp-2 >}}
 
 @fig-grf-combined-resp-2 continues with the remaining attitudinal scales, where the moderation is dominated by evaluations of the European Union.
 Across this battery the pattern is consistent, as respondents who judge the Union negatively penalize Muslim profiles more and those who judge it favorably penalize them less.
@@ -285,6 +281,11 @@ In the few subgroups where the penalty comes closest to disappearing, only the u
 The strongest and most coherent moderation runs through evaluations of European integration, where respondents hostile to the Union or skeptical of its effects penalize Muslim profiles systematically more than those who regard it favorably.
 Yet even on the pro-European side of these scales a robust penalty remains, attenuated rather than abolished.
 The variable-importance ranking in the appendix (@fig-grf-combined-vi) corroborates this reading, placing EU-evaluation items among the four most influential moderators of the five.
+
+{{< embed code/07_postprocess_grf.qmd#fig-grf-combined-resp-1 >}}
+
+{{< embed code/07_postprocess_grf.qmd#fig-grf-combined-resp-2 >}}
+
 
 ### Robustness {#sec-robustness}
 
