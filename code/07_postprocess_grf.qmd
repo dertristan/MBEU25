@@ -3478,7 +3478,6 @@ plot_comb <- function(df, ncol, title, ylab = yl_i) {
       ) +
       geom_line(data = d_scale, aes(group = game, linetype = game)) +
       geom_point(data = d_scale) +
-      scale_linetype_game() +
       scale_fill_manual(values = game_cols, name = NULL)
   }
   # categorical: dodged linerange + point
@@ -3486,7 +3485,7 @@ plot_comb <- function(df, ncol, title, ylab = yl_i) {
     p <- p +
       geom_linerange(
         data = d_cat,
-        aes(ymin = lower, ymax = upper),
+        aes(ymin = lower, ymax = upper, linetype = game),
         position = dodge
       ) +
       geom_point(data = d_cat, position = dodge)
@@ -3495,6 +3494,7 @@ plot_comb <- function(df, ncol, title, ylab = yl_i) {
     facet_wrap(~mod, scales = "free", ncol = ncol, labeller = labeller(mod = mod_strip)) +
     scale_colour_game() +
     scale_shape_game() +
+    scale_linetype_game() +
     scale_x_discrete(labels = relabel_key) +
     labs(title = title, x = NULL, y = ylab) +
     guides(fill = "none", linetype = "none") +
@@ -3543,11 +3543,12 @@ cont_panel <- function(mod, xlim, ylab = yl_i) {
 
 All five conjoint-round (profile-level) moderators on one canvas, Dictator and Trust overlaid.
 All five are categorical (including `cj_age`, whose five values are fixed conjoint ages), so each
-is drawn as dodged points only.
+is drawn as dodged points with cluster-robust interval bars, the two games keyed by colour, shape,
+and linetype together.
 
 ```{r}
 #| label: fig-grf-combined-prof
-#| fig-cap: "CF estimates of the profile-level CATE of the Muslim profile across the levels of every conjoint-round moderator (x-axis), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis ($\\hat{\\tau}_{ric}$) is the profile-level CATE on the token-allocation scale. Points are per-level doubly-robust subset estimates and the vertical bars are honest cluster-robust 95% confidence intervals (each a separate cluster-robust estimate on that subset, clustered by respondent). Grey bars along the bottom of each facet show the per-level row count (pooled over games). The y-axis is free per facet. Levels comprising less than 1% of a game's sample are dropped because their subset estimate is too imprecise to compare. In the Profile partisanship facet, partisanship not shown refers to within the co-national category only, since partisanship is displayed for co-national profiles only."
+#| fig-cap: "CF estimates of the profile-level CATE ($\\hat{\\tau}_{ric}$) of the Muslim profile across the levels of every conjoint-round moderator (x-axis), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis is $\\hat{\\tau}_{ric}$ on the token-allocation scale. Each point is a per-level doubly-robust subset estimate with an honest cluster-robust 95% confidence interval, estimated separately on that subset and clustered by respondent. Grey bars along the bottom of each facet show the per-level row count (pooled over games). The y-axis is free per facet. In the Profile partisanship facet, partisanship not shown refers to within the co-national category only, since partisanship is displayed for co-national profiles only."
 #| dpi: 500
 #| fig-width: 9
 #| fig-height: 6
@@ -3589,7 +3590,7 @@ resp_half2 <- resp_cat[(half + 1):length(resp_cat)]
 
 ```{r}
 #| label: fig-grf-combined-resp-1
-#| fig-cap: "CF estimates of the respondent-level CATE of the Muslim profile across the levels of the first half of the discrete individual-level moderators (top panel) and across age (q_age, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis ($\\hat{\\tau}_i$) is the respondent-level CATE on the token-allocation scale. Identity scales are reversed so higher means more attachment. The EU-effect items are reversed so higher means a more positive evaluation, and q_class runs working class up to higher class with dont_know last. Top: points are per-level doubly-robust subset estimates with honest cluster-robust 95% confidence intervals (each a separate cluster-robust estimate on that subset, clustered by respondent). Ordered numeric scales are drawn as a connecting line and 95% CI ribbon, categorical moderators as dodged points and CIs. Grey bars show the per-level row count (pooled over games). Bottom: per-grid-cell subset estimate, 95% CI ribbon, and connecting line per game over a grey histogram of the covariate, on 100 equal intervals across the full 18–75 years. The y-axis is free per facet. Discrete levels comprising less than 1% of a game's sample are dropped because their subset estimate is too imprecise to compare."
+#| fig-cap: "CF estimates of the respondent-level CATE ($\\hat{\\tau}_i$) of the Muslim profile across the levels of the first half of the discrete individual-level moderators (top panel) and across age (q_age, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis is $\\hat{\\tau}_i$ on the token-allocation scale. All item scales are oriented so that higher x-axis values mean more agreement, a more positive evaluation, or more attachment, depending on the item (see @tbl-wordings). Every point and ribbon value is a doubly-robust subset estimate with an honest cluster-robust 95% interval, computed separately on that subset and clustered by respondent. Top: ordered numeric scales are drawn as a connecting line and interval ribbon per game, categorical moderators as dodged points and intervals. Grey bars show the per-level row count (pooled over games). Bottom: per-grid-cell estimate, interval ribbon, and connecting line per game over a grey histogram of the covariate, on 100 equal intervals across the full 18–75 years. The y-axis is free per facet. Discrete levels comprising less than 1% of a game's sample are dropped because their estimate is too imprecise to compare."
 #| dpi: 500
 #| fig-width: 11
 #| fig-height: 14
@@ -3608,7 +3609,7 @@ p_age <- cont_panel("q_age", c(18, 75)) +
 
 ```{r}
 #| label: fig-grf-combined-resp-2
-#| fig-cap: "CF estimates of the respondent-level CATE of the Muslim profile across the levels of the second half of the discrete individual-level moderators (top panel) and across age at which education stopped (q_edu_age_stop, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis ($\\hat{\\tau}_i$) is the respondent-level CATE on the token-allocation scale. Identity scales are reversed so higher means more attachment. The EU-effect items are reversed so higher means a more positive evaluation, and q_class runs working class up to higher class with dont_know last. Top: points are per-level doubly-robust subset estimates with honest cluster-robust 95% confidence intervals (each a separate cluster-robust estimate on that subset, clustered by respondent). Ordered numeric scales are drawn as a connecting line and 95% CI ribbon, categorical moderators as dodged points and CIs. Grey bars show the per-level row count (pooled over games). Bottom: subset estimate, 95% CI ribbon, and connecting line per game at each integer year of education-stopping age from 15 to 30, over a grey histogram of the covariate. The y-axis is free per facet. Discrete levels comprising less than 1% of a game's sample are dropped because their subset estimate is too imprecise to compare."
+#| fig-cap: "CF estimates of the respondent-level CATE ($\\hat{\\tau}_i$) of the Muslim profile across the levels of the second half of the discrete individual-level moderators (top panel) and across age at which education stopped (q_edu_age_stop, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis is $\\hat{\\tau}_i$ on the token-allocation scale. All item scales are oriented so that higher x-axis values mean more agreement, a more positive evaluation, or more attachment, depending on the item (see @tbl-wordings). Every ribbon value is a doubly-robust subset estimate with an honest cluster-robust 95% interval, computed separately on that subset and clustered by respondent. Top: ordered numeric scales are drawn as a connecting line and interval ribbon per game. Grey bars show the per-level row count (pooled over games). Bottom: per-year estimate, interval ribbon, and connecting line per game at each integer year of education-stopping age from 15 to 30, over a grey histogram of the covariate. The y-axis is free per facet. Discrete levels comprising less than 1% of a game's sample are dropped because their estimate is too imprecise to compare."
 #| dpi: 500
 #| fig-width: 11
 #| fig-height: 14
