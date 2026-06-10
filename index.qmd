@@ -348,6 +348,8 @@ It isolates the causal effect of individual attributes cleanly, but how these ef
 ::: {#refs}
 :::
 
+\newpage
+
 ## Appendix {.unnumbered}
 
 ### Appendix A Additional Sample Details {.unnumbered}
