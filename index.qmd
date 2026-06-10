@@ -17,14 +17,14 @@ draft-mode: visible
 ## Introduction {#sec-introduction}
 
 Numerous studies have documented a significant ‘Muslim penalty’ across European societies [@helbling2014opposing; @helbling2012islamophobia].
-In labour markets, housing, and everyday social interaction, individuals identified as Muslim are often disadvantaged relative to otherwise comparable non-Muslims.
+In labor markets, housing, and everyday social interaction, individuals identified as Muslim are often disadvantaged relative to otherwise comparable non-Muslims.
 Yet establishing the existence of this penalty, i.e. the systematic disadvantage incurred by individuals identified as Muslim, is only the starting point for a substantive understanding of the phenomenon.
 The more demanding questions concern who discriminates, against whom, and under which conditions.
 
 Against this background, this paper revisits a large-scale conjoint survey experiment conducted across 25 European Union member states by @hahm2024divided.
 Using a combination of dictator and trust games alongside a conjoint design, they estimate the relative strength of multiple social divides.
 While their main focus is on the dominance of the partisan divide, their analysis also identifies a notable anti-Muslim bias that is consistent across all 25 countries.
-Whenever Muslim identity is experimentally signalled, respondents’ allocation decisions reveal a systematic penalty relative to otherwise comparable non-Muslim profiles.
+Whenever Muslim identity is experimentally signaled, respondents’ allocation decisions reveal a systematic penalty relative to otherwise comparable non-Muslim profiles.
 What this finding does not reveal, however, is whether and how the magnitude of this penalty varies with the other attributes attached to Muslim profiles, with the characteristics and political orientations of respondents, or with the interaction between profiles and respondents.
 
 This paper takes that heterogeneity as its central object of inquiry.
@@ -49,20 +49,20 @@ Understanding the conditions that amplify this bias is crucial for grasping the 
 Our analysis reuses the conjoint survey experiment of @hahm2024divided, an online study fielded across 25 European Union member states around the 2019 European Parliament elections.
 The experiment embeds a randomized conjoint within two behavioral games.
 In each task a respondent is endowed with ten tokens and decides how many to transfer to a fictional co-player whose profile is randomly generated.
-The Dictator (or Solidarity) game records this transfer directly, whereas the Trust game adds announced reciprocity, as the experimenter triples the transferred amount and the co-player may return a share.
+The Dictator game records this transfer directly, whereas the Trust game adds announced reciprocity, as the experimenter triples the transferred amount and the co-player may return a share.
 Each respondent completes three rounds of each game, for six decisions in total, with a fresh profile drawn for every round.
 
 The co-player profile varies seven attributes: age, gender, social class, nationality, partisan affiliation, EU identity, and religion.
 Both the order in which the attributes appear and the level shown for each are randomized by design.[^example]
-Because some attribute combinations are implausible, @hahm2024divided restrict which attributes are displayed through four conditions that vary whether EU identity and partisan affiliation appear and whether the co-player is a conational.[^treatments]
-For our analysis, we collapse partisan affiliation into a display-aware indicator of whether party was shown, not shown but the co-player was still a conational, or not applicable because no conational was displayed.
+Because some attribute combinations are implausible, @hahm2024divided restrict which attributes are displayed through four conditions that vary whether EU identity and partisan affiliation appear and whether the co-player is a co-national.[^treatments]
+For our analysis, we collapse partisan affiliation into a display-aware indicator of whether party was shown, not shown but the co-player was still a co-national, or not applicable because no co-national was displayed.
 This lets us recover the average effect of merely displaying a partisan affiliation on the Muslim penalty rather than the effect of any particular party.
 The religion attribute, with the four levels Muslim, Catholic, Protestant, and non-religious, is shown across all four conditions, so the full set of game decisions can be used to estimate the Muslim penalty.
 
 [^example]: @fig-profile in the appendix shows an example profile.
 
-[^treatments]: These randomly assigned conditions are: a conational with both EU identity and partisan affiliation, a conational with party but not EU identity, an EU national with EU identity but not party, and a co-player of some nationality with neither.
-Partisan affiliation is displayed only for conationals, since assigning a national party to a co-player ineligible to vote for it would be implausible.
+[^treatments]: These randomly assigned conditions are: a co-national with both EU identity and partisan affiliation, a co-national with party but not EU identity, an EU national with EU identity but not party, and a co-player of some nationality with neither.
+Partisan affiliation is displayed only for co-nationals, since assigning a national party to a co-player ineligible to vote for it would be implausible.
 
 The design contains no condition in which religion is absent, so there is no pure no-religion control.
 We do not adopt non-religious as the baseline, because being non-religious is not obviously a neutral reference and may be read differently across contexts, for instance in the post-communist states of eastern Europe.
@@ -74,7 +74,7 @@ These data are inherently hierarchical: decisions (rounds) are nested within res
 We include every covariate measured before the games and exclude those recorded afterward, to avoid post-treatment and collider bias.
 The retained set ranges from demographics to attitudinal batteries on national and European attachment, populist, democratic, and technocratic dispositions, and evaluations of the European Union.
 We make two exceptions for stable demographics drawn from the post-game block, age at which education stopped and residence type, which the experiment cannot plausibly have altered.
-Appendix @tbl-wordings gives the full set with exact question wordings and scales.
+@tbl-wordings in the appendix gives the full set with exact question wordings and scales.
 
 
 [^binary-coding]: This coding effectively averages the non-Muslim religion features against the Muslim one. As we are interested in the drivers of Muslim bias rather than in particular facets of that bias, we adopt this simpler approach.
@@ -97,9 +97,9 @@ We observe only the realized outcome, which can be represented in potential outc
 $$
 Y_{ric}^{g,\text{obs}} =
 T_{ric} \cdot Y_{ric}^{g}(1) + (1 - T_{ric}) \cdot Y_{ric}^{g}(0)
-$$ {#eq-observed}
+$${#eq-observed}
 
-Since both games reflect different types of discrimination, we estimate separate models for each game $g \in \{D, TR\}$, where $D$ denotes the dictator game and $TR$ the trust game. Our baseline estimand for each game is the Average Treatment Effect (ATE):
+Since both games reflect different types of discrimination, we estimate separate models for each game $g \in \{D, TR\}$, where $D$ denotes the Dictator game and $TR$ the Trust game. Our baseline estimand for each game is the Average Treatment Effect (ATE):
 
 $$
 \text{ATE}^{g} = \mathbb{E}\!\left[Y_{ric}^{g}(1) - Y_{ric}^{g}(0)\right]
@@ -126,7 +126,7 @@ $$
         \right]
 $${#eq-cate1}
 
-\noindent where $X_{ic}$ denotes time-invariant respondent-level covariates (demographic questions, several EU-related items, democratic, populist, and technocratic items, see @tbl-wordings in appendix for the full list), and $A_{ric}$ denotes the remaining profile attributes displayed in round $r$, namely gender, age, social class, party affiliation and nationality.
+\noindent where $X_{ic}$ denotes time-invariant respondent-level covariates (demographic questions, several EU-related items, democratic, populist, and technocratic items, see @tbl-wordings in the appendix for the full list), and $A_{ric}$ denotes the remaining profile attributes displayed in round $r$, namely gender, age, social class, party affiliation and nationality.
 Importantly, we do not treat these profile attributes as separate treatments as in the AMCE approach, but as potential moderators of the Muslim penalty.
 
 This single CATE function captures two different sources of heterogeneity.
@@ -173,25 +173,25 @@ A method tuned to predict the outcome therefore spends most of its capacity on t
 The modern tools for this task grew out of regression trees and random forests, which partition the covariate space into regions and average within them, learning flexible response surfaces without a pre-specified functional form [@breiman2001random].
 Two developments adapted this machinery to treatment effects, and they differ less in statistical philosophy than in where they place their corrections.
 The first keeps the tree ensemble but disciplines it with a prior.
-Bayesian Additive Regression Trees (BART) model the outcome as a regularised sum of trees [@chipman2006bayesian; @chipman2010bart], and were carried into causal inference by fitting the response surface and differencing predicted potential outcomes [@hill2011bayesian; @hill2020bayesian; @carnegie2019examining].
+Bayesian Additive Regression Trees (BART) model the outcome as a regularized sum of trees [@chipman2006bayesian; @chipman2010bart], and were carried into causal inference by fitting the response surface and differencing predicted potential outcomes [@hill2011bayesian; @hill2020bayesian; @carnegie2019examining].
 The second corrects the data instead of the prior.
 Causal trees and forests split the sample so that the partition is learned on one part and the effects estimated on another, a property their authors call honesty.
 Under regularity conditions, honesty restores asymptotically valid confidence intervals on the recovered effects [@athey2019estimating; @wager2018estimation; @jawadekar2023practical].
 The same sample-splitting logic underpins double machine learning, which combines it with partialling the nuisance structure out of treatment and outcome [@chernozhukov2018double; @ratkovic2023relaxing].
-Generalised random forests sit in this tradition, extending honest, orthogonalised estimation to a broad class of estimands [@athey2019generalized], and have become a workhorse for heterogeneous-effect analysis in applied work and in political science [@davis2017using; @zheng2023estimating].
+Generalized random forests sit in this tradition, extending honest, orthogonalized estimation to a broad class of estimands [@athey2019generalized], and have become a workhorse for heterogeneous-effect analysis in applied work and in political science [@davis2017using; @zheng2023estimating].
 The two families have been compared directly in @ratkovic2021subgroup, which raises two concerns about the Bayesian, full-sample approach.
 The first is that it does not model the treatment as a function of the covariates.
 The second is that it uses the same data to fit the model and to estimate and test the effects.
-The first concern bites mainly when assignment is not randomised.
+The first concern bites mainly when assignment is not randomized.
 When the propensity depends on covariates that also drive the outcome, a method that ignores it inherits the resulting confounding, and the split-sample forest is then markedly less biased and better covered.
-Under randomised assignment with known propensities, as in our conjoint, that gap closes and the two families perform comparably on this axis.
-The second concern, by contrast, survives randomisation.
+Under randomized assignment with known propensities, as in our conjoint, that gap closes and the two families perform comparably on this axis.
+The second concern, by contrast, survives randomization.
 Whenever the effect surface is learned from the data rather than fixed in advance, using the same data to discover and to test it invalidates the resulting intervals, a point that does not depend on how treatment was assigned.
-Bayesian Causal Forests (BCF) answer the first concern by giving the treatment surface its own prior and its own regularisation, separate from the prognostic surface.
-This guards against the regularisation-induced confounding that arises when a single prior shrinks both [@hahn2020bayesian], an idea since sharpened with shrinkage and sparsity refinements [@caron2022shrinkage; @caron2022estimating].
+Bayesian Causal Forests (BCF) answer the first concern by giving the treatment surface its own prior and its own regularization, separate from the prognostic surface.
+This guards against the regularization-induced confounding that arises when a single prior shrinks both [@hahn2020bayesian], an idea since sharpened with shrinkage and sparsity refinements [@caron2022shrinkage; @caron2022estimating].
 They have no analogue for the second concern.
 Standard BCF, including the hierarchical variants we draw on, uses the full sample both to fit the trees and to form the posterior intervals, with no sample-splitting step [@hahn2020bayesian; @thal2024aggregate].
-The honesty of the causal forest is exactly that missing device, and it is the concern our randomised design does not dissolve.
+The honesty of the causal forest is exactly that missing device, and it is the concern our randomized design does not dissolve.
 
 Our design follows from this comparison and from the structure of our data.
 We observe each respondent over three conjoint rounds, and respondents are themselves grouped within 25 countries, so the observations are clustered at two levels.
@@ -205,7 +205,7 @@ We then checked both estimators on synthetic data built with the same two-level 
 This was a smoke test of the machinery, not a validation against realistic confounding.
 Each estimator recovered the planted effects within sampling error, but the nested BCF did so only at small scale, and at full scale the nested fit proved computationally infeasible.[^nested-ri]
 The causal forest recovered the same quantities at a fraction of the cost, using the respondent clusters and country fixed effects described above.
-We therefore adopted the causal forest as our primary estimator, since it delivers the honest, cluster-robust intervals the comparison above favours and scales to the full sample.
+We therefore adopted the causal forest as our primary estimator, since it delivers the honest, cluster-robust intervals the comparison above favors and scales to the full sample.
 We keep the BCF as a robustness check, fit with country random intercepts only.
 Because it can no longer model the within-respondent dependence directly, we recover that uncertainty after the fact with a respondent cluster bootstrap.
 The two fits therefore do not handle the clustered structure identically.
@@ -231,7 +231,7 @@ Each panel shows the $\hat{\tau}$ on the token scale within a level or bin of on
 For categorical moderators we plot the point estimate and an honest 95% confidence interval at each level, drawn as a shape and a line segment.
 For continuous moderators and rating scales we estimate the point and interval at each value, binning age and years of education into a pre-specified number of bins, and connect them into a line with a ribbon, which lets the forest reveal any non-linear trend.
 Throughout, we orient every rating scale so that moving right along the x-axis denotes more agreement, a more positive evaluation, or more attachment, depending on the item, with full wordings and original codings given in @tbl-wordings.
-We overlay the two games within a single panel by colour, so that any divergence between them reads directly as a game-specific difference in heterogeneity.
+We overlay the two games within a single panel by color, so that any divergence between them reads directly as a game-specific difference in heterogeneity.
 
 ## Empirical Analysis {#sec-analysis}
 
@@ -240,26 +240,26 @@ We overlay the two games within a single panel by colour, so that any divergence
 {{< embed code/07_postprocess_grf.qmd#fig-grf-combined-prof >}}
 
 @fig-grf-combined-prof asks whether the remaining profile attributes interact with the Muslim signal, the source of heterogeneity we termed causal interaction, with the Dictator game in blue and the Trust game in orange.
-Across these attributes the penalty is strikingly stable, since every level of every attribute carries a sizeable and clearly negative effect and none of the accompanying features comes close to neutralising it.
+Across these attributes the penalty is strikingly stable, since every level of every attribute carries a sizeable and clearly negative effect and none of the accompanying features comes close to neutralizing it.
 The clearest moderation is partisanship.
 Among co-nationals, displaying a party affiliation reduces the penalty substantially relative to withholding it, the single largest shift in the figure, and the attenuation holds in both games.
 Nationality is the only attribute whose moderation differs across the two games.
 The penalty against non-EU national profiles is deeper in the Trust game than in the Dictator game, the two intervals being disjoint.
-Within the Dictator game the ordering is itself informative, as non-EU nationals draw the smallest penalty while co-nationals are penalised systematically more, an ordering the Trust game does not reproduce.
-Social class moves the penalty only at its upper end, where lower- and middle-class profiles are penalised indistinguishably but profiles presented as upper class are penalised somewhat less.
+Within the Dictator game the ordering is itself informative, as non-EU nationals draw the smallest penalty while co-nationals are penalized systematically more, an ordering the Trust game does not reproduce.
+Social class moves the penalty only at its upper end, where lower- and middle-class profiles are penalized indistinguishably but profiles presented as upper class are penalized somewhat less.
 The remaining attributes leave the penalty essentially untouched.
 Whether a profile identifies as an EU citizen or rejects that identity makes no difference, though in the Dictator game both attract a marginally smaller penalty than the condition in which EU identity is not displayed, a gap that lies within sampling error and does not recur in the Trust game.
-Profile age produces only a minor, non-systematic dip at thirty, with intervals overlapping across the age range, and male and female profiles are penalised alike.
+Profile age produces only a minor, non-systematic dip at thirty, with intervals overlapping across the age range, and male and female profiles are penalized alike.
 As a general pattern the Trust-game point estimates sit slightly below their Dictator-game counterparts, but the two games rarely diverge in a way the intervals can distinguish.
 
 
 {{< embed code/07_postprocess_grf.qmd#fig-grf-combined-resp-1 >}}
 
-@fig-grf-combined-resp-1 and @fig-grf-combined-resp-2 turn to causal moderation, the respondent-level characteristics that govern who penalises more, which the introduction flagged as the substantively more consequential source of variation.
+@fig-grf-combined-resp-1 and @fig-grf-combined-resp-2 turn to causal moderation, the respondent-level characteristics that govern who penalizes more, which the introduction flagged as the substantively more consequential source of variation.
 These characteristics display more heterogeneity than the profile attributes above.
-Among the categorical respondent characteristics, the sharpest contrast is by gender, as men penalise Muslim profiles more than women in both games, though only in the Dictator game do the intervals separate.
+Among the categorical respondent characteristics, the sharpest contrast is by gender, as men penalize Muslim profiles more than women in both games, though only in the Dictator game do the intervals separate.
 Respondents' own religion orders the penalty as well, with Catholics and Protestants exhibiting the strongest bias and the Orthodox the weakest by their point estimates.
-Place of residence matters at the margin, rural respondents penalising somewhat more than those in large cities and smaller towns falling in between, a gradient that is firmer in the Trust game.
+Place of residence matters at the margin, rural respondents penalizing somewhat more than those in large cities and smaller towns falling in between, a gradient that is firmer in the Trust game.
 Subjective class is largely flat, its main features being the wide intervals and smallest penalty of respondents who decline to place themselves and a slightly but not systematically lower penalty among the working class compared to lower-middle and middle class respondents in the Dictator game.
 The upper middle class is the interesting exception, drawing the smallest penalty of any class in the Dictator game but the largest in the Trust game by their point estimates, a between-game difference that is systematic.
 The attitudinal scales reveal more structure.
@@ -272,12 +272,12 @@ The view that politics is a struggle between good and evil follows the same dire
 Valuing compromise, its mirror image, is associated with a marginally smaller penalty, although agreement is high throughout the sample and few respondents populate the low end of that item.
 Respondent age closes the figure and hints at a U-shaped relationship.
 Among the youngest respondents the intervals brush the zero line repeatedly, and at the very youngest ages the point estimates briefly cross it, the only place in the analysis where the penalty appears to vanish.
-The penalty then deepens through middle age and lifts again past sixty-five, though that upturn coincides with the thinning of the sample at older ages and may be an artefact of the wider intervals there.
+The penalty then deepens through middle age and lifts again past sixty-five, though that upturn coincides with the thinning of the sample at older ages and may be an artifact of the wider intervals there.
 
 {{< embed code/07_postprocess_grf.qmd#fig-grf-combined-resp-2 >}}
 
 @fig-grf-combined-resp-2 continues with the remaining attitudinal scales, where the moderation is dominated by evaluations of the European Union.
-Across this battery the pattern is consistent, as respondents who judge the Union negatively penalise Muslim profiles more and those who judge it favourably penalise them less.
+Across this battery the pattern is consistent, as respondents who judge the Union negatively penalize Muslim profiles more and those who judge it favorably penalize them less.
 More negative assessments of the EU's effect on the national economy, on national culture and identity, and on national political status each accompany a larger penalty, as does agreement that the Union would be better abolished and that it should heed the people.
 Satisfaction with the EU and support for its pursuing long-term goals run the other way toward a smaller penalty, the latter flattening at the top of its scale.
 The technocratic and remaining populist items move the penalty far less.
@@ -287,7 +287,7 @@ The weakest moderators are the claim that ordinary people do not know what is go
 
 Taken together, the respondent-level results describe substantial heterogeneity across demographic subgroups and pre-treatment attitudes, but heterogeneity almost entirely in the magnitude of the anti-Muslim penalty rather than in its presence.
 In the few subgroups where the penalty comes closest to disappearing, only the upper bound of the interval grazes zero, and no single moderator credibly nullifies the penalty, let alone reverses it.
-The strongest and most coherent moderation runs through evaluations of European integration, where respondents hostile to the Union or sceptical of its effects penalise Muslim profiles systematically more than those who regard it favourably.
+The strongest and most coherent moderation runs through evaluations of European integration, where respondents hostile to the Union or skeptical of its effects penalize Muslim profiles systematically more than those who regard it favorably.
 Yet even on the pro-European side of these scales a robust penalty remains, attenuated rather than abolished.
 The variable-importance ranking in the appendix (@fig-grf-combined-vi) corroborates this reading, placing EU-evaluation items among the four most influential moderators of the five.
 
@@ -336,7 +336,7 @@ The forest and the BCF therefore do not handle the clustered structure under ide
 Sixth, the sample was recruited to be representative of national populations only in age and gender, which is why we report a sample rather than a population quantity.
 Our estimates describe the realized sample, and extrapolation to the wider European population should be made with that restriction in mind.
 Finally, the conjoint is by construction an artificial setting.
-It isolates the causal effect of individual attributes cleanly, but how these effects translate to less structured real-world encounters, where group membership is inferred rather than labelled, remains a separate question.
+It isolates the causal effect of individual attributes cleanly, but how these effects translate to less structured real-world encounters, where group membership is inferred rather than labeled, remains a separate question.
 
 
 ## Conclusion {#sec-conclusion}
@@ -352,9 +352,9 @@ It isolates the causal effect of individual attributes cleanly, but how these ef
 
 ## Appendix {.unnumbered}
 
-### Appendix A Additional Sample Details {.unnumbered}
+### Appendix A: Additional Sample Details {.unnumbered}
 
-#### Examplary Profile From Conjoint Experiment {.unnumbered}
+#### Example Profile From Conjoint Experiment {.unnumbered}
 
 ![Player 2 Profile Example. *Note:* Figure embedded from @hahm2024divided, Figure 1.](https://static.cambridge.org/binary/version/id/urn:cambridge.org:id:binary:20240123150926403-0273:S0003055423000266:S0003055423000266_fig1.png){#fig-profile}
 
@@ -374,7 +374,7 @@ It isolates the causal effect of individual attributes cleanly, but how these ef
 
 {{< embed code/09_additional_figs_tables.qmd#tbl-wordings >}}
 
-### Appendix B Additional CF Figures {.unnumbered}
+### Appendix B: Additional CF Figures {.unnumbered}
 
 #### TOC / AUTOC Curve {.unnumbered}
 
@@ -388,7 +388,7 @@ It isolates the causal effect of individual attributes cleanly, but how these ef
 
 {{< embed code/07_postprocess_grf.qmd#fig-grf-combined-vi >}}
 
-### Appendix C Main Results from BCF Method {.unnumbered}
+### Appendix C: Main Results from BCF Method {.unnumbered}
 
 #### BCF Moderation by Profile-level Covariates {.unnumbered}
 
