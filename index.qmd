@@ -320,14 +320,12 @@ In the worst case of near-perfect within-respondent correlation the deflation co
 Several limitations qualify our conclusions.
 First, our binary treatment pools every non-Muslim religion into a single comparison and reduces partisanship to an indicator of whether a party was displayed.
 This averages over heterogeneous comparison groups by design and cannot isolate which facet of the Muslim signal drives the penalty.
-
 Second, our analysis treats the Muslim attribute as the primary signal respondents respond to.
-Whether it actually dominates perception inside the experimental setting is beyond our scope of possibilities.
+Whether it actually dominates perception in the experimental setting is a question our data cannot answer.
 
 Third, to guard against post-treatment and collider bias we condition only on pre-treatment covariates, with the two exceptions noted above.
 Our interpretations therefore hold with respect to this covariate set, which excludes theoretically relevant measures such as general left-right placement, EU integration preferences, and nativist attitudes.
 Incorporating these in a principled way is a natural extension.
-
 Fourth, we examine the moderating role of each covariate one at a time and do not characterize interactions among moderators.
 The forest accommodates high-dimensional, non-linear interactions internally, and a fuller treatment of these higher-order patterns is left to future work.
 
@@ -337,7 +335,6 @@ The forest and the BCF therefore do not handle the clustered structure under ide
 
 Sixth, the sample was recruited to be representative of national populations only in age and gender, which is why we report a sample rather than a population quantity.
 Our estimates describe the realized sample, and extrapolation to the wider European population should be made with that restriction in mind.
-
 Finally, the conjoint is by construction an artificial setting.
 It isolates the causal effect of individual attributes cleanly, but how these effects translate to less structured real-world encounters, where group membership is inferred rather than labelled, remains a separate question.
 
