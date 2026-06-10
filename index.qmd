@@ -157,30 +157,48 @@ These quantities are linked through the law of iterated expectations, which ensu
 ### Estimation Strategy
 
 Estimating how a treatment effect varies across units is a different problem from predicting an outcome, and a harder one.
-The signal of interest, the variation in the effect, is typically an order of magnitude smaller than the variation in the outcome itself, so a method tuned to predict the outcome spends most of its capacity on strong confounding structure and little on the effect [@imai2013estimating].
-The modern tools for this task grew out of regression trees and random forests, which partition the covariate space into regions and average within them, learning flexible response surfaces without a pre-specified functional form.
+The signal of interest, the variation in the effect, is usually far weaker than the variation in the outcome itself.
+A method tuned to predict the outcome therefore spends most of its capacity on the prognostic structure that sets the level of the outcome, and little on the effect [@imai2013estimating].
+The modern tools for this task grew out of regression trees and random forests, which partition the covariate space into regions and average within them, learning flexible response surfaces without a pre-specified functional form [@breiman2001random].
 Two developments adapted this machinery to treatment effects, and they differ less in statistical philosophy than in where they place their corrections.
 The first keeps the tree ensemble but disciplines it with a prior.
-Bayesian Additive Regression Trees (BART) model the outcome as a regularised sum of trees [@chipman2006bayesian; @chipman2010bart;@hill2011bayesian], and were carried into causal inference by fitting the response surface and differencing predicted potential outcomes [@hill2020bayesian; @carnegie2019examining].
+Bayesian Additive Regression Trees (BART) model the outcome as a regularised sum of trees [@chipman2006bayesian; @chipman2010bart], and were carried into causal inference by fitting the response surface and differencing predicted potential outcomes [@hill2011bayesian; @hill2020bayesian; @carnegie2019examining].
 The second corrects the data instead of the prior.
-Causal trees and forests split the sample so that the partition is learned on one part and the effects are estimated on another, a property their authors call honesty, which restores valid confidence intervals on the recovered effects [@athey2019estimating; @wager2018estimation; @jawadekar2023practical].
+Causal trees and forests split the sample so that the partition is learned on one part and the effects estimated on another, a property their authors call honesty.
+Under regularity conditions, honesty restores asymptotically valid confidence intervals on the recovered effects [@athey2019estimating; @wager2018estimation; @jawadekar2023practical].
 The same sample-splitting logic underpins double machine learning, which combines it with partialling the nuisance structure out of treatment and outcome [@chernozhukov2018double; @ratkovic2023relaxing].
 Generalised random forests sit in this tradition, extending honest, orthogonalised estimation to a broad class of estimands [@athey2019generalized], and have become a workhorse for heterogeneous-effect analysis in applied work and in political science [@davis2017using; @zheng2023estimating].
-The two families have been compared directly in @ratkovic2021subgroup.
-Under randomised treatment they perform comparably, but absent randomisation the sample-splitting approach is markedly less biased and yields confidence intervals with substantially better coverage.
-That comparison raises two concerns about using BART for this task, that it does not model the treatment as a function of the covariates and that it uses the full sample both to fit the model and to estimate and test the effects.
-Bayesian Causal Forests (BCF) answer the first concern by giving the treatment surface its own prior and its own regularisation, separate from the prognostic surface, which guards against the regularisation-induced confounding that arises when a single prior shrinks both [@hahn2020bayesian], an idea since sharpened with shrinkage and sparsity refinements [@caron2022shrinkage; @caron2022estimating].
-The second concern, the absence of sample splitting, remains in the Bayesian branch.
+The two families have been compared directly in @ratkovic2021subgroup, which raises two concerns about the Bayesian, full-sample approach.
+The first is that it does not model the treatment as a function of the covariates.
+The second is that it uses the same data to fit the model and to estimate and test the effects.
+The first concern bites mainly when assignment is not randomised.
+When the propensity depends on covariates that also drive the outcome, a method that ignores it inherits the resulting confounding, and the split-sample forest is then markedly less biased and better covered.
+Under randomised assignment with known propensities, as in our conjoint, that gap closes and the two families perform comparably on this axis.
+The second concern, by contrast, survives randomisation.
+Whenever the effect surface is learned from the data rather than fixed in advance, using the same data to discover and to test it invalidates the resulting intervals, a point that does not depend on how treatment was assigned.
+Bayesian Causal Forests (BCF) answer the first concern by giving the treatment surface its own prior and its own regularisation, separate from the prognostic surface.
+This guards against the regularisation-induced confounding that arises when a single prior shrinks both [@hahn2020bayesian], an idea since sharpened with shrinkage and sparsity refinements [@caron2022shrinkage; @caron2022estimating].
+They have no analogue for the second concern.
+Standard BCF, including the hierarchical variants we draw on, uses the full sample both to fit the trees and to form the posterior intervals, with no sample-splitting step [@hahn2020bayesian; @thal2024aggregate].
+The honesty of the causal forest is exactly that missing device, and it is the concern our randomised design does not dissolve.
 
 Our design follows from this comparison and from the structure of our data.
-We observe each respondent over three conjoint rounds, and respondents are themselves grouped within 25 countries, so the observations are clustered at two levels and treating them as independent would understate our uncertainty.
-To respect that structure we first turned to the Bayesian branch, where an active literature extends BCF to hierarchical and longitudinal settings through random effects and partial pooling [@thal2024aggregate; @prevot2025hierarchical], and where a working implementation already places a random intercept on the prognostic surface for clustered, multisite trials [@yeager2019national; @yeager2022synergistic].
+We observe each respondent over three conjoint rounds, and respondents are themselves grouped within 25 countries, so the observations are clustered at two levels.
+Treating them as independent would understate our uncertainty.
+The causal forest accommodates this structure directly.
+We cluster the honest sampling and the variance estimation by respondent, which absorbs the within-respondent dependence across rounds, and we enter country as fixed effects in the covariate matrix, which absorbs between-country baseline variation [@athey2019generalized].
+The Bayesian branch absorbs the same structure through random intercepts and partial pooling.
+An active literature extends BCF to these hierarchical and longitudinal settings [@thal2024aggregate; @prevot2025hierarchical], and a working implementation already places a random intercept on the prognostic surface for clustered, multisite trials [@yeager2019national; @yeager2022synergistic].
 That implementation carries only a single level of random intercepts, so we extended it to the two nested levels our data require, respondent within country, under the same partial-pooling logic.[^nested-extension]
-We then tested the estimators on synthetic data built with the same two-level structure.
-The nested BCF recovered the planted random intercepts and treatment surface correctly, but at full scale the nested fit proved computationally infeasible.[^nested-ri]
-On the same synthetic data the Causal Forest (CF) recovered the average effects and the heterogeneity almost exactly, using respondent-level clusters for the within-respondent dependence and country fixed effects in the covariate matrix.
-We therefore adopted the CF as our primary estimator for the main analysis, since it delivers the honest, cluster-robust intervals that the comparison above favours at a fraction of the cost.
-We keep the BCF as a robustness check, fit with country random intercepts only, and handle the within-respondent dependence it can no longer model directly with a respondent cluster bootstrap.
+We then checked both estimators on synthetic data built with the same two-level structure and a known, planted treatment surface.
+This was a smoke test of the machinery, not a validation against realistic confounding.
+Each estimator recovered the planted effects within sampling error, but the nested BCF did so only at small scale, and at full scale the nested fit proved computationally infeasible.[^nested-ri]
+The causal forest recovered the same quantities at a fraction of the cost, using the respondent clusters and country fixed effects described above.
+We therefore adopted the causal forest as our primary estimator, since it delivers the honest, cluster-robust intervals the comparison above favours and scales to the full sample.
+We keep the BCF as a robustness check, fit with country random intercepts only.
+Because it can no longer model the within-respondent dependence directly, we recover that uncertainty after the fact with a respondent cluster bootstrap.
+The two fits therefore do not handle the clustered structure identically.
+The forest builds the respondent dependence into estimation, whereas the BCF drops the respondent random effect and patches the uncertainty back in, so their agreement is reassuring but not two fully independent confirmations under the same assumptions.
 Throughout, we treat the country and respondent variation as a nuisance to absorb rather than a quantity to interpret, in keeping with our interest in heterogeneity within the sample rather than comparison across countries.
 
 [^nested-extension]: @yeager2019national fit their hierarchical BCF with the `multibart` package [@murray2021multibart], whose C++ sampler already accommodates an arbitrary random-effects design. Moving from a single level of random intercepts to nested intercepts therefore required only a minor adaptation of the high-level R helper that assembles that design, not a change to the sampler itself.
@@ -210,7 +228,7 @@ We overlay the two games within a single panel by colour, so that any divergence
 
 - Interpretations: 
     - overall, Muslim penalty remains stable with regards to other profile attributes
-    - e.g. age, sex, and eu position
+    - e.g. age, sex, and eu identity (recall EU identity was only (randomly) shown)
     - across all attribute dimensions trust game yields consistently lower CATE point estimates, but intervals overlap with those from dictator game.
         - only exception: Muslim profiles presented as non Eu nationals receive significantly fewer (i.e. the penatly is significantly larger) in trust game
         - though interestingly this difference arises more from an upwards shift of the Dictator non-eu estimate
