@@ -15,7 +15,7 @@ execute:
   message: true
 ---
 
-# Setup {#sec-setup}
+## Setup {#sec-setup}
 
 ```{r}
 #| label: setup
@@ -43,7 +43,7 @@ sapply(p_required, require, character.only = TRUE)
 rm(p_required, p_to_install, packages)
 ```
 
-# Load long format data {#sec-code-1}
+## Load long format data {#sec-code-1}
 
 ```{r}
 #| label: load-dat
@@ -56,7 +56,7 @@ eu25_long <- read_rds(
 )
 ```
 
-# House style {#sec-house}
+## House style {#sec-house}
 
 The shared visual grammar for every figure in this notebook.
 The two games are the only thing encoded by colour, shape, and linetype, and they are always
@@ -121,7 +121,7 @@ golden <- (1 + sqrt(5)) / 2 # ~1.618
 golden_h <- function(width) width / golden
 ```
 
-# Token allocation to Muslim profiles {#sec-diff-means}
+## Token allocation to Muslim profiles {#sec-diff-means}
 
 The motivating descriptive: how many tokens does a profile receive when it is
 labelled Muslim versus everything else, in each game.
@@ -215,7 +215,7 @@ dim_means |>
 ```
 
 
-# Outcome Distribution
+## Outcome Distribution
 
 The distribution of the raw outcome — tokens allocated to the displayed profile,
 an integer from 0 to 10 — in each game.
@@ -260,7 +260,7 @@ outcome_distr |>
   theme_mbeu()
 ```
 
-# Data Covariate Balance Table
+## Data Covariate Balance Table
 
 ```{r}
 #| label: tbl-balance-round-mods
@@ -375,7 +375,7 @@ eu25_long |>
   as_kable()
 ```
 
-# Survey Item Reference Table {#sec-survey-items}
+## Survey Item Reference Table {#sec-survey-items}
 
 ```{r}
 #| label: tbl-wordings
@@ -413,7 +413,7 @@ tibble::tribble(
   knitr::kable()
 ```
 
-# Session Info {#sec-session-info .appendix .unnumbered}
+## Session Info {#sec-session-info .appendix .unnumbered}
 
 ```{r}
 #| label: session-info
@@ -422,7 +422,7 @@ tibble::tribble(
 session_info()
 ```
 
-# Execution Time {#sec-exec-time .appendix .unnumbered}
+## Execution Time {#sec-exec-time .appendix .unnumbered}
 
 ```{r}
 #| label: exec-time

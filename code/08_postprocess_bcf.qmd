@@ -17,7 +17,7 @@ execute:
   cache: true
 ---
 
-# Purpose {#sec-purpose}
+## Purpose {#sec-purpose}
 
 This notebook post-processes the **robustness** estimator — the saved hierarchical BCF fits
 (`data/03_final/bcf_{dictator,trust}.rds`) — into the same three quantities, in the same order,
@@ -58,7 +58,7 @@ of magnitude at every level, and it already widens appropriately as the level co
 bands are, in other words, genuinely that precise; the bootstrap is folded in for completeness but
 moves them by only a few percent.
 
-# Setup {#sec-setup}
+## Setup {#sec-setup}
 
 The setup chunk loads the project packages plus `multibart`'s own dependencies before the local
 package is attached (needed for `get_forest_fit()`).
@@ -108,7 +108,7 @@ if (!requireNamespace("multibart", quietly = TRUE)) {
 library(multibart)
 ```
 
-# Load data and fits {#sec-load}
+## Load data and fits {#sec-load}
 
 ```{r}
 #| label: load-data
@@ -118,7 +118,7 @@ fit_dict <- readRDS(here::here("data", "03_final", "bcf_dictator.rds"))
 fit_trust <- readRDS(here::here("data", "03_final", "bcf_trust.rds"))
 ```
 
-# Variable definitions {#sec-vars}
+## Variable definitions {#sec-vars}
 
 The frozen moderator list and `prep_game()` are reused verbatim from `05_bcf_fit.qmd` so the
 reconstructed moderator design matches fit-time row order and columns exactly.
@@ -209,7 +209,7 @@ game_mods <- function(dat, game) {
 }
 ```
 
-# House style {#sec-house}
+## House style {#sec-house}
 
 The Okabe-Ito game palette with redundant shape and linetype, the three reserved scales, the
 shared theme, and the reference layers — copied from `09_additional_figs_tables.qmd` / the combined
@@ -246,7 +246,7 @@ yl_ric <- expression(hat(tau)[ric]) # profile-level CATE
 yl_i <- expression(hat(tau)[ic]) # respondent-level CATE
 ```
 
-# Posterior summary builders {#sec-machinery}
+## Posterior summary builders {#sec-machinery}
 
 Every quantity below is read off `tau_draws`, the `nsim × n` posterior matrix returned by
 `get_forest_fit()` (rows index posterior draws, columns index observations). All three builders
@@ -503,7 +503,7 @@ finalize_ci <- function(df, boot) {
 }
 ```
 
-# Combined plotters {#sec-plotters}
+## Combined plotters {#sec-plotters}
 
 `plot_comb()` draws the faceted overview with a free y-axis per facet: grey per-level count bars
 (pooled over games) along the bottom, posterior medians and credible intervals dodged by game
@@ -634,7 +634,7 @@ cont_panel <- function(d, raw, mod, xlim, ylab = yl_i) {
 }
 ```
 
-# Build summaries {#sec-build}
+## Build summaries {#sec-build}
 
 `tau_draws` is large (`nsim × n`); we extract it one game at a time and free it once the small
 summary tibbles (ATE, projection, and the combined CATE-by-moderator tables) are built.
@@ -803,7 +803,7 @@ stopifnot(
 )
 ```
 
-# The recovered ATEs {#sec-ate}
+## The recovered ATEs {#sec-ate}
 
 The posterior ATE — the per-draw average of τ(x) over all observations — for each game, reported as
 the posterior median and 95% credible interval (the manuscript quotes these numbers in a footnote
@@ -822,7 +822,7 @@ for (i in seq_len(nrow(ate_comb))) {
 }
 ```
 
-# The posterior linear projections {#sec-proj}
+## The posterior linear projections {#sec-proj}
 
 The posterior projection of τ(x) onto the moderator design: a linear summary of which moderators
 shift the treatment effect, the Bayesian counterpart to GRF's best linear projection
@@ -855,7 +855,7 @@ ggplot(proj_plot, aes(x = estimate, y = term, colour = game, shape = game)) +
   theme_mbeu()
 ```
 
-# The posterior CATEs by moderator {#sec-cate}
+## The posterior CATEs by moderator {#sec-cate}
 
 The headline figures: posterior median CATE on the y-axis, the moderator on the x-axis, with a
 cluster-robust 95% interval at each level/grid cell, both games overlaid. The y-axis is free per
@@ -960,7 +960,7 @@ p_edu <- cont_panel(
 (p_resp2 / p_edu) + plot_layout(heights = c(3, 1))
 ```
 
-# Session Info {#sec-session-info .appendix .unnumbered}
+## Session Info {#sec-session-info .appendix .unnumbered}
 
 ```{r}
 #| label: session-info
@@ -969,7 +969,7 @@ p_edu <- cont_panel(
 session_info()
 ```
 
-# Execution Time {#sec-exec-time .appendix .unnumbered}
+## Execution Time {#sec-exec-time .appendix .unnumbered}
 
 ```{r}
 #| label: exec-time
