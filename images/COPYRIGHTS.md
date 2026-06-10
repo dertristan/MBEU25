@@ -1,6 +1,6 @@
 ### Copyright and Usage Restrictions for University Assets
 
-**Important Notice:** The R package code is licensed under the GNU General Public License v3.0. However, the following assets included in this package are the intellectual property of the University of Mannheim and are **not** covered by the GPL-3.0 license.
+**Important Notice:** This repository is released under a dual license (CC BY 4.0 for the manuscript text and original figures, MIT for the project's own code; the bundled `code/multibart/` package remains under the GNU General Public License v3.0). The following assets are the intellectual property of the University of Mannheim and are **not** covered by any of those licenses.
 
 The logo of the University of Mannheim and the photo of the main palace are the exclusive property of the university, and their use is subject to strict conditions as outlined on the [university's homepage](https://www.uni-mannheim.de/en/cd/using-the-corporate-design/how-to-use-the-logo/right-to-use-the-logo/). The marketing rights are exclusively held by the university's Service und Marketing GmbH.
 

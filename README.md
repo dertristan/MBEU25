@@ -1,30 +1,31 @@
-# Penalized for Faith: Muslim Bias in Economic Behavioral Games Across 25 EU Countries
+# Penalized for Faith: Who Drives the Muslim Penalty?
 
-**Course:** Causal Inference — Term Paper  
-**Status:** Work in progress
+### Treatment-Effect Heterogeneity in European Conjoint Behavioral Games
+
+Term paper for **Theory Building and Causal Inference** (Prof. Marc Ratkovic), University of Mannheim, Spring 2026.
 
 ---
 
 ## Research Summary
 
-This project reanalyzes data from [Hahm, Hilpert & König (2024)](#data-source), a large-scale conjoint survey experiment fielded across all 25 EU member states in 2019. In the original study, respondents participated in economic behavioral games — a **dictator/solidarity game** and a **trust game** — in which they allocated tokens to a fictitious co-player. Co-player profiles were constructed with randomized attributes (including religion, nationality, age, and others), allowing causal identification of attribute-specific biases via the conjoint design.
+This project reanalyzes data from [Hahm, Hilpert & König (2024)](#data-source), a conjoint survey experiment fielded across 25 EU member states in 2019. Respondents played two economic behavioral games — a **dictator/solidarity game** and a **trust game** — allocating tokens to a fictitious co-player whose profile carried randomized attributes (religion, nationality, age, social class, partisanship, EU stance, gender). The conjoint randomization identifies attribute-specific biases.
 
-We exploit the religion attribute to study **Muslim bias**: the causal effect of a co-player being presented as Muslim (vs. all other religions pooled) on the respondent's token allocation. Rather than a comparative cross-national study, the focus is on **treatment effect heterogeneity** — what drives variation in the well-documented Muslim penalty. Two families of moderators are examined:
+We isolate the **Muslim penalty** — the causal effect of a co-player being shown as Muslim (vs. all other religions pooled) on the respondent's allocation — and treat it as the quantity of interest. The study is **not** a cross-national comparison; country is a nuisance to account for, not interpreted. Instead we focus on **heterogeneity** in the penalty, shifting from the AMCE to a conditional-average-treatment-effect (CATE) logic, across two sources:
 
-1. **Profile-level heterogeneity** — which *other conjoint attributes* shown in the same co-player profile (e.g., occupation, nationality, partisan affiliation, EU stance) amplify or attenuate the Muslim effect.
-2. **Respondent-level heterogeneity** — which *respondent characteristics* (e.g., political attitudes, religiosity, contact with Muslims, socioeconomic status) are associated with stronger or weaker Muslim bias.
+1. **Profile-level interaction** — which *other conjoint attributes* in the same profile (occupation, nationality, partisanship, EU stance, …) amplify or attenuate the Muslim effect.
+2. **Respondent-level moderation** — which *respondent characteristics* (political attitudes, religiosity, contact, socioeconomic status, …) predict stronger or weaker bias.
 
-Country-level structure is treated as a nuisance to account for, not interpreted substantively. The analysis is exploratory and descriptive throughout.
+The analysis is exploratory and descriptive throughout.
 
 ### Empirical Strategy
 
-Heterogeneity is estimated with a dual strategy targeting the conditional average treatment effect (CATE) of the Muslim attribute. The primary method is **causal random forests** (`grf`) with respondent-level clusters and country fixed effects, giving honest cluster-robust confidence intervals on τ̂(x). As a Bayesian robustness check, we additionally fit **hierarchical Bayesian Causal Forests** (BCF). The clustered data structure is handled by **country random intercepts**; within-respondent dependence across the three conjoint rounds is absorbed by the cluster structure on the `grf` side and by a respondent cluster bootstrap on the BCF side. Separate models are estimated for each behavioral game (dictator and trust). See `index.qmd` for more details.
+We estimate the CATE of the Muslim attribute with a dual strategy. The primary method is **causal random forests** (`grf`) with respondent-level clusters and country fixed effects, giving honest, cluster-robust confidence intervals on τ̂(x). As a Bayesian robustness check we fit **hierarchical Bayesian Causal Forests** (BCF). The clustered structure is handled by **country random intercepts**; within-respondent dependence across the three conjoint rounds is absorbed by the cluster structure on the `grf` side and by a respondent cluster bootstrap on the BCF side. Separate models are estimated for each game. See `index.qmd` for full detail.
 
 ### Data Source
 
 > Hahm, H., Hilpert, D., & König, T. (2024). Divided we unite: The nature of partyism and the role of coalition partnership in Europe. *American Political Science Review*, 118(1), 69–87. https://doi.org/10.1017/S0003055423000266
 
-Full dataset (and pre-processing pipeline) is available at [GitHub](https://github.com/LS-Konig/eu25games2019).
+Full dataset and pre-processing pipeline: [github.com/LS-Konig/eu25games2019](https://github.com/LS-Konig/eu25games2019).
 
 ---
 
@@ -36,105 +37,66 @@ MBEU25/
 ├── index.qmd                    # Main manuscript (paper)
 ├── presentation.qmd             # Revealjs presentation slides
 ├── _quarto.yml                  # Quarto project config (authors, formats, bibliography)
-├── references.bib               # BibTeX bibliography
+├── references.bib               # BibTeX bibliography (APSR style)
 ├── theme.scss                   # Custom SCSS theme for the presentation
-├── robots.txt                   # Prevents search engine indexing of HTML output
-├── CLAUDE.md                    # Guidance for Claude Code AI assistant
 │
 ├── code/
-│   ├── 00_template.qmd                   # Template for new analysis notebooks
+│   ├── 00_template.qmd                  # Template for new analysis notebooks
 │   ├── 01_exploration4presentation.qmd  # Exploratory analysis for the slides
-│   ├── 02_data_prep.qmd                  # Data cleaning / prep for heterogeneity analysis
+│   ├── 02_data_prep.qmd                 # Data cleaning / prep (long-format analysis tibble)
 │   ├── 03_multibart_nested_ri_test.qmd  # Hierarchical (nested RI) BCF mechanism test
-│   ├── 04_grf_nested_test.qmd           # grf causal-forest nested-structure test
-│   ├── 05_bcf_fit.qmd                    # Full BCF fits on real data (robustness)
-│   ├── 06_grf_fit.qmd                    # Full grf causal-forest fits on real data (primary)
-│   ├── multibart/                        # Local R package: hierarchical BCF with nested random intercepts
-│   └── helper_scripts/
-│       ├── copy_figures.R                # Post-render: copies figures into _manuscript/
-│       └── glftrackeR.R                  # Helper utilities
+│   ├── 04_grf_nested_test.qmd           # grf causal-forest mechanism test
+│   ├── 05_bcf_fit.qmd                   # Full BCF fits on real data (robustness)
+│   ├── 06_grf_fit.qmd                   # Full grf causal-forest fits (primary)
+│   ├── 07_postprocess_grf.qmd           # GRF post-processing: ATE, CATE-by-moderator figures
+│   ├── 08_postprocess_bcf.qmd           # BCF post-processing: posterior CATE figures
+│   ├── 09_additional_figs_tables.qmd    # Descriptive figures and tables
+│   ├── multibart/                       # Local R package: hierarchical BCF (see below)
+│   └── helper_scripts/                  # copy_figures.R, moderator_labels.R, glftrackeR.R
 │
 ├── data/
-│   ├── 01_raw/                  # Raw, unmodified source data (never overwrite)
-│   ├── 02_processed/            # Cleaned and analysis-ready datasets
-│   └── 03_final/               # Final analysis datasets
+│   ├── 01_raw/                  # Raw source data (eu25games2019.rds)
+│   ├── 02_processed/            # Clean long-format analysis tibble (eu25_long.rds)
+│   └── 03_final/                # Saved fits: grf_{dictator,trust}.rds, bcf_{dictator,trust}.rds
 │
-├── images/
-│   ├── uma_palace.png           # University of Mannheim branding (slides)
-│   └── uma_ss.png               # University of Mannheim logo (slides)
-│
-└── literature/                  # PDF papers — gitignored, not tracked in Git
+├── images/                      # University of Mannheim branding for slides (see COPYRIGHTS.md)
+└── literature/                  # Source PDFs — gitignored, not tracked
 ```
 
 > **Generated folders** (`_freeze/`, `_manuscript/`, `.quarto/`, `site_libs/`) are created by Quarto at render time and are gitignored.
 
 ### The `multibart` package
 
-The local `code/multibart/` package implements **hierarchical Bayesian Causal Forests with nested random intercepts** (respondent within country), used here as the **Bayesian robustness check** (the primary analysis is `grf`). The nested two-level extension is implemented and validated on synthetic data, but the full-scale nested respondent fit was benchmarked and found computationally infeasible in the project window; the real-data BCF fits therefore use **country random intercepts only**, with respondent dependence handled by a cluster bootstrap. The code is adapted from the BCF implementation released with the following study:
+`code/multibart/` implements **hierarchical Bayesian Causal Forests with nested random intercepts** (respondent within country), used here as the **Bayesian robustness check**. The two-level extension is implemented and validated on synthetic data, but the full-scale nested respondent fit was benchmarked as computationally infeasible in the project window; the real-data BCF fits therefore use **country random intercepts only**, with respondent dependence handled by a cluster bootstrap. The nesting extension was made entirely in R (no C++ changes); the package is adapted from the BCF implementation released with:
 
-> Yeager, D. S., Bryan, C. J., Gross, J. J., Murray, J. S., Krettek Cobb, D., HF Santos, P., Gravelding, H., Johnson, M., & Jamieson, J. P. (2022). A synergistic mindsets intervention protects adolescents from stress. *Nature*, 607(7919), 512–520. https://doi.org/10.1038/s41586-022-04907-7
-
-**Adaptation for two-level nesting.** The original implementation supports single-level (site) random effects. The extension to two-level nesting (respondent within country) was made **entirely in R** — a `nested_random_intercepts()` constructor and a matching posterior extractor added to `R/groups.R` and exported in `NAMESPACE`. **No C++/`src` source was modified** for the nesting logic (the only commit touching `src/` is an unrelated `PI` declaration bugfix). See the package commit history for details.
+> Yeager, D. S., et al. (2022). A synergistic mindsets intervention protects adolescents from stress. *Nature*, 607(7919), 512–520. https://doi.org/10.1038/s41586-022-04907-7
 
 ---
 
 ## Getting Started
 
-### Prerequisites
-
-- [Quarto](https://quarto.org/docs/get-started/) (≥ 1.4)
-- R with the following packages: `tidyverse`, `here`, `ggpubr`, `sessioninfo`
-
-### Render the project
+**Prerequisites:** [Quarto](https://quarto.org/docs/get-started/) (≥ 1.4) and R with `tidyverse`, `here`, `ggpubr`, `sessioninfo` (analysis notebooks pull in `grf` and the local `multibart`).
 
 ```bash
-# Full project (manuscript + all notebooks)
-quarto render
-
-# Main manuscript only
-quarto render index.qmd
-
-# Presentation only
-quarto render presentation.qmd
-
-# Single analysis notebook
-quarto render code/01_test.qmd
-
-# Live preview with hot reload
-quarto preview
+quarto render                       # Full project (manuscript + all notebooks)
+quarto render index.qmd             # Main manuscript only
+quarto render presentation.qmd      # Presentation only
+quarto preview                      # Live preview with hot reload
 ```
 
-Output formats are **HTML**, **PDF**, and **DOCX** for the manuscript; **Revealjs HTML** (self-contained) for the presentation.
-
-### Adding a new analysis notebook
-
-1. Copy `code/00_template.qmd` → `code/NN_name.qmd`
-2. Register it in `_quarto.yml`:
-   ```yaml
-   manuscript:
-     notebooks:
-       - notebook: code/NN_name.qmd
-         title: "Descriptive title"
-   ```
-3. Embed outputs in `index.qmd`:
-   ```
-   {{< embed code/NN_name.qmd#fig-label >}}
-   ```
-
-Quarto caches computed results in `_freeze/` (`freeze: auto`). A notebook only re-executes when its source changes. To force re-execution, delete the notebook's subfolder under `_freeze/code/`.
+Quarto caches computed results in `_freeze/` (`freeze: auto`); a notebook re-executes only when its source changes. To force re-execution, delete its subfolder under `_freeze/code/`.
 
 ---
 
-## Documentation
+## License
 
-| Topic | Link |
-|---|---|
-| Quarto manuscripts | https://quarto.org/docs/manuscripts/ |
-| Quarto output formats | https://quarto.org/docs/output-formats/all-formats.html |
-| Quarto Revealjs presentations | https://quarto.org/docs/presentations/revealjs/ |
-| Quarto execution & freeze | https://quarto.org/docs/projects/code-execution.html |
-| Quarto citations & bibliography | https://quarto.org/docs/authoring/citations.html |
-| Quarto authors & affiliations | https://quarto.org/docs/journals/authors.html |
-| APSR citation style | https://www.apsanet.org/PUBLICATIONS/Journals/APSR |
-| `tidyverse` | https://www.tidyverse.org/ |
-| `here` (relative paths in R) | https://here.r-lib.org/ |
+This repository is **dual-licensed**:
+
+- **Manuscript text and original figures** — [CC BY 4.0](LICENSE-CC-BY-4.0.md).
+- **The project's own analysis code** (notebooks `code/02`–`code/09`, `code/helper_scripts/`) — [MIT](LICENSE).
+
+The following components are **third-party** and are **not** covered by the licenses above:
+
+- `code/multibart/` — **GNU GPL v3.0** (upstream, Jared Murray; see its `DESCRIPTION`).
+- `data/` — **not licensed here.** © Hahm, Hilpert & König; redistributed per the upstream repository [LS-Konig/eu25games2019](https://github.com/LS-Konig/eu25games2019).
+- `images/` — University of Mannheim branding, All Rights Reserved (see [`images/COPYRIGHTS.md`](images/COPYRIGHTS.md)).

@@ -1,8 +1,8 @@
 ---
 title: |
-  Penalized for Faith: Muslim Bias in Economic Behavioral Games Across 25 EU Countries
+  Penalized for Faith: Who Drives the Muslim Penalty?
 subtitle: |
-  Evidence from a Conjoint Survey Experiment
+  Treatment-Effect Heterogeneity in European Conjoint Behavioral Games
 abstract: |
   We reanalyize data
 execute:
