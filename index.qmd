@@ -235,6 +235,7 @@ We overlay the two games within a single panel by colour, so that any divergence
 
 ## Empirical Analysis {#sec-analysis}
 
+### Results {#sec-results}
 
 {{< embed code/07_postprocess_grf.qmd#fig-grf-combined-prof >}}
 
@@ -290,26 +291,55 @@ The strongest and most coherent moderation runs through evaluations of European 
 Yet even on the pro-European side of these scales a robust penalty remains, attenuated rather than abolished.
 The variable-importance ranking in the appendix (@fig-grf-combined-vi) corroborates this reading, placing EU-evaluation items among the four most influential moderators of the five.
 
-## Robustness {#sec-robustness}
+### Robustness {#sec-robustness}
 
-The results based on the Bayesian Causal Forest [@hahn2020bayesian] yield identical patterns for the conjoint profile level moderators (@fig-bcf-combined-prof in the appendix).
+The Bayesian Causal Forest reproduces the substantive findings of the primary analysis.
+For the profile-level moderators the two estimators agree closely (@fig-bcf-combined-prof).
+The Muslim penalty remains uniformly negative across attribute levels, partisanship among co-nationals attenuates it most, and nationality is again the only attribute whose moderation differs across the two games.
 
-The same picture appears for the individual level covariates (@fig-bcf-combined-resp-1 and @fig-bcf-combined-resp-2). 
-Although uncertainty bounds appear smaller for small-N levels / values, possibly a consequence of the "lack" of "honest" sample splitting approach, the substantive trends described in the results section seem to replicate.
-At most, the moderation effects of continuous survey items appear more "smooth" in the BCF estimates, but direction and trends remain -- Muslim penalty is overall robust, there appears a small gender gap (though less so in the trust game estimates), EU related items show strongest heterogeneity differences across scales, and the same  populism items as described above are associated with differing magnitudes of Muslim penalty.
-The only notable disagreement appears in the recovered heterogeneity of respondents' age.
-In the BCF results there is no "touching" the zero effect visible for younger respondents, neither does the trend approach zero in larger values of age as described in the lose u turn interpretation above.
-Also BCF shows more stable differences between the games, but this too might partially be an artifact of the smaller uncertainty bounds. 
+The respondent-level picture replicates as well (@fig-bcf-combined-resp-1 and @fig-bcf-combined-resp-2).
+The penalty is robust throughout, a modest gender gap persists but narrows in the Trust game, evaluations of European integration remain the strongest source of heterogeneity, and the same populist items track differences in its magnitude.
+The continuous moderators trace smoother gradients under the BCF than under the forest, yet their direction and shape are unchanged.
 
-## Limitations {#sec-limits}
+Two differences deserve comment, and both plausibly stem from the same source.
+The BCF intervals are narrower than the forest's, most visibly at sparsely populated moderator levels.
+A respondent cluster bootstrap confirms that within-person dependence across the three rounds accounts for almost none of this narrowness, which we therefore read as a consequence of the absent honest sample splitting and the aggressive pooling of the Bayesian prior rather than as evidence of greater precision.[^bcf-clustering]
+The narrower intervals also make the BCF appear to separate the two games more cleanly than the forest does, a distinction we treat with the same caution.
+The one genuine disagreement concerns respondent age.
+The U-shaped pattern recovered by the CF, in which the penalty approaches zero among the youngest and oldest respondents, does not appear under the BCF, whose age gradient neither touches zero at the young end nor lifts at the old end.
 
-Only looked at within covariate moderating heterogeneity, not cross-covariate interactions.
-The forest approaches do account for high dimensional complex non-linear interactions, future extensions might devote more attention to analyzing these.
-Our substantive focus on Muslim penalty, implicitly assuming this is primary signal respondents perceive in experiment, this might not be the case in reality.
-To avoid potential post-treatment biases, we only focuses on pre-treatment covariates (expection being years of education and residence type).
-Hence all interpretations of our results are to be understood with respect to the selected covariate set.
-This choice led us to exclude theoretically / potentially interesting variables such as general left right placement, EU integration placement, nativist attitudes and more which future endeaouvors might shed more light on, incorporating systematic ways to assess these as well. 
-Also the conjoint setup is inherently an artificial setting, though it serves to isolate causal effects of individual attributes, whether and how these translate to more complex real world settings is another questions, as perceptions play a major role there (put differently, in reality, people do not walk around with clearly visible labels).
+[^bcf-clustering]: The bootstrap quantifies only one of the two channels through which the respondent structure enters.
+It resamples respondents and recomputes each bin's mean of the estimated effects, capturing the design and sampling variability of the displayed point estimates, and on the real fits this component is roughly an order of magnitude below the posterior standard deviation, so it adds at most one to three percent to the bands.
+It cannot, however, repair the second channel.
+The BCF likelihood treats the roughly 84,600 rows as conditionally independent given the trees and the country random intercept, so if there is residual within-respondent correlation beyond what the country intercept absorbs, the posterior over $\tau(x)$ concentrates on too much information and the posterior standard deviation is internally deflated.
+An additive bootstrap term cannot detect or correct this.
+In the worst case of near-perfect within-respondent correlation the deflation could reach $\sqrt{3} \approx 1.7$, which is not negligible.
+
+### Limitations {#sec-limits}
+
+Several limitations qualify our conclusions.
+First, our binary treatment pools every non-Muslim religion into a single comparison and reduces partisanship to an indicator of whether a party was displayed.
+This averages over heterogeneous comparison groups by design and cannot isolate which facet of the Muslim signal drives the penalty.
+
+Second, our analysis treats the Muslim attribute as the primary signal respondents respond to.
+Whether it actually dominates perception inside the experimental setting is beyond our scope of possibilities.
+
+Third, to guard against post-treatment and collider bias we condition only on pre-treatment covariates, with the two exceptions noted above.
+Our interpretations therefore hold with respect to this covariate set, which excludes theoretically relevant measures such as general left-right placement, EU integration preferences, and nativist attitudes.
+Incorporating these in a principled way is a natural extension.
+
+Fourth, we examine the moderating role of each covariate one at a time and do not characterize interactions among moderators.
+The forest accommodates high-dimensional, non-linear interactions internally, and a fuller treatment of these higher-order patterns is left to future work.
+
+Fifth, our robustness check is not a fully independent confirmation.
+The full nested fit was computationally infeasible, so the BCF drops the respondent random effect and recovers the corresponding uncertainty through a cluster bootstrap, and it carries no honest sample-splitting step.
+The forest and the BCF therefore do not handle the clustered structure under identical assumptions, and their agreement is reassuring without being two independent verifications.
+
+Sixth, the sample was recruited to be representative of national populations only in age and gender, which is why we report a sample rather than a population quantity.
+Our estimates describe the realized sample, and extrapolation to the wider European population should be made with that restriction in mind.
+
+Finally, the conjoint is by construction an artificial setting.
+It isolates the causal effect of individual attributes cleanly, but how these effects translate to less structured real-world encounters, where group membership is inferred rather than labelled, remains a separate question.
 
 
 ## Conclusion {#sec-conclusion}
