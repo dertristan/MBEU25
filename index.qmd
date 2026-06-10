@@ -330,6 +330,8 @@ The forest and the BCF therefore do not handle the clustered structure under ide
 
 Sixth, the sample was recruited to be representative of national populations only in age and gender, which is why we report a sample rather than a population quantity.
 Our estimates describe the realized sample, and extrapolation to the wider European population should be made with that restriction in mind.
+The data are also a single cross-section fielded in 2019.
+Our estimates capture the penalty at that moment, and whether its size or its political gradient has shifted in the years since is a question the design cannot address.
 Finally, the conjoint is by construction an artificial setting.
 It isolates the causal effect of individual attributes cleanly, but how these effects translate to less structured real-world encounters, where group membership is inferred rather than labeled, remains a separate question.
 
@@ -347,7 +349,6 @@ In its intensity, the penalty is political.
 The attributes of the displayed profile move it only at the margin, with displayed partisanship the main exception.
 Who the respondent is matters more, and the strongest and most coherent gradient runs through evaluations of European integration.
 Respondents hostile to the European Union penalize Muslim profiles substantially more than those who view it favorably, with populist dispositions tracing the same direction more weakly.
-This pattern echoes experimental evidence that anti-Muslim bias concentrates among those with negative prior attitudes toward Muslims [@findor2025anti].
 
 These results suggest that anti-Muslim discrimination in Europe is entangled with the cosmopolitan–populist divide rather than an isolated individual disposition.
 That the penalty attenuates but nowhere disappears is the sobering counterpart: even the most pro-European respondents allocate fewer tokens to Muslim profiles.
