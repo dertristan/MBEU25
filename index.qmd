@@ -336,7 +336,22 @@ It isolates the causal effect of individual attributes cleanly, but how these ef
 
 ## Conclusion {#sec-conclusion}
 
+A large experimental literature documents that Europeans penalize Muslims.
+This paper has asked who drives that penalty.
+Reanalyzing behavioral games from a conjoint experiment across 25 European countries, we moved from the average penalty to its variation across profiles and respondents.
 
+The answer has two parts.
+In its reach, the penalty is general.
+It persists across every profile attribute and every respondent subgroup we examine, and no moderator comes close to undoing it.
+In its intensity, the penalty is political.
+The attributes of the displayed profile move it only at the margin, with displayed partisanship the main exception.
+Who the respondent is matters more, and the strongest and most coherent gradient runs through evaluations of European integration.
+Respondents hostile to the European Union penalize Muslim profiles substantially more than those who view it favorably, with populist dispositions tracing the same direction more weakly.
+This pattern echoes experimental evidence that anti-Muslim bias concentrates among those with negative prior attitudes toward Muslims [@findor2025anti].
+
+These results suggest that anti-Muslim discrimination in Europe is entangled with the cosmopolitan–populist divide rather than an isolated individual disposition.
+That the penalty attenuates but nowhere disappears is the sobering counterpart: even the most pro-European respondents allocate fewer tokens to Muslim profiles.
+A natural next step is to characterize how these moderators interact, a task the forest performs internally but our one-at-a-time presentation does not yet exploit.
 
 ## References
 
