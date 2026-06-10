@@ -88,7 +88,7 @@ This coding follows from our interest in the drivers of the Muslim penalty rathe
 
 After standard quality filtering on attention checks and completed games, the analysis sample comprises roughly 28,200 respondents across the 25 countries, yielding about 84,600 decisions per game.
 These data are inherently hierarchical: decisions (rounds) are nested within respondents, who are in turn nested within countries.
-We include every covariate measured before the games and exclude those recorded afterward, to avoid post-treatment and collider bias.
+We include every covariate measured before the games and exclude those recorded afterward, to avoid post-treatment and collider bias [@blackwell2025priming].
 The retained set ranges from demographics to attitudinal batteries on national and European attachment, populist, democratic, and technocratic dispositions, and evaluations of the European Union.
 We make two exceptions for stable demographics drawn from the post-game block, age at which education stopped and residence type, which the experiment cannot plausibly have altered.
 @tbl-wordings in the appendix gives the full set with exact question wordings and scales.
@@ -99,32 +99,24 @@ We make two exceptions for stable demographics drawn from the post-game block, a
 
 ### Causal Estimand
 
-While our analysis builds on the conjoint survey experiment fielded by
-[@hahm2023divided; @hahm2024divided], our research question differs from theirs.
-Original study focuses on the identity side of the story and how six different attributes of it, including religion, affect token allocations.
-Since we focus exclusively on the Muslim penalty and ask what drives variation in it across individuals and contexts, it also changes the quantities of interest.
-The conventional estimand in conjoint experiments is the Average Marginal Component Effect [AMCE, for definition see @hainmueller2014causal].
-However, since it by definition is the average, it conceals the heterogeneity in how different respondents respond to the same treatment, which is exactly what we are interested in. Therefore, following @robinson2024detect, we adopt the idea of nested causal quantities.
+Our analysis builds on the conjoint survey experiment fielded by @hahm2023divided and @hahm2024divided, but our research question differs from theirs.
+The original study asks how the displayed identity attributes, religion among them, affect token allocations, and answers with the conventional conjoint estimand, the Average Marginal Component Effect [AMCE, for a definition see @hainmueller2014causal].
+Because the AMCE is by definition an average, it conceals how different respondents respond to the same treatment, which is exactly what we are interested in.
+Following @robinson2024detect, we therefore adopt the idea of nested causal quantities.
 
-Firstly, as discussed above, we simplify the religion attribute.
-After this simplification, our treatment variable is binary: $T_{ric} \in \{0,1\}$, where $T_{ric} = 1$ if the profile is displayed as Muslim and 0 otherwise.
-This change shifts our estimand from the AMCE framework to a standard average treatment effect logic.
-We observe only the realized outcome, which can be represented in potential outcomes notation as following:
+With the religion attribute collapsed as described above, our treatment variable is binary: $T_{ric} \in \{0,1\}$, where $T_{ric} = 1$ if the profile is displayed as Muslim and 0 otherwise.
+This shifts our estimand from the AMCE framework to a standard treatment effect logic.
+We observe only the realized outcome, which in potential outcomes notation is:
 
 $$
 Y_{ric}^{g,\text{obs}} =
 T_{ric} \cdot Y_{ric}^{g}(1) + (1 - T_{ric}) \cdot Y_{ric}^{g}(0)
 $${#eq-observed}
 
-Since both games reflect different types of discrimination, we estimate separate models for each game $g \in \{D, TR\}$, where $D$ denotes the Dictator game and $TR$ the Trust game. Our baseline estimand for each game is the Average Treatment Effect (ATE):
-
-$$
-\text{ATE}^{g} = \mathbb{E}\!\left[Y_{ric}^{g}(1) - Y_{ric}^{g}(0)\right]
-$${#eq-ate}
-
-\noindent where $Y_{ric}^{g}(t)$ is the number of tokens allocated by respondent $i$ in country $c$ during round $r$ of game $g$ under treatment assignment $t$.
-This quantity captures the average Muslim penalty in the target population. Since the religion attribute is randomly assigned by design, $\{Y_{ric}^{g}(1),\, Y_{ric}^{g}(0)\}  \perp T_{ric}$.[^balance]
-However, as the sample was recruited to be representative of national populations only in terms of age and gender [@hahm2024divided, p. 73], we adopt the more conservative Sample ATE (SATE), which conditions on the observed sample rather than making broader claims about the target population:[^sate-choice]
+Since both games reflect different types of discrimination, we estimate separate models for each game $g \in \{D, TR\}$, where $D$ denotes the Dictator game and $TR$ the Trust game.
+The population Average Treatment Effect (ATE), $\mathbb{E}[Y_{ric}^{g}(1) - Y_{ric}^{g}(0)]$, captures the average Muslim penalty, where $Y_{ric}^{g}(t)$ is the number of tokens allocated by respondent $i$ in country $c$ during round $r$ of game $g$ under treatment assignment $t$.
+Since the religion attribute is randomly assigned by design, $\{Y_{ric}^{g}(1),\, Y_{ric}^{g}(0)\}  \perp T_{ric}$.[^balance]
+However, as the sample was recruited to be representative of national populations only in terms of age and gender [@hahm2024divided, p. 73], our baseline estimand is the more conservative Sample ATE (SATE), which conditions on the observed sample rather than making broader claims about the target population:[^sate-choice]
 
 $$
     \text{SATE}^{g} =
@@ -179,35 +171,22 @@ These quantities are linked through the law of iterated expectations, which ensu
 
 [^sate-choice]: Since we are interested in treatment effect heterogeneity and not the average penalty itself, the choice between ATE and SATE is inconsequential for the main analysis.
 
-[^subscripts]:The subscripts $r, i, c$ reflect the hierarchical structure of the outcome $Y_{ric}^g$ (round $r$, nested in respondent $i$, nested in country $c$) and not the conditioning set in the expectation. We apply the same convention to the covariates and the disaggregated CATEs: $X_{ic}$ carries the country index because respondent $i$ is nested in country $c$ (so $c$ is determined by $i$), even though country is not part of the conditioning set. Likewise, $\tau_{ric}^g$ retains $i$ after marginalizing over respondents. After marginalizing over respondents, only $A_{ric}$ remains as the conditioning argument. After marginalizing over rounds, only $X_{ic}$ remains.
+[^subscripts]: The subscripts $r, i, c$ reflect the hierarchical structure of the outcome $Y_{ric}^g$ (round $r$, nested in respondent $i$, nested in country $c$), not the conditioning set in the expectation. The same convention applies to the covariates and the disaggregated CATEs: $X_{ic}$ carries the country index because $c$ is determined by $i$, and $\tau_{ric}^g$ retains $i$ even though only $A_{ric}$ remains in the conditioning set after marginalizing over respondents.
 
 
 ### Estimation Strategy
 
 Estimating how a treatment effect varies across units is a different problem from predicting an outcome, and a harder one.
-The signal of interest, the variation in the effect, is usually far weaker than the variation in the outcome itself.
-A method tuned to predict the outcome therefore spends most of its capacity on the prognostic structure that sets the level of the outcome, and little on the effect [@imai2013estimating].
-The modern tools for this task grew out of regression trees and random forests, which partition the covariate space into regions and average within them, learning flexible response surfaces without a pre-specified functional form [@breiman2001random].
-Two developments adapted this machinery to treatment effects, and they differ less in statistical philosophy than in where they place their corrections.
-The first keeps the tree ensemble but disciplines it with a prior.
-Bayesian Additive Regression Trees (BART) model the outcome as a regularized sum of trees [@chipman2006bayesian; @chipman2010bart], and were carried into causal inference by fitting the response surface and differencing predicted potential outcomes [@hill2011bayesian; @hill2020bayesian; @carnegie2019examining].
-The second corrects the data instead of the prior.
-Causal trees and forests split the sample so that the partition is learned on one part and the effects estimated on another, a property their authors call honesty.
-Under regularity conditions, honesty restores asymptotically valid confidence intervals on the recovered effects [@athey2019estimating; @wager2018estimation; @jawadekar2023practical].
-The same sample-splitting logic underpins double machine learning, which combines it with partialling the nuisance structure out of treatment and outcome [@chernozhukov2018double; @ratkovic2023relaxing].
-Generalized random forests sit in this tradition, extending honest, orthogonalized estimation to a broad class of estimands [@athey2019generalized], and have become a workhorse for heterogeneous-effect analysis in applied work and in political science [@davis2017using; @zheng2023estimating].
-The two families have been compared directly in @ratkovic2021subgroup, which raises two concerns about the Bayesian, full-sample approach.
-The first is that it does not model the treatment as a function of the covariates.
-The second is that it uses the same data to fit the model and to estimate and test the effects.
-The first concern bites mainly when assignment is not randomized.
-When the propensity depends on covariates that also drive the outcome, a method that ignores it inherits the resulting confounding, and the split-sample forest is then markedly less biased and better covered.
-Under randomized assignment with known propensities, as in our conjoint, that gap closes and the two families perform comparably on this axis.
-The second concern, by contrast, survives randomization.
-Whenever the effect surface is learned from the data rather than fixed in advance, using the same data to discover and to test it invalidates the resulting intervals, a point that does not depend on how treatment was assigned.
-Bayesian Causal Forests (BCF) answer the first concern by giving the treatment surface its own prior and its own regularization, separate from the prognostic surface.
-This guards against the regularization-induced confounding that arises when a single prior shrinks both [@hahn2020bayesian], an idea since sharpened with shrinkage and sparsity refinements [@caron2022shrinkage; @caron2022estimating].
-They have no analogue for the second concern.
-Standard BCF, including the hierarchical variants we draw on, uses the full sample both to fit the trees and to form the posterior intervals, with no sample-splitting step [@hahn2020bayesian; @thal2024aggregate].
+The variation in the effect is usually far weaker than the variation in the outcome itself, so a method tuned to prediction spends most of its capacity on the prognostic structure and little on the effect [@imai2013estimating].
+The modern tools for this task are tree ensembles, which learn flexible response surfaces without a pre-specified functional form [@breiman2001random], adapted to treatment effects along two routes that differ mainly in where they place their corrections.
+The first disciplines the ensemble with a prior: Bayesian Additive Regression Trees (BART) model the outcome as a regularized sum of trees [@chipman2006bayesian; @chipman2010bart] and were carried into causal inference by differencing predicted potential outcomes [@hill2011bayesian; @hill2020bayesian; @carnegie2019examining].
+The second corrects the data instead: causal forests learn the partition on one part of the sample and estimate the effects on another, a property called honesty that restores asymptotically valid confidence intervals [@wager2018estimation; @athey2019estimating; @jawadekar2023practical] and shares its sample-splitting logic with double machine learning [@chernozhukov2018double; @ratkovic2023relaxing].
+Generalized random forests extend this honest, orthogonalized estimation to a broad class of estimands [@athey2019generalized] and have become a workhorse for heterogeneous-effect analysis in political science [@davis2017using; @zheng2023estimating].
+Comparing the two families, @ratkovic2021subgroup raises two concerns about the Bayesian, full-sample approach: it does not model the treatment as a function of the covariates, and it uses the same data to fit the model and to test the effects.
+The first concern bites mainly when assignment is not randomized, and under the known propensities of our conjoint it loses its force.
+The second survives randomization, since using the same data to discover an effect surface and to test it invalidates the resulting intervals regardless of how treatment was assigned.
+Bayesian Causal Forests (BCF) answer the first concern by giving the treatment surface its own prior and regularization, guarding against the regularization-induced confounding that arises when a single prior shrinks both surfaces [@hahn2020bayesian; @caron2022shrinkage; @caron2022estimating].
+They have no analogue for the second: standard BCF, including the hierarchical variants we draw on, fits the trees and forms the posterior intervals on the full sample [@hahn2020bayesian; @thal2024aggregate].
 The honesty of the causal forest is exactly that missing device, and it is the concern our randomized design does not dissolve.
 
 Our design follows from this comparison and from the structure of our data.
@@ -225,8 +204,7 @@ The causal forest recovered the same quantities at a fraction of the cost, using
 We therefore adopted the causal forest as our primary estimator, since it delivers the honest, cluster-robust intervals the comparison above favors and scales to the full sample.
 We keep the BCF as a robustness check, fit with country random intercepts only.
 Because it can no longer model the within-respondent dependence directly, we recover that uncertainty after the fact with a respondent cluster bootstrap.
-The two fits therefore do not handle the clustered structure identically.
-The forest builds the respondent dependence into estimation, whereas the BCF drops the respondent random effect and patches the uncertainty back in, so their agreement is reassuring but not two fully independent confirmations under the same assumptions.
+The two fits therefore do not handle the clustered structure identically, a caveat we return to in @sec-limits.
 Throughout, we treat the country and respondent variation as a nuisance to absorb rather than a quantity to interpret, in keeping with our interest in heterogeneity within the sample rather than comparison across countries.
 
 [^nested-extension]: @yeager2019national fit their hierarchical BCF with the `multibart` package [@murray2021multibart], whose C++ sampler already accommodates an arbitrary random-effects design. Moving from a single level of random intercepts to nested intercepts therefore required only a minor adaptation of the high-level R helper that assembles that design, not a change to the sampler itself.
@@ -320,7 +298,7 @@ The continuous moderators trace smoother gradients under the BCF than under the 
 
 Two differences deserve comment, and both plausibly stem from the same source.
 The BCF intervals are narrower than the forest's, most visibly at sparsely populated moderator levels.
-A respondent cluster bootstrap confirms that within-person dependence across the three rounds accounts for almost none of this narrowness, which we therefore read as a consequence of the absent honest sample splitting and the aggressive pooling of the Bayesian prior rather than as evidence of greater precision.[^bcf-clustering]
+A respondent cluster bootstrap shows that the sampling variability contributed by within-person dependence across the three rounds accounts for almost none of this narrowness, which we therefore read as a consequence of the absent honest sample splitting and the aggressive pooling of the Bayesian prior rather than as evidence of greater precision.[^bcf-clustering]
 The narrower intervals also make the BCF appear to separate the two games more cleanly than the forest does, a distinction we treat with the same caution.
 The one genuine disagreement concerns respondent age.
 The U-shaped pattern recovered by the CF, in which the penalty approaches zero among the youngest and oldest respondents, does not appear under the BCF, whose age gradient neither touches zero at the young end nor lifts at the old end.
@@ -342,7 +320,7 @@ Whether it actually dominates perception in the experimental setting is a questi
 
 Third, to guard against post-treatment and collider bias we condition only on pre-treatment covariates, with the two exceptions noted above.
 Our interpretations therefore hold with respect to this covariate set, which excludes theoretically relevant measures such as general left-right placement, EU integration preferences, and nativist attitudes.
-Incorporating these in a principled way is a natural extension.
+Incorporating these in a principled way, for instance through designs that bound the trade-off between post-treatment and priming bias [@blackwell2025priming], is a natural extension.
 Fourth, we examine the moderating role of each covariate one at a time and do not characterize interactions among moderators.
 The forest accommodates high-dimensional, non-linear interactions internally, and a fuller treatment of these higher-order patterns is left to future work.
 
