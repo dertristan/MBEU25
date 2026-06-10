@@ -10,7 +10,7 @@ Term paper for **Theory Building and Causal Inference** (Prof. Marc Ratkovic), U
 
 This project reanalyzes data from [Hahm, Hilpert & König (2024)](#data-source), a conjoint survey experiment fielded across 25 EU member states in 2019. Respondents played two economic behavioral games — a **dictator/solidarity game** and a **trust game** — allocating tokens to a fictitious co-player whose profile carried randomized attributes (religion, nationality, age, social class, partisanship, EU stance, gender). The conjoint randomization identifies attribute-specific biases.
 
-We isolate the **Muslim penalty** — the causal effect of a co-player being shown as Muslim (vs. all other religions pooled) on the respondent's allocation — and treat it as the quantity of interest. The study is **not** a cross-national comparison; country is a nuisance to account for, not interpreted. Instead we focus on **heterogeneity** in the penalty, shifting from the AMCE to a conditional-average-treatment-effect (CATE) logic, across two sources:
+We isolate the **Muslim penalty** — the causal effect of a co-player being shown as Muslim (vs. all other religions pooled) on the respondent's allocation — and treat it as the quantity of interest. The study is **not** a cross-national comparison. Country is a nuisance to account for, not interpreted. Instead we focus on **heterogeneity** in the penalty, shifting from the AMCE to a conditional-average-treatment-effect (CATE) logic, across two sources:
 
 1. **Profile-level interaction** — which *other conjoint attributes* in the same profile (occupation, nationality, partisanship, EU stance, …) amplify or attenuate the Muslim effect.
 2. **Respondent-level moderation** — which *respondent characteristics* (political attitudes, religiosity, contact, socioeconomic status, …) predict stronger or weaker bias.
@@ -19,7 +19,7 @@ The analysis is exploratory and descriptive throughout.
 
 ### Empirical Strategy
 
-We estimate the CATE of the Muslim attribute with a dual strategy. The primary method is **causal random forests** (`grf`) with respondent-level clusters and country fixed effects, giving honest, cluster-robust confidence intervals on τ̂(x). As a Bayesian robustness check we fit **hierarchical Bayesian Causal Forests** (BCF). The clustered structure is handled by **country random intercepts**; within-respondent dependence across the three conjoint rounds is absorbed by the cluster structure on the `grf` side and by a respondent cluster bootstrap on the BCF side. Separate models are estimated for each game. See `index.qmd` for full detail.
+We estimate the CATE of the Muslim attribute with a dual strategy. The primary method is **causal random forests** (`grf`) with respondent-level clusters and country fixed effects, giving honest, cluster-robust confidence intervals on τ̂(x). As a Bayesian robustness check we fit **hierarchical Bayesian Causal Forests** (BCF). The clustered structure is handled by **country random intercepts**. Within-respondent dependence across the three conjoint rounds is absorbed by the cluster structure on the `grf` side and by a respondent cluster bootstrap on the BCF side. Separate models are estimated for each game. See `index.qmd` for full detail.
 
 ### Data Source
 
@@ -67,7 +67,7 @@ MBEU25/
 
 ### The `multibart` package
 
-`code/multibart/` implements **hierarchical Bayesian Causal Forests with nested random intercepts** (respondent within country), used here as the **Bayesian robustness check**. The two-level extension is implemented and validated on synthetic data, but the full-scale nested respondent fit was benchmarked as computationally infeasible in the project window; the real-data BCF fits therefore use **country random intercepts only**, with respondent dependence handled by a cluster bootstrap. The nesting extension was made entirely in R (no C++ changes); the package is adapted from the BCF implementation released with:
+`code/multibart/` implements **hierarchical Bayesian Causal Forests with nested random intercepts** (respondent within country), used here as the **Bayesian robustness check**. The two-level extension is implemented and validated on synthetic data, but the full-scale nested respondent fit was benchmarked as computationally infeasible in the project window. The real-data BCF fits therefore use **country random intercepts only**, with respondent dependence handled by a cluster bootstrap. The nesting extension was made entirely in R (no C++ changes). The package is adapted from the BCF implementation released with:
 
 > Yeager, D. S., et al. (2022). A synergistic mindsets intervention protects adolescents from stress. *Nature*, 607(7919), 512–520. https://doi.org/10.1038/s41586-022-04907-7
 
@@ -84,7 +84,7 @@ quarto render presentation.qmd      # Presentation only
 quarto preview                      # Live preview with hot reload
 ```
 
-Quarto caches computed results in `_freeze/` (`freeze: auto`); a notebook re-executes only when its source changes. To force re-execution, delete its subfolder under `_freeze/code/`.
+Quarto caches computed results in `_freeze/` (`freeze: auto`). A notebook re-executes only when its source changes. To force re-execution, delete its subfolder under `_freeze/code/`.
 
 ---
 
@@ -97,6 +97,6 @@ This repository is **dual-licensed**:
 
 The following components are **third-party** and are **not** covered by the licenses above:
 
-- `code/multibart/` — **GNU GPL v3.0** (upstream, Jared Murray; see its `DESCRIPTION`).
-- `data/` — **not licensed here.** © Hahm, Hilpert & König; redistributed per the upstream repository [LS-Konig/eu25games2019](https://github.com/LS-Konig/eu25games2019).
+- `code/multibart/` — **GNU GPL v3.0** (upstream, Jared Murray, see its `DESCRIPTION`).
+- `data/` — **not licensed here.** © Hahm, Hilpert & König, redistributed per the upstream repository [LS-Konig/eu25games2019](https://github.com/LS-Konig/eu25games2019).
 - `images/` — University of Mannheim branding, All Rights Reserved (see [`images/COPYRIGHTS.md`](images/COPYRIGHTS.md)).
