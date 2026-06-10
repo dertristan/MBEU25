@@ -192,7 +192,7 @@ The honesty of the causal forest is exactly that missing device, and it is the c
 Our design follows from this comparison and from the structure of our data.
 We observe each respondent over three conjoint rounds, and respondents are themselves grouped within 25 countries, so the observations are clustered at two levels.
 Treating them as independent would understate our uncertainty.
-The causal forest accommodates this structure directly.
+The causal forest (CF) accommodates this structure directly.
 We cluster the honest sampling and the variance estimation by respondent, which absorbs the within-respondent dependence across rounds, and we enter country as fixed effects in the covariate matrix, which absorbs between-country baseline variation [@athey2019generalized].
 The Bayesian branch absorbs the same structure through random intercepts and partial pooling.
 An active literature extends BCF to these hierarchical and longitudinal settings [@thal2024aggregate; @prevot2025hierarchical], and a working implementation already places a random intercept on the prognostic surface for clustered, multisite trials [@yeager2019national; @yeager2022synergistic].
@@ -214,7 +214,7 @@ With both country and respondent intercepts that number runs into the tens of th
 Restricting the random effects to countries reduces that block to a trivial $25 \times 25$ solve.
 
 Before turning to heterogeneity, we confirm that the forest recovers the average effect.
-The CF estimates a sample average treatment effect of $-0.5641$ (SE $0.0190$, 95% CI $[-0.6013, -0.5268]$) in the Dictator game and $-0.6419$ (SE $0.0205$, 95% CI $[-0.6820, -0.6018]$) in the Trust game.
+The CF estimates a SATE of $-0.56$ (SE $0.02$, 95% CI $[-0.60, -0.53]$) in the Dictator game and $-0.64$ (SE $0.02$, 95% CI $[-0.68, -0.60]$) in the Trust game.
 Both reproduce the difference in means reported above (@fig-diff-in-means), a first sign that the forest behaves as it should before we ask it about heterogeneity.[^bcf-sate]
 We then test whether that heterogeneity is real with the targeting operator characteristic curve (@fig-grf-combined-toc, appendix), whose area lies well above zero in both games.
 This indicates that the variation in the Muslim penalty is targetable rather than noise, which motivates the moderator-by-moderator analysis that follows.
@@ -280,7 +280,7 @@ Leaving decisions to experts and elevating leaders above ordinary citizens are a
 Valuing the views of other groups behaves like the compromise item, edging the penalty down over the upper half of the scale.
 The weakest moderators are the claim that ordinary people do not know what is good for them and the age at which respondents left education, both of which leave the penalty essentially flat.
 
-Taken together, the respondent-level results describe substantial heterogeneity across demographic subgroups and pre-treatment attitudes, but heterogeneity almost entirely in the magnitude of the anti-Muslim penalty rather than in its presence.
+Taken together, the respondent-level results describe substantial heterogeneity across demographic subgroups and pre-treatment attitudes, but heterogeneity almost entirely in the magnitude of the Muslim penalty rather than in its presence.
 In the few subgroups where the penalty comes closest to disappearing, only the upper bound of the interval grazes zero, and no single moderator credibly nullifies the penalty, let alone reverses it.
 The strongest and most coherent moderation runs through evaluations of European integration, where respondents hostile to the Union or skeptical of its effects penalize Muslim profiles systematically more than those who regard it favorably.
 Yet even on the pro-European side of these scales a robust penalty remains, attenuated rather than abolished.
