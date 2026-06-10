@@ -46,26 +46,30 @@ Understanding the conditions that amplify this bias is crucial for grasping the 
 
 ### Data and Experiment
 
-Our data structure is inherently hierarchical.
-Each respondent played three rounds of a Dictator (or Solidarity) game and a Trust game, the latter introduced announced reciprocity in the instructions.
-Additionally, given the cross-national structure, respondents are grouped into 25 countries.
+Our analysis reuses the conjoint survey experiment of @hahm2024divided, an online study fielded across 25 European Union member states around the 2019 European Parliament elections.
+The experiment embeds a randomized conjoint within two behavioral games.
+In each task a respondent is endowed with ten tokens and decides how many to transfer to a fictional co-player whose profile is randomly generated.
+The Dictator (or Solidarity) game records this transfer directly, whereas the Trust game adds announced reciprocity, as the experimenter triples the transferred amount and the co-player may return a share.
+Each respondent completes three rounds of each game, for six decisions in total, with a fresh profile drawn for every round.
 
-In each round, respondents received a fictional co-player with randomized attributes age, gender, social class, nationality, partisan affiliation, EU stance and religion.
-Randomization occured in multiple instances: both the order in which attributes were displayed as well as the *feature* of each attribute were both random by design.
+The co-player profile varies seven attributes: age, gender, social class, nationality, partisan affiliation, EU identity, and religion.
+Both the order in which the attributes appear and the level shown for each are randomized by design.[^example]
+Because some attribute combinations are implausible, @hahm2024divided restrict which attributes are displayed through four conditions that vary whether EU identity and partisan affiliation appear and whether the co-player is a conational.[^treatments]
+The religion attribute, with the four levels Muslim, Catholic, Protestant, and non-religious, is shown across all four conditions, so the full set of game decisions can be used to estimate the Muslim penalty.
 
-To adress the issue of implausible co-player configurations and in light of their research questions, @hahm2024divided implemented four distinct treatment conditions throughout the behavioral games.
-In condition one, the conjoint co-player was displayed as a conational, with EU stance and partisan affiliation.
-Condition two included conationals with partisan affiliation but no EU stance.
-Condition three showed a different but EU nationality and the EU stance attribute, while the final condition four showed only some nationality with no partisan affiliation or EU stance.
+[^example]: @fig-profile in the appendix shows an example profile.
 
-Importantly, the religion attribute, consisting the of four features *muslim*, *catholic*, *protestant* and *non-religious* was shown across all of the above mentioned conditions.
-This allows us to utilize the full (game) dataset for estimating the Muslim penalty.
-One caveat is constituted by the fact that there is not strict control condition for the religion attribute, i.e., in which there was *no* religion feature shown at all.
-We refrain from selecting *non-religious* as a substnative control condition as being non-religious itself might not constitute a neutral baseline as it might for instance be perceived differently in eastern European countries with post-communist legacies than elsewhere.
-To circumvent the issues with selecting a reference category [see @leeper2020measuring] and to simplify the causal terminology, we collapse the religion feature into a binary treatment indicator $T$ with $T=1$ if the profile was displayed as Muslim and $T=0$ otherwise.[^1]
-This choice is motivated by our substantive interest in studying heterogeneity in the *Muslim penalty*, not analyzing the conjoint allocation game with its full multidimensional treatment space.
+[^treatments]:
 
-[^1]: This approach effectively averages the non-Muslim religion feature against the Muslim one. As we are primarily interested in drivers of Muslim bias, not certain facets of Muslim bias itself, we opt for this simpler approach.
+The design contains no condition in which religion is absent, so there is no pure no-religion control.
+We do not adopt non-religious as the baseline, because being non-religious is not obviously a neutral reference and may be read differently across contexts, for instance in the post-communist states of eastern Europe.
+To avoid the dependence of conjoint estimates on a chosen reference category [see @leeper2020measuring] and to simplify the causal language, we collapse religion into a binary treatment $T$, equal to 1 when the co-player is displayed as Muslim and 0 otherwise.[^1]
+This coding follows from our interest in the drivers of the Muslim penalty rather than in the full multidimensional conjoint.
+
+After standard quality filtering on attention checks and completed games, the analysis sample comprises roughly 28,200 respondents across the 25 countries, yielding about 84,600 decisions per game.
+These data are inherently hierarchical: decisions (rounds) are nested within respondents, who are in turn nested within countries.
+
+[^1]: This coding effectively averages the non-Muslim religion features against the Muslim one. As we are interested in the drivers of Muslim bias rather than in particular facets of that bias, we adopt this simpler approach.
 
 
 ### Causal Estimand
@@ -303,7 +307,7 @@ This led us to exclude theoretically / potentially interesting variables such as
 
 #### Examplary Profile From Conjoint Experiment {.unnumbered}
 
-![Player 2 Profile Example. *Note:* Figure embedded from @hahm2024divided, Figure 1.](https://static.cambridge.org/binary/version/id/urn:cambridge.org:id:binary:20240123150926403-0273:S0003055423000266:S0003055423000266_fig1.png)
+![Player 2 Profile Example. *Note:* Figure embedded from @hahm2024divided, Figure 1.](https://static.cambridge.org/binary/version/id/urn:cambridge.org:id:binary:20240123150926403-0273:S0003055423000266:S0003055423000266_fig1.png){#fig-profile}
 
 #### Distribution of Outcome Variable {.unnumbered}
 
