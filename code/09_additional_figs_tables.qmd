@@ -265,7 +265,7 @@ outcome_distr |>
 
 ```{r}
 #| label: tbl-balance-round-mods
-#| tbl-cap: "Profile level covariates distributions by treatment."
+#| tbl-cap: "Profile level covariates distributions by treatment. Cells show raw counts with column percentages in parentheses for categorical variables, and the median with the first and third quartiles (Q1, Q3) in parentheses for numeric variables."
 prof_mods <- c(
   "cj_nat",
   "der_cj_eu_identity",
@@ -326,7 +326,7 @@ eu25_long |>
 
 ```{r}
 #| label: tbl-balance-resp-mods
-#| tbl-cap: "Individual level covariate distributions by treatment."
+#| tbl-cap: "Individual level covariate distributions by treatment. Cells show raw counts with column percentages in parentheses for categorical variables, and the median with the first and third quartiles (Q1, Q3) in parentheses for numeric variables."
 #| warning: false
 #| message: false
 eu25_long |>
