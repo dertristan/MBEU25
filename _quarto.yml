@@ -10,21 +10,21 @@ project:
 manuscript:
   notebooks:
     - notebook: code/02_data_prep.qmd
-      title: "Data Preparation"
+      title: "1 Data Preparation"
     - notebook: code/03_multibart_nested_ri_test.qmd
-      title: "BCF Estimator Test"
+      title: "2 BCF Estimator Test"
     - notebook: code/04_grf_nested_test.qmd
-      title: "CF Estimator Test"
+      title: "3 CF Estimator Test"
     - notebook: code/05_bcf_fit.qmd
-      title: "BCF Fits"
+      title: "4 BCF Fits"
     - notebook: code/06_grf_fit.qmd
-      title: "CF Fits"
+      title: "5 CF Fits"
     - notebook: code/07_postprocess_grf.qmd
-      title: "CF Post-Processing"
+      title: "6 CF Post-Processing"
     - notebook: code/08_postprocess_bcf.qmd
-      title: "BCF Post-Processing"
+      title: "7 BCF Post-Processing"
     - notebook: code/09_additional_figs_tables.qmd
-      title: "Additional Figures & Tables"
+      title: "8 Additional Figures & Tables"
 
 execute: 
   freeze: auto
@@ -76,6 +76,9 @@ format:
       - text: "Report an issue"
         icon: flag
         href: https://github.com/dertristan/MBEU25/issues
+      - text: "Dataset Repository"
+        icon: database
+        href: https://github.com/ls-konig/eu25games2019
     citeproc: false
     filters:
       - at: pre-quarto
