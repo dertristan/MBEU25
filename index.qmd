@@ -55,21 +55,29 @@ Each respondent completes three rounds of each game, for six decisions in total,
 The co-player profile varies seven attributes: age, gender, social class, nationality, partisan affiliation, EU identity, and religion.
 Both the order in which the attributes appear and the level shown for each are randomized by design.[^example]
 Because some attribute combinations are implausible, @hahm2024divided restrict which attributes are displayed through four conditions that vary whether EU identity and partisan affiliation appear and whether the co-player is a conational.[^treatments]
+For our analysis, we collapse partisan affiliation into a display-aware indicator of whether party was shown, not shown but the co-player was still a conational, or not applicable because no conational was displayed.
+This lets us recover the average effect of merely displaying a partisan affiliation on the Muslim penalty rather than the effect of any particular party.
 The religion attribute, with the four levels Muslim, Catholic, Protestant, and non-religious, is shown across all four conditions, so the full set of game decisions can be used to estimate the Muslim penalty.
 
 [^example]: @fig-profile in the appendix shows an example profile.
 
-[^treatments]:
+[^treatments]: These randomly assigned conditions are: a conational with both EU identity and partisan affiliation, a conational with party but not EU identity, an EU national with EU identity but not party, and a co-player of some nationality with neither.
+Partisan affiliation is displayed only for conationals, since assigning a national party to a co-player ineligible to vote for it would be implausible.
 
 The design contains no condition in which religion is absent, so there is no pure no-religion control.
 We do not adopt non-religious as the baseline, because being non-religious is not obviously a neutral reference and may be read differently across contexts, for instance in the post-communist states of eastern Europe.
-To avoid the dependence of conjoint estimates on a chosen reference category [see @leeper2020measuring] and to simplify the causal language, we collapse religion into a binary treatment $T$, equal to 1 when the co-player is displayed as Muslim and 0 otherwise.[^1]
+To avoid the dependence of conjoint estimates on a chosen reference category [see @leeper2020measuring] and to simplify the causal language, we collapse religion into a binary treatment $T$, equal to 1 when the co-player is displayed as Muslim and 0 otherwise.[^binary-coding]
 This coding follows from our interest in the drivers of the Muslim penalty rather than in the full multidimensional conjoint.
 
 After standard quality filtering on attention checks and completed games, the analysis sample comprises roughly 28,200 respondents across the 25 countries, yielding about 84,600 decisions per game.
 These data are inherently hierarchical: decisions (rounds) are nested within respondents, who are in turn nested within countries.
+We include every covariate measured before the games and exclude those recorded afterward, to avoid post-treatment and collider bias.
+The retained set ranges from demographics to attitudinal batteries on national and European attachment, populist, democratic, and technocratic dispositions, and evaluations of the European Union.
+We make two exceptions for stable demographics drawn from the post-game block, age at which education stopped and residence type, which the experiment cannot plausibly have altered.
+Appendix @tbl-wordings gives the full set with exact question wordings and scales.
 
-[^1]: This coding effectively averages the non-Muslim religion features against the Muslim one. As we are interested in the drivers of Muslim bias rather than in particular facets of that bias, we adopt this simpler approach.
+
+[^binary-coding]: This coding effectively averages the non-Muslim religion features against the Muslim one. As we are interested in the drivers of Muslim bias rather than in particular facets of that bias, we adopt this simpler approach.
 
 
 ### Causal Estimand
@@ -98,8 +106,8 @@ $$
 $${#eq-ate}
 
 \noindent where $Y_{ric}^{g}(t)$ is the number of tokens allocated by respondent $i$ in country $c$ during round $r$ of game $g$ under treatment assignment $t$.
-This quantity captures the average Muslim penalty in the target population. Since the religion attribute is randomly assigned by design, $\{Y_{ric}^{g}(1),\, Y_{ric}^{g}(0)\}  \perp T_{ric}$.
-However, as the sample was recruited to be representative of national populations only in terms of age and gender [@hahm2024divided, p. 73], we adopt the more conservative Sample ATE (SATE), which conditions on the observed sample rather than making broader claims about the target population:[^2]
+This quantity captures the average Muslim penalty in the target population. Since the religion attribute is randomly assigned by design, $\{Y_{ric}^{g}(1),\, Y_{ric}^{g}(0)\}  \perp T_{ric}$.[^balance]
+However, as the sample was recruited to be representative of national populations only in terms of age and gender [@hahm2024divided, p. 73], we adopt the more conservative Sample ATE (SATE), which conditions on the observed sample rather than making broader claims about the target population:[^sate-choice]
 
 $$
     \text{SATE}^{g} =
@@ -136,7 +144,7 @@ $$
 $${#eq-cate-respondent}
 
 Second, we are interested in *causal interaction*: whether other profile attributes change the Muslim penalty.
-Disaggregating to the profile level by averaging over respondents, we define the profile-level CATE:[^3]
+Disaggregating to the profile level by averaging over respondents, we define the profile-level CATE:[^subscripts]
 
 $$
     \tau_{ric}^{g}
@@ -150,9 +158,11 @@ $${#eq-cate-profile}
 
 These quantities are linked through the law of iterated expectations, which ensures internal consistency across levels of the hierarchy: $\text{SATE}^{g} = \mathbb{E}_{i}\!\left[\mathbb{E}_{r}[\tau^{g}(X_{ic}, A_{ric})]\right] = \mathbb{E}_{i}[\tau_{ic}^{g}]$.
 
-[^2]: Since we are interested in treatment effect heterogeneity and not the average penalty itself, the choice between ATE and SATE is inconsequential for the main analysis.
+[^balance]: @tbl-balance-round-mods and @tbl-balance-resp-mods in the appendix report the profile-level attributes and respondent-level covariates by treatment status. Both sets are balanced across Muslim and non-Muslim profiles, confirming that random assignment of the religion attribute holds in the realized sample.
 
-[^3]:The subscripts $r, i, c$ reflect the hierarchical structure of the outcome $Y_{ric}^g$ (round $r$, nested in respondent $i$, nested in country $c$) and not the conditioning set in the expectation. We apply the same convention to the covariates and the disaggregated CATEs: $X_{ic}$ carries the country index because respondent $i$ is nested in country $c$ (so $c$ is determined by $i$), even though country is not part of the conditioning set. Likewise, $\tau_{ric}^g$ retains $i$ after marginalizing over respondents. After marginalizing over respondents, only $A_{ric}$ remains as the conditioning argument. After marginalizing over rounds, only $X_{ic}$ remains.
+[^sate-choice]: Since we are interested in treatment effect heterogeneity and not the average penalty itself, the choice between ATE and SATE is inconsequential for the main analysis.
+
+[^subscripts]:The subscripts $r, i, c$ reflect the hierarchical structure of the outcome $Y_{ric}^g$ (round $r$, nested in respondent $i$, nested in country $c$) and not the conditioning set in the expectation. We apply the same convention to the covariates and the disaggregated CATEs: $X_{ic}$ carries the country index because respondent $i$ is nested in country $c$ (so $c$ is determined by $i$), even though country is not part of the conditioning set. Likewise, $\tau_{ric}^g$ retains $i$ after marginalizing over respondents. After marginalizing over respondents, only $A_{ric}$ remains as the conditioning argument. After marginalizing over rounds, only $X_{ic}$ remains.
 
 
 ### Estimation Strategy
