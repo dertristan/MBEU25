@@ -4,7 +4,14 @@ title: |
 subtitle: |
   Treatment-Effect Heterogeneity in European Conjoint Behavioral Games
 abstract: |
-  We reanalyize data
+  Conjoint experiments across Europe consistently reveal a Muslim penalty: profiles displayed as Muslim receive systematically fewer resources than otherwise comparable profiles.
+  We move beyond this average and ask who drives the penalty.
+  Reanalyzing dictator and trust games embedded in a conjoint experiment across 25 European countries, we treat the Muslim attribute as a binary treatment and estimate conditional average treatment effects with honest causal forests, using a hierarchical Bayesian causal forest as a robustness check.
+  The penalty is negative in essentially every subgroup we examine.
+  The other attributes of the displayed profile moderate it only weakly.
+  Respondent characteristics matter more.
+  Evaluations of the European Union form the strongest and most coherent gradient, yet even the most pro-European respondents retain a clear penalty.
+  Anti-Muslim bias in Europe emerges as politically structured rather than idiosyncratic, attenuated but nowhere undone.
 execute:
   echo: false
   warning: false
@@ -16,27 +23,37 @@ draft-mode: visible
 
 ## Introduction {#sec-introduction}
 
-Numerous studies have documented a significant ‘Muslim penalty’ across European societies [@helbling2014opposing; @helbling2012islamophobia].
-In labor markets, housing, and everyday social interaction, individuals identified as Muslim are often disadvantaged relative to otherwise comparable non-Muslims.
-Yet establishing the existence of this penalty, i.e. the systematic disadvantage incurred by individuals identified as Muslim, is only the starting point for a substantive understanding of the phenomenon.
+Experimental research has documented a robust Muslim penalty across European societies [@helbling2012islamophobia].
+Individuals identified as Muslim receive less help in everyday encounters [@choi2023hijab], are less welcome as labor migrants and refugees [@helbling2022muslim], and elicit weaker opposition to their persecution abroad [@findor2025anti].
+Yet establishing the existence of this penalty, that is the systematic disadvantage incurred by individuals identified as Muslim, is only the starting point for a substantive understanding of the phenomenon.
 The more demanding questions concern who discriminates, against whom, and under which conditions.
 
 Against this background, this paper revisits a large-scale conjoint survey experiment conducted across 25 European Union member states by @hahm2024divided.
 Using a combination of dictator and trust games alongside a conjoint design, they estimate the relative strength of multiple social divides.
-While their main focus is on the dominance of the partisan divide, their analysis also identifies a notable anti-Muslim bias that is consistent across all 25 countries.
-Whenever Muslim identity is experimentally signaled, respondents’ allocation decisions reveal a systematic penalty relative to otherwise comparable non-Muslim profiles.
-What this finding does not reveal, however, is whether and how the magnitude of this penalty varies with the other attributes attached to Muslim profiles, with the characteristics and political orientations of respondents, or with the interaction between profiles and respondents.
+Their main finding is the dominance of the partisan divide, but religion emerges as the second strongest divide in their analysis.
+Whenever Muslim identity is experimentally signaled, respondents’ allocation decisions reveal a systematic penalty relative to otherwise comparable non-Muslim profiles (@fig-diff-in-means).
+What these averages do not reveal is whether and how the magnitude of the penalty varies with the other attributes attached to Muslim profiles, with the characteristics and political orientations of respondents, or with the interaction between the two.
 
 This paper takes that heterogeneity as its central object of inquiry.
-Treating the Muslim penalty as the primary quantity of interest, it shifts from the AMCE framework towards a Conditional Average Treatment Effect logic and distinguishes two sources of variation [@robinson2024detect].
+Treating the Muslim penalty as the primary quantity of interest, it shifts from the average effects conventionally reported in conjoint analyses toward a conditional average treatment effect logic and distinguishes two sources of variation [@robinson2024detect].
 The first concerns whether the remaining attributes of the displayed Muslim profile, such as class, nationality, or EU stance, moderate the magnitude of the penalty.
-The second, and substantively more consequential, concerns whether individual-level characteristics of respondents, in particular their populist predispositions and their orientations towards European integration, account for who discriminates more strongly.
-That the penalty is unlikely to constitute a single, undifferentiated response is suggested both by evidence that hostility towards Muslims is driven less by nominal religious affiliation than by perceived religiosity [@helbling2020islamophobia; @helbling2022muslim] and by the contextual, social-identity logic underlying the original study [@hahm2024divided].
+The second, and substantively more consequential, concerns whether individual-level characteristics of respondents, in particular their populist predispositions and their orientations toward European integration, account for who discriminates more strongly.
+The literature gives strong reasons to expect that the penalty is conditional rather than uniform.
+Hostility toward Muslims is driven less by nominal religious affiliation than by perceived religiosity [@helbling2020islamophobia; @helbling2022muslim].
+Discriminatory behavior responds to signals about a Muslim target's values and differs with the discriminator's own gender and ideology [@choi2023hijab].
+And anti-Muslim bias in policy attitudes appears only among respondents holding negative or neutral prior views of Muslims, varying more with individual attitudes than with country context [@findor2025anti].
+What is missing is a systematic account of this variation within a single behavioral design.
 
+We reanalyze roughly 84,600 allocation decisions per game with honest causal forests, treating the Muslim attribute as a binary treatment and recovering conditional effects across pre-specified profile-level and respondent-level moderators.
+A hierarchical Bayesian causal forest serves as a robustness check.
+Three findings stand out.
+First, the penalty is negative in essentially every subgroup we examine.
+Second, the other profile attributes moderate it only weakly, with displayed partisanship the main exception.
+Third, respondent characteristics matter more, and evaluations of the European Union form the strongest and most coherent gradient.
+Respondents hostile to the Union penalize Muslim profiles substantially more, yet even the most pro-European retain a clear penalty.
 
-
-In a broader context, the study promotes a more nuanced understanding of anti-Muslim discrimination in Europe.
-By situating the variation in penalties within the cosmopolitan–populist divide that defines contemporary European politics, it suggests that the bias is less an isolated individual disposition than a politically driven phenomenon.
+These results promote a more nuanced understanding of anti-Muslim discrimination in Europe.
+The variation in penalties tracks the cosmopolitan–populist divide that defines contemporary European politics, suggesting a bias that is less an isolated individual disposition than a politically structured phenomenon.
 Understanding the conditions that amplify this bias is crucial for grasping the mechanisms that sustain it and the potential avenues for its mitigation.
 
 
