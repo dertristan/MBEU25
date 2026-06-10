@@ -238,12 +238,14 @@ We overlay the two games within a single panel by colour, so that any divergence
 {{< embed code/07_postprocess_grf.qmd#fig-grf-combined-prof >}}
 
 - Interpretations: 
-    - overall, Muslim penalty remains stable with regards to other profile attributes
-    - e.g. age, sex, and eu identity (recall EU identity was only (randomly) shown)
-    - across all attribute dimensions trust game yields consistently lower CATE point estimates, but intervals overlap with those from dictator game.
-        - only exception: Muslim profiles presented as non Eu nationals receive significantly fewer (i.e. the penatly is significantly larger) in trust game
-        - though interestingly this difference arises more from an upwards shift of the Dictator non-eu estimate
-    - across both games, Muslim profiles presented as upper class are penalized slightly less
+    - overall, Muslim penalty remains quite stable with regards to other profile attributes
+    - nationality: systematic difference between Dict and trust game for non-eu-national muslim profiles (stronger penalty in latter), point estimate in dict game lowest for "co-national", in dictator the latter surprisingly is systematically lower (i.e. bias is higher, systematic as the confidence intervals do not overlap) than for non-eu nationals, though this pattern is absent for the trust game outcomes.
+    - EU identity: positive or negative attachement not different, in Dictator point estimates for both slighly higher (i.e. less penalty) compared to control condition (not displayed), but overlapping intervals and not in trust game
+    - strongest effect is in partisanship: if a partisanship was shown, this reduces bias compared to when it was not shown (comparison refers to conationals only), this is robust across both games
+    - profile's age show for both games a minor "drop" for age 30 regarding point estimates, but not systematic (overlapping intervals across all ages)
+    - gender: no systematic difference between male and female muslim profiles
+    - class: no difference between lower and middle class profiles, but Muslim profiles presented as upper class show receive reduced penalty
+    - overall: point estimates of trust game most of the time more negative, but rarely suggest systematic difference 
 
 
 {{< embed code/07_postprocess_grf.qmd#fig-grf-combined-resp-1 >}}
@@ -281,7 +283,8 @@ We overlay the two games within a single panel by colour, so that any divergence
     - Age left education: pretty flat trend
 
 - Overall: Overall we find substantial heterogeneity across respondent subgroups, demographics and pre-treatment attitudes, but with very few exception these heterogeneities relate to the extend of anit-Muslim bias, not the presence of it. Even in those very few exceptions, it is only the upper uncertainty bounds that just scratch the zero line, no (single) moderator seems to credibly nullify, let alone reverse, the (negative) Muslim effect on token allocation. 
-Strongest moderation heterogeneity is found across EU evaluations/attitudes, where the pattern in the data generally suggest that respondents against EU integration or with negative evaluations of the EU show systematically higher levels of anti-Muslim bias than those favoring / positively evaluating the EU and its effects. Still, even in the pro-European sides of the scales, robust Muslim penalties persist, albeit at lower levels. 
+Strongest moderation heterogeneity is found across EU evaluations/attitudes, where the pattern in the data generally suggest that respondents against EU integration or with negative evaluations of the EU show systematically higher levels of anti-Muslim bias than those favoring / positively evaluating the EU and its effects.
+Still, even in the pro-European sides of the scales, robust Muslim penalties persist, albeit at lower levels. 
 This impression is supported by the variable importance plot in the appendix (@fig-grf-combined-vi), which identifies the mentioned EU items as 4 of the 5 most "important" variables.
 
 ## Robustness {#sec-robustness}
@@ -301,6 +304,8 @@ Only looked at within covariate moderating heterogeneity, not cross-covariate in
 Focused on Muslim penalty, implicitly assuming this is primary signal respondents perceive in experiment, this might not be the case in reality.
 To avoid potential post-treatment biases, we only focuses on pre-treatment covariates (expection being years of education and residence type). 
 This led us to exclude theoretically / potentially interesting variables such as general left right placement, EU integration placement, nativist attitudes and more which future endeaouvors might shed more light on, incorporating systematic ways to assess these as well. 
+Also the conjoint setup is inherently an artificial setting, though it serves to isolate causal effects of individual attributes, whether and how these translate to more complex real world settings is another questions, as perceptions play a major role there (put differently, in reality, people do not walk around with clearly visible labels).
+
 
 ## Conclusion {#sec-conclusion}
 
