@@ -81,7 +81,7 @@ Drafted in the Research Design section of `index.qmd` (2026-06-08). Sketch:
 ## Execution Plan (Thu 2026-06-04 → Thu 2026-06-11)
 
 > [!NOTE]
-> **Status (Mon 2026-06-08):** ahead of the table. Data prep, both full fits (all four `data/03_final/*.rds`), and post-processing/figures are done — the planned `07_*` figures step shipped as three notebooks (`07_postprocess_grf`, `08_postprocess_bcf`, `09_additional_figs_tables`). Manuscript writing has started: the causal-estimand and data-description sections are drafted and appendix figures/tables are embedded in `index.qmd`. The Mon buffer day was not needed for firefighting; effort has rolled into writing (the Tue–Thu task).
+> **Status (Wed 2026-06-10):** ahead of the table; in the writing phase. Data prep, both full fits (all four `data/03_final/*.rds`), and post-processing/figures are done — the planned `07_*` figures step shipped as three notebooks (`07_postprocess_grf`, `08_postprocess_bcf`, `09_additional_figs_tables`). The manuscript (`index.qmd`) is now substantially drafted across all sections: Introduction, Research Design (Data and Experiment, Causal Estimand, Estimation Strategy), Empirical Analysis (headline GRF CATE-by-moderator figures with full written interpretation), Robustness (BCF comparison), Limitations, a Conclusion stub, and Appendices A/B/C with figures/tables embedded. Remaining writing work (through Thu 2026-06-11): tighten the Conclusion and Introduction, length trim to the 7-page target. The Mon buffer day was not needed for firefighting; effort rolled into writing.
 
 | Day | Task |
 |-----|------|
@@ -103,7 +103,7 @@ The two headline results figures are the CATE density (#1) and the CATE-recovery
 2. **Top respondent-level moderator marginal plots (CATE recovery by moderator):** 4–6 small multiples, τ̂ vs. levels of top respondent moderators (construct-level), per-bin/per-level CATE with cluster-robust CIs (CRF) / posterior mean + credible ribbon (BCF), following fig 3 (`fig-cate-by-cov-grf`) of `04_grf_nested_test.qmd`. One figure per outcome. **Headline results figure.**
 3. **Top profile-level moderator marginal plots (CATE recovery by moderator):** 3–5 small multiples for other conjoint attributes that moderate Muslim bias, same fig-3 grammar as #2. Separate figure or clearly separated panels. **Headline results figure.**
 4. **Variable importance bar plot:** constructs ranked, profile- and respondent-level moderators distinguished by color/facet. Likely supplement.
-5. **Appendix / supplement:** projection table — CRF `best_linear_projection` coefficients alongside BCF posterior projection coefficients on the same pre-specified moderators (the linear-summary counterpart to #2–#3), split into profile-level and respondent-level subtables. Template: fig 4 (`fig-blp`) in `04_grf_nested_test.qmd`.
+5. **Appendix / supplement — dropped from the manuscript (2026-06-10).** The linear projection figure was cut from the appendix; the embed is commented out in `index.qmd` (Appendix B). The CRF `best_linear_projection` / BCF posterior projection are still computed in `07_`/`08_` but no longer surfaced as a figure. (Originally: CRF BLP coefficients alongside BCF posterior projection on the same pre-specified moderators, the linear-summary counterpart to #2–#3, template fig 4 `fig-blp` in `04_grf_nested_test.qmd`.)
 6. **Appendix only:** country-level ATE variation as a clustering diagnostic.
 
 ## Key Commands
