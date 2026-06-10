@@ -14,6 +14,7 @@ execute:
   warning: true
   eval: true
   message: true
+  cache: true
 ---
 
 # Purpose {#sec-purpose}
@@ -111,6 +112,7 @@ library(multibart)
 
 ```{r}
 #| label: load-data
+#| cache: false
 dat <- readRDS(here::here("data", "02_processed", "eu25_long.rds"))
 fit_dict <- readRDS(here::here("data", "03_final", "bcf_dictator.rds"))
 fit_trust <- readRDS(here::here("data", "03_final", "bcf_trust.rds"))
@@ -645,8 +647,12 @@ m_dict <- game_mods(dat, "cj_dict") |>
   mutate(
     across(
       c(
-        q_identity_country, q_identity_eu, q_identity_europe,
-        q_eu_imp_nat_econ, q_eu_imp_nat_cul, q_eu_imp_nat_pol
+        q_identity_country,
+        q_identity_eu,
+        q_identity_europe,
+        q_eu_imp_nat_econ,
+        q_eu_imp_nat_cul,
+        q_eu_imp_nat_pol
       ),
       flip5
     ),
@@ -705,8 +711,12 @@ m_trust <- game_mods(dat, "cj_trust") |>
   mutate(
     across(
       c(
-        q_identity_country, q_identity_eu, q_identity_europe,
-        q_eu_imp_nat_econ, q_eu_imp_nat_cul, q_eu_imp_nat_pol
+        q_identity_country,
+        q_identity_eu,
+        q_identity_europe,
+        q_eu_imp_nat_econ,
+        q_eu_imp_nat_cul,
+        q_eu_imp_nat_pol
       ),
       flip5
     ),
@@ -869,7 +879,9 @@ drawn as dodged points with cluster-robust intervals.
 plot_comb(
   comb_prof,
   ncol = 3,
-  title = bquote("CATE by conjoint-round moderator, both games" ~ (hat(tau)[ric])),
+  title = bquote(
+    "CATE by conjoint-round moderator, both games" ~ (hat(tau)[ric])
+  ),
   ylab = yl_ric
 )
 ```
