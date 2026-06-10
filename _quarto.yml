@@ -14,13 +14,13 @@ manuscript:
     - notebook: code/03_multibart_nested_ri_test.qmd
       title: "BCF Estimator Test"
     - notebook: code/04_grf_nested_test.qmd
-      title: "GRF Estimator Test"
+      title: "CF Estimator Test"
     - notebook: code/05_bcf_fit.qmd
       title: "BCF Fits"
     - notebook: code/06_grf_fit.qmd
-      title: "GRF Fits"
+      title: "CF Fits"
     - notebook: code/07_postprocess_grf.qmd
-      title: "GRF Post-Processing"
+      title: "CF Post-Processing"
     - notebook: code/08_postprocess_bcf.qmd
       title: "BCF Post-Processing"
     - notebook: code/09_additional_figs_tables.qmd

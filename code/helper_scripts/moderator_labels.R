@@ -6,8 +6,8 @@
 # Reference table in 09_additional_figs_tables.qmd#tbl-wordings.
 mod_labels <- c(
   cj_nat                   = "Profile nationality",
-  der_cj_eu_identity       = "EU identity",
-  der_cj_partisanship      = "Partisanship",
+  der_cj_eu_identity       = "Profile EU identity",
+  der_cj_partisanship      = "Profile partisanship",
   cj_age                   = "Profile age",
   cj_sex                   = "Profile gender",
   cj_class                 = "Profile social class",
@@ -51,18 +51,18 @@ cat_mods <- c(
 # covering exactly the observed levels in eu25_long.
 value_labels <- list(
   cj_nat = c(
-    own_country = "Own country", eu = "EU national", non_eu = "Non-EU national"
+    own_country = "co-national", eu = "EU national", non_eu = "Non-EU national"
   ),
   cj_sex = c(female = "Female", male = "Male"),
   cj_class = c(lower = "Lower", middle = "Middle", upper = "Upper"),
   der_cj_eu_identity = c(
-    eu_citizen = "sees herself as EU citizen",
-    not_eu_citizen = "does not see herself as EU citizen",
-    not_displayed = "not displayed"
+    eu_citizen = "sees herself\nas EU citizen",
+    not_eu_citizen = "does not see herself\nas EU citizen",
+    not_displayed = "not displayed\n(control)"
   ),
   der_cj_partisanship = c(
-    shown = "partisanship shown",
-    not_shown = "partisanship not shown",
+    shown = "shown",
+    not_shown = "not shown",
     not_applicable = "not applicable"
   ),
   q_gender = c(female = "Female", male = "Male", other = "Other"),

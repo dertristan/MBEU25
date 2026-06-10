@@ -309,7 +309,7 @@ Also the conjoint setup is inherently an artificial setting, though it serves to
 
 ## Conclusion {#sec-conclusion}
 
-\singlespacing
+
 
 ## References
 
@@ -318,7 +318,7 @@ Also the conjoint setup is inherently an artificial setting, though it serves to
 
 ## Appendix {.unnumbered}
 
-### Appendix A {.unnumbered}
+### Appendix A Additional Sample Details {.unnumbered}
 
 #### Examplary Profile From Conjoint Experiment {.unnumbered}
 
