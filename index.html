@@ -2,7 +2,7 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.9.36">
+<meta name="generator" content="quarto-1.10.11">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
@@ -56,10 +56,10 @@ div.csl-indent {
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-5947b73a06bce04bf1d622ae23e1ec5b.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-67270d1595a62d14f123c043d4fb2f18.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-3b361995821cf61d77a5cf475430d514.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script src="site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
 <link href="site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
 <link href="site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
@@ -263,7 +263,7 @@ Anti-Muslim bias in Europe emerges as politically structured rather than idiosyn
   <li><a href="#appendix-c-main-results-from-bcf-method" id="toc-appendix-c-main-results-from-bcf-method" class="nav-link" data-scroll-target="#appendix-c-main-results-from-bcf-method">Appendix C: Main Results from BCF Method</a></li>
   </ul></li>
   </ul>
-<div class="quarto-alternate-notebooks"><h2>Notebooks</h2><ul><li><a href="code\02_data_prep-preview.html"><i class="bi bi-journal-code"></i>1 Data Preparation</a></li><li><a href="code\03_multibart_nested_ri_test-preview.html"><i class="bi bi-journal-code"></i>2 BCF Estimator Test</a></li><li><a href="code\04_grf_nested_test-preview.html"><i class="bi bi-journal-code"></i>3 CF Estimator Test</a></li><li><a href="code\05_bcf_fit-preview.html"><i class="bi bi-journal-code"></i>4 BCF Fits</a></li><li><a href="code\06_grf_fit-preview.html"><i class="bi bi-journal-code"></i>5 CF Fits</a></li><li><a href="code\07_postprocess_grf-preview.html"><i class="bi bi-journal-code"></i>6 CF Post-Processing</a></li><li><a href="code\08_postprocess_bcf-preview.html"><i class="bi bi-journal-code"></i>7 BCF Post-Processing</a></li><li><a href="code\09_additional_figs_tables-preview.html"><i class="bi bi-journal-code"></i>8 Additional Figures &amp; Tables</a></li></ul></div></nav>
+<div class="quarto-alternate-notebooks"><h2>Notebooks</h2><ul><li><a href="code/02_data_prep-preview.html"><i class="bi bi-journal-code"></i>1 Data Preparation</a></li><li><a href="code/03_multibart_nested_ri_test-preview.html"><i class="bi bi-journal-code"></i>2 BCF Estimator Test</a></li><li><a href="code/04_grf_nested_test-preview.html"><i class="bi bi-journal-code"></i>3 CF Estimator Test</a></li><li><a href="code/05_bcf_fit-preview.html"><i class="bi bi-journal-code"></i>4 BCF Fits</a></li><li><a href="code/06_grf_fit-preview.html"><i class="bi bi-journal-code"></i>5 CF Fits</a></li><li><a href="code/07_postprocess_grf-preview.html"><i class="bi bi-journal-code"></i>6 CF Post-Processing</a></li><li><a href="code/08_postprocess_bcf-preview.html"><i class="bi bi-journal-code"></i>7 BCF Post-Processing</a></li><li><a href="code/09_additional_figs_tables-preview.html"><i class="bi bi-journal-code"></i>8 Additional Figures &amp; Tables</a></li></ul></div></nav>
 </div>
 <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
 </div>
@@ -343,7 +343,7 @@ Table&nbsp;1: Mean tokens allocated to a profile by the Muslim label, by game. T
 <section id="causal-estimand" class="level3" data-number="2.2">
 <h3 data-number="2.2" class="anchored" data-anchor-id="causal-estimand"><span class="header-section-number">2.2</span> Causal Estimand</h3>
 <p>Our analysis builds on the conjoint survey experiment fielded by <span class="citation" data-cites="hahm2023divided">Hahm et al. (<a href="#ref-hahm2023divided" role="doc-biblioref">2023</a>)</span> and <span class="citation" data-cites="hahm2024divided">Hahm et al. (<a href="#ref-hahm2024divided" role="doc-biblioref">2024</a>)</span>, but our research question differs from theirs. The original study asks how the displayed identity attributes, religion among them, affect token allocations, and answers with the conventional conjoint estimand, the Average Marginal Component Effect <span class="citation" data-cites="hainmueller2014causal">(AMCE, for a definition see <a href="#ref-hainmueller2014causal" role="doc-biblioref">Hainmueller et al. 2014</a>)</span>. Because the AMCE is by definition an average, it conceals how different respondents respond to the same treatment, which is exactly what we are interested in. Following <span class="citation" data-cites="robinson2024detect">Robinson and Duch (<a href="#ref-robinson2024detect" role="doc-biblioref">2024</a>)</span>, we therefore adopt the idea of nested causal quantities <span class="citation" data-cites="goplerud2025estimating">(see also <a href="#ref-goplerud2025estimating" role="doc-biblioref">Goplerud et al. 2025</a>)</span>.</p>
-<p>With the religion attribute collapsed as described above, our treatment variable is binary: <span class="math inline">\(T_{ric} \in \{0,1\}\)</span>, where <span class="math inline">\(T_{ric} = 1\)</span> if the profile is displayed as Muslim and 0 otherwise. This recasts the marginal contrast in standard treatment-effect notation and shifts attention to its conditional counterparts. We observe only the realized outcome <span class="citation" data-cites="holland1986statistics">(<a href="#ref-holland1986statistics" role="doc-biblioref">Holland 1986</a>)</span>, which in potential outcomes notation <span class="citation" data-cites="neyman1923application rubin1974estimating">(<a href="#ref-neyman1923application" role="doc-biblioref">Splawa-Neyman 1990</a>; <a href="#ref-rubin1974estimating" role="doc-biblioref">Rubin 1974</a>)</span> is:</p>
+<p>With the religion attribute collapsed as described above, our treatment variable is binary: <span class="math inline">\(T_{ric} \in \{0,1\}\)</span>, where <span class="math inline">\(T_{ric} = 1\)</span> if the profile is displayed as Muslim and 0 otherwise. This recasts the marginal contrast in standard treatment-effect notation and shifts attention to its conditional counterparts. We observe only the realized outcome <span class="citation" data-cites="holland1986statistics">(<a href="#ref-holland1986statistics" role="doc-biblioref">Holland 1986</a>)</span>, which in potential outcomes notation <span class="citation" data-cites="neyman1990application rubin1974estimating">(<a href="#ref-neyman1990application" role="doc-biblioref">Splawa-Neyman 1990</a>; <a href="#ref-rubin1974estimating" role="doc-biblioref">Rubin 1974</a>)</span> is:</p>
 <p><span id="eq-observed"><span class="math display">\[
 Y_{ric}^{g,\text{obs}} =
 T_{ric} \cdot Y_{ric}^{g}(1) + (1 - T_{ric}) \cdot Y_{ric}^{g}(0)
@@ -592,7 +592,7 @@ Robinson, Thomas S., and Raymond M. Duch. 2024. <span>“How to Detect Heterogen
 <div id="ref-rubin1974estimating" class="csl-entry" role="listitem">
 Rubin, Donald B. 1974. <span>“Estimating Causal Effects of Treatments in Randomized and Nonrandomized Studies.”</span> <em>Journal of Educational Psychology</em> 66 (5): 688. <a href="https://doi.org/10.1037/h0037350">https://doi.org/10.1037/h0037350</a>.
 </div>
-<div id="ref-neyman1923application" class="csl-entry" role="listitem">
+<div id="ref-neyman1990application" class="csl-entry" role="listitem">
 Splawa-Neyman, Jerzy. 1990. <span>“On the Application of Probability Theory to Agricultural Experiments. Essay on Principles. Section 9.”</span> <em>Statistical Science</em> 5 (4): 465–72. <a href="https://doi.org/10.1214/ss/1177012031">https://doi.org/10.1214/ss/1177012031</a>.
 </div>
 <div id="ref-thal2024aggregate" class="csl-entry" role="listitem">

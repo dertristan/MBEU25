@@ -1,0 +1,467 @@
+---
+title: "Additional Figures & Tables"
+subtitle: |
+  Main Figures and Tables
+date: last-modified
+date-format: MMMM D, YYYY
+format:
+  html:
+    toc: true
+    code-fold: true
+    code-tools: true
+execute:
+  echo: true
+  warning: true
+  eval: true
+  message: true
+---
+
+## Setup {#sec-setup}
+
+```{r}
+#| label: setup
+#| include: false
+# execution time
+start_time <- Sys.time()
+# console width
+options(width = 80)
+# packages
+p_required <- c(
+  "tidyverse", # dplyr, ggplot2, tidyr
+  "here", # relative paths
+  "ggpubr", # theme_pubr
+  "patchwork", # multi-panel composition
+  "gtsummary",
+  "gt",
+  "sessioninfo" # session docs
+)
+packages <- rownames(installed.packages())
+p_to_install <- p_required[!(p_required %in% packages)]
+if (length(p_to_install) > 0) {
+  install.packages(p_to_install)
+}
+sapply(p_required, require, character.only = TRUE)
+rm(p_required, p_to_install, packages)
+```
+
+## Load long format data {#sec-code-1}
+
+```{r}
+#| label: load-dat
+eu25_long <- read_rds(
+  here(
+    "data",
+    "02_processed",
+    "eu25_long.rds"
+  )
+)
+```
+
+## House style {#sec-house}
+
+The shared visual grammar for every figure in this notebook.
+The two games are the only thing encoded by colour, shape, and linetype, and they are always
+encoded by all three at once, so each game is distinguishable in colour, in greyscale print,
+and under colourblindness.
+Any other categorical distinction (moderator family, estimator, treatment level) is carried by
+facets, panels, or axis position — never by reusing a game channel.
+
+```{r}
+#| label: game-style
+# game identity: Okabe-Ito blue / orange, redundant shape + linetype
+game_labs <- c(cj_dict = "Dictator game", cj_trust = "Trust game")
+game_cols <- c("Dictator game" = "#0072B2", "Trust game" = "#D55E00")
+game_shapes <- c("Dictator game" = 16, "Trust game" = 17) # circle / triangle
+game_ltys <- c("Dictator game" = "solid", "Trust game" = "longdash")
+
+# raw cj_game_type -> ordered, human-readable factor
+lab_game <- function(x) {
+  factor(unname(game_labs[as.character(x)]), levels = unname(game_labs))
+}
+```
+
+The three reserved scales are always added together so the legend collapses to one key.
+
+```{r}
+#| label: game-scales
+scale_colour_game <- function() {
+  scale_colour_manual(values = game_cols, name = NULL)
+}
+scale_shape_game <- function() {
+  scale_shape_manual(values = game_shapes, name = NULL)
+}
+scale_linetype_game <- function() {
+  scale_linetype_manual(values = game_ltys, name = NULL)
+}
+```
+
+Shared theme, reference layers, dodge width, and the common CATE y-axis label.
+
+```{r}
+#| label: house-theme
+theme_mbeu <- function(base_size = 11) {
+  ggpubr::theme_pubr(base_size = base_size) +
+    theme(legend.position = "top")
+}
+# dashed null line for effect figures
+ref_zero <- geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60")
+# side-by-side offset for two-game overlays
+dodge <- position_dodge(width = 0.5)
+# shared axis label for CATE-by-moderator figures
+yl_cate <- "CATE (effect of Muslim profile)"
+```
+
+The golden ratio is the default figure aspect (width : height ≈ 1.618 : 1).
+Set chunk `fig-width`/`fig-height` from `golden` so single-panel figures share one proportion;
+do not apply it to faceted small multiples or auto-sized contexts.
+
+```{r}
+#| label: golden-ratio
+golden <- (1 + sqrt(5)) / 2 # ~1.618
+# figure height (in) for a given width at golden proportion
+golden_h <- function(width) width / golden
+```
+
+## Token allocation to Muslim profiles {#sec-diff-means}
+
+The motivating descriptive: how many tokens does a profile receive when it is
+labelled Muslim versus everything else, in each game.
+We summarise this three ways — a per-game Welch two-sample t-test on the raw
+difference in means (the sample average treatment effect, SATE), a
+slope/dumbbell figure of the two group means with 95% confidence intervals, and
+a one-row-per-game summary table of the same quantities (the version embedded
+in the manuscript).
+The test is intentionally simple and descriptive: respondent clustering is left
+to the heterogeneity models that follow.
+
+```{r}
+#| label: diff-in-means-test
+# analysis frame: muslim vs all-else, readable game
+dim_dat <- eu25_long |>
+  mutate(
+    treat = factor(
+      if_else(cj_rel == "muslim", "Muslim", "Non-Muslim"),
+      levels = c("Non-Muslim", "Muslim")
+    ),
+    game = lab_game(cj_game_type)
+  )
+
+# welch t-test per game, muslim - non-muslim
+dim_test_one <- function(df) {
+  tt <- t.test(cj_pl2 ~ treat, data = df) # non-muslim - muslim
+  tibble(
+    mean_nonmuslim = unname(tt$estimate[1]),
+    mean_muslim = unname(tt$estimate[2]),
+    diff = mean_muslim - mean_nonmuslim,
+    conf_low = -tt$conf.int[2],
+    conf_high = -tt$conf.int[1],
+    t = -unname(tt$statistic),
+    df = unname(tt$parameter),
+    p = tt$p.value
+  )
+}
+
+dim_tests <- dim_dat |>
+  group_by(game) |>
+  group_modify(~ dim_test_one(.x)) |>
+  ungroup()
+
+dim_tests
+```
+
+Read the SATE numbers off `dim_tests` above and fill the placeholders in the
+figure caption.
+
+```{r}
+#| label: fig-diff-in-means
+#| fig-cap: "Mean tokens allocated to a profile by the Muslim label, by game. The outcome (y-axis) is the number of tokens the respondent allocates to the displayed profile. X-axis contrasts profiles labelled Muslim against all other religions pooled. Points are group means and error bars are 95% confidence intervals. The slope of each line is the sample average treatment effect (SATE) of the Muslim label, estimated by a per-game Welch two-sample difference-in-means t-test: $\\widehat{\\text{SATE}}_\\text{Dictator} = -0.57\\ [-0.61, -0.53]$, $\\widehat{\\text{SATE}}_\\text{Trust} = -0.64\\ [-0.68, -0.61]$."
+#| fig-dpi: 500
+#| fig-width: 5.5
+#| fig-height: 3.4
+# group means + 95% ci
+dim_means <- dim_dat |>
+  group_by(game, treat) |>
+  summarise(
+    mean_tok = mean(cj_pl2),
+    se = sd(cj_pl2) / sqrt(n()),
+    ci = qt(0.975, n() - 1) * se,
+    .groups = "drop"
+  )
+
+dim_means |>
+  ggplot(aes(
+    x = treat,
+    y = mean_tok,
+    colour = game,
+    shape = game,
+    linetype = game,
+    group = game
+  )) +
+  geom_line(position = dodge, linewidth = 0.7) +
+  geom_errorbar(
+    aes(ymin = mean_tok - ci, ymax = mean_tok + ci),
+    position = dodge,
+    width = 0.08,
+    linewidth = 0.4,
+    linetype = "solid"
+  ) +
+  geom_point(position = dodge, size = 3) +
+  scale_colour_game() +
+  scale_shape_game() +
+  scale_linetype_game() +
+  labs(
+    title = "Muslim profiles receive fewer tokens in both games",
+    x = NULL,
+    y = "Mean tokens allocated"
+  ) +
+  theme_mbeu()
+```
+
+The summary table condenses the figure into one row per game: the two group
+means with their 95% confidence intervals, the per-game SATE from `dim_tests`,
+and its 95% confidence interval.
+
+```{r}
+#| label: tbl-diff-in-means
+#| tbl-cap: "Mean tokens allocated to a profile by the Muslim label, by game. The outcome is the number of tokens the respondent allocates to the displayed profile. Profiles labelled Muslim are contrasted against all other religions pooled. The first two columns show group means with 95% confidence intervals in brackets. The SATE column reports the sample average treatment effect of the Muslim label, estimated by a per-game Welch two-sample difference-in-means t-test, with its 95% confidence interval alongside. The test is intentionally simple and descriptive. Respondent clustering is left to the heterogeneity models."
+# one row per game: group means [ci], sate, sate ci
+dim_means |>
+  mutate(
+    cell = sprintf("%.2f [%.2f, %.2f]", mean_tok, mean_tok - ci, mean_tok + ci)
+  ) |>
+  select(game, treat, cell) |>
+  pivot_wider(names_from = treat, values_from = cell) |>
+  left_join(dim_tests, by = "game") |>
+  transmute(
+    Game = game,
+    Muslim,
+    `Non-Muslim`,
+    SATE = sprintf("%.2f", diff),
+    `95% CI` = sprintf("[%.2f, %.2f]", conf_low, conf_high)
+  ) |>
+  knitr::kable()
+```
+
+
+## Outcome Distribution
+
+The distribution of the raw outcome — tokens allocated to the displayed profile,
+an integer from 0 to 10 — in each game.
+Both games are drawn together with the reserved colour/shape/linetype grammar applied at
+once, and shown as within-game proportions so the two games are comparable despite differing
+numbers of decisions.
+
+```{r}
+#| label: fig-outcome-distr
+#| fig-cap: "Distribution of outcomes (tokens allocated to the displayed profile) by game. Points are the within-game share of decisions at each integer token value, connected within game. $N=84.603$ in both games."
+#| fig-dpi: 500
+#| fig-width: 5.5
+#| fig-height: 3.4
+# within-game share at each integer token value
+outcome_distr <- eu25_long |>
+  mutate(game = lab_game(cj_game_type)) |>
+  count(game, cj_pl2) |>
+  group_by(game) |>
+  mutate(prop = n / sum(n)) |>
+  ungroup()
+
+outcome_distr |>
+  ggplot(aes(
+    x = cj_pl2,
+    y = prop,
+    colour = game,
+    shape = game,
+    linetype = game,
+    group = game
+  )) +
+  geom_line(linewidth = 0.7) +
+  geom_point(size = 2.5) +
+  scale_colour_game() +
+  scale_shape_game() +
+  scale_linetype_game() +
+  scale_x_continuous(breaks = 0:10) +
+  scale_y_continuous(labels = scales::label_percent()) +
+  labs(
+    x = "Tokens allocated to profile",
+    y = "Share of decisions"
+  ) +
+  theme_mbeu()
+```
+
+## Data Covariate Balance Table
+
+```{r}
+#| label: tbl-balance-round-mods
+#| tbl-cap: "Profile level covariates distributions by treatment. Cells show raw counts with column percentages in parentheses for categorical variables, and the median with the first and third quartiles (Q1, Q3) in parentheses for numeric variables."
+prof_mods <- c(
+  "cj_nat",
+  "der_cj_eu_identity",
+  "der_cj_partisanship",
+  "cj_age",
+  "cj_sex",
+  "cj_class"
+)
+resp_mods <- c(
+  "q_gender",
+  "q_age",
+  "q_identity_country",
+  "q_identity_eu",
+  "q_identity_europe",
+  "q_religion",
+  "q_class",
+  "q_eu_efficacy_understand",
+  "q_pop_reps",
+  "q_pop_goodevil",
+  "q_pop_compromise",
+  "q_dem_compromise",
+  "q_dem_listen",
+  "q_tech_experts",
+  "q_tech_leaders",
+  "q_party_harm",
+  "q_people_incompetent",
+  "q_eu_longterm",
+  "q_eu_responsive",
+  "q_eu_imp_nat_econ",
+  "q_eu_imp_nat_cul",
+  "q_eu_imp_nat_pol",
+  "q_eu_abolish",
+  "q_eu_satisfaction",
+  "q_rural_urban",
+  "q_edu_age_stop"
+)
+all_mods <- c(prof_mods, resp_mods)
+
+eu25_long |>
+  mutate(
+    treat = factor(
+      if_else(cj_rel == "muslim", "Muslim", "Non-Muslim"),
+      levels = c("Non-Muslim", "Muslim")
+    )
+  ) |>
+  select(
+    all_of(prof_mods),
+    treat
+  ) |>
+  tbl_summary(
+    by = treat
+  ) |>
+  modify_header(
+    label = "**Variable**"
+  ) |>
+  as_kable()
+```
+
+```{r}
+#| label: tbl-balance-resp-mods
+#| tbl-cap: "Individual level covariate distributions by treatment. Cells show raw counts with column percentages in parentheses for categorical variables, and the median with the first and third quartiles (Q1, Q3) in parentheses for numeric variables."
+#| warning: false
+#| message: false
+eu25_long |>
+  mutate(
+    treat = factor(
+      if_else(cj_rel == "muslim", "Muslim", "Non-Muslim"),
+      levels = c("Non-Muslim", "Muslim")
+    )
+  ) |>
+  select(
+    all_of(resp_mods),
+    treat,
+    meta_pid
+  ) |>
+  distinct(meta_pid, .keep_all = T) |>
+  select(-meta_pid) |>
+  tbl_summary(
+    by = treat,
+    type = list(
+      q_age ~ "continuous",
+      q_identity_country ~ "continuous",
+      q_identity_eu ~ "continuous",
+      q_identity_europe ~ "continuous",
+      q_eu_efficacy_understand ~ "continuous",
+      q_pop_reps ~ "continuous",
+      q_pop_goodevil ~ "continuous",
+      q_pop_compromise ~ "continuous",
+      q_dem_compromise ~ "continuous",
+      q_dem_listen ~ "continuous",
+      q_tech_experts ~ "continuous",
+      q_tech_leaders ~ "continuous",
+      q_party_harm ~ "continuous",
+      q_people_incompetent ~ "continuous",
+      q_eu_longterm ~ "continuous",
+      q_eu_responsive ~ "continuous",
+      q_eu_imp_nat_econ ~ "continuous",
+      q_eu_imp_nat_cul ~ "continuous",
+      q_eu_imp_nat_pol ~ "continuous",
+      q_eu_abolish ~ "continuous",
+      q_eu_satisfaction ~ "continuous",
+      q_edu_age_stop ~ "continuous"
+    )
+  ) |>
+  modify_header(
+    label = "**Variable**"
+  ) |>
+  as_kable()
+```
+
+## Survey Item Reference Table {#sec-survey-items}
+
+```{r}
+#| label: tbl-wordings
+#| tbl-cap: "Question wordings and scales of individual-level covariates used in the analysis."
+# fmt: skip
+tibble::tribble(
+  ~Variable, ~`Question wording`, ~`Scale coding`,
+  "`q_gender`", "Please indicate your gender.", "Categorical",
+  "`q_religion`", "Do you consider yourself to be…?", "Categorical",
+  "`q_class`", "Do you see yourself and your household belonging to...?", "Categorical",
+  "`q_rural_urban`", "Would you say you live in a…?", "Categorical",
+  "`q_identity_country`", "Please tell me how attached you feel to... - [SURVEY COUNTRY]", "1 (very attached) to 5 (not at all attached)",
+  "`q_identity_eu`", "Please tell me how attached you feel to... - The European Union (EU)", "1 (very attached) to 5 (not at all attached)",
+  "`q_identity_europe`", "Please tell me how attached you feel to... - Europe", "1 (very attached) to 5 (not at all attached)",
+  "`q_eu_efficacy_understand`", "Please tell me to what extent you agree or disagree with each of the following statements. - I can understand and evaluate important political questions about the EU", "1 (strongly disagree) to 7 (strongly agree)",
+  "`q_pop_reps`", "Please indicate how much you agree with each of the following statements. - Elected officials talk too much and take too little action.", "1 (strongly disagree) to 7 (strongly agree)",
+  "`q_pop_goodevil`", "Please indicate how much you agree with each of the following statements. - Politics is ultimately a struggle between good and evil.", "1 (strongly disagree) to 7 (strongly agree)",
+  "`q_pop_compromise`", "Please indicate how much you agree with each of the following statements. - What people call \"compromise\" in politics is really just selling out on one's principles.", "1 (strongly disagree) to 7 (strongly agree)",
+  "`q_dem_compromise`", "Please indicate how much you agree with each of the following statements. - In a democracy it is important to make compromises among differing viewpoints.", "1 (strongly disagree) to 7 (strongly agree)",
+  "`q_age`", "How old are you?", "Age in years",
+  "`q_dem_listen`", "Please indicate how much you agree with each of the following statements. - It is important to listen to the opinion of other groups.", "1 (strongly disagree) to 7 (strongly agree)",
+  "`q_tech_experts`", "Please indicate how much you agree with each of the following statements. - Our country would run better if political decisions were left up to experts instead of politicians and citizens.", "1 (strongly disagree) to 7 (strongly agree)",
+  "`q_tech_leaders`", "Please indicate how much you agree with each of the following statements. - The leaders of our country should be more educated and skilled than ordinary citizens.", "1 (strongly disagree) to 7 (strongly agree)",
+  "`q_party_harm`", "Please indicate how much you agree with each of the following statements. - Political parties do more harm than good to society", "1 (strongly disagree) to 7 (strongly agree)",
+  "`q_people_incompetent`", "Please indicate how much you agree with each of the following statements. - Ordinary people don't know what policies are good for them.", "1 (strongly disagree) to 7 (strongly agree)",
+  "`q_eu_longterm`", "In thinking about the European Union (EU) and its decisions more generally, some people argue that it should act upon its long-term goals without pandering to the demand of the people. On the other hand, others argue that the EU should listen to the demand of people, rather than to act upon its long-term goals. When it comes to the question of whether the EU should act upon its long-term goals or it should listen to the demand of the people, what is your opinion? - The EU should act upon its long-term goals", "1 (strongly disagree) to 7 (strongly agree)",
+  "`q_eu_responsive`", "In thinking about the European Union (EU) and its decisions more generally, some people argue that it should act upon its long-term goals without pandering to the demand of the people. On the other hand, others argue that the EU should listen to the demand of people, rather than to act upon its long-term goals. When it comes to the question of whether the EU should act upon its long-term goals or it should listen to the demand of the people, what is your opinion? - The EU should listen to the demand of the people", "1 (strongly disagree) to 7 (strongly agree)",
+  "`q_eu_imp_nat_econ`", "Could you tell me whether you think that the EU has a rather positive or rather negative effect on each of the following domains? - UK economy", "1 (very positive) to 5 (very negative)",
+  "`q_eu_imp_nat_cul`", "Could you tell me whether you think that the EU has a rather positive or rather negative effect on each of the following domains? - Our culture and identity", "1 (very positive) to 5 (very negative)",
+  "`q_eu_imp_nat_pol`", "Could you tell me whether you think that the EU has a rather positive or rather negative effect on each of the following domains? - UK's political status and influence", "1 (very positive) to 5 (very negative)",
+  "`q_eu_abolish`", "Please tell me to what extent you agree or disagree with each of the following statements. - If the EU started making a lot of decisions that most people disagreed with, it might be better to do away with the EU altogether", "1 (strongly disagree) to 7 (strongly agree)",
+  "`q_eu_satisfaction`", "Please tell me to what extent you agree or disagree with each of the following statements. - I am satisfied with the performance of the EU", "1 (strongly disagree) to 7 (strongly agree)",
+  "`q_edu_age_stop`", "How old were you when you stopped full-time education?", "Years"
+) |>
+  knitr::kable()
+```
+
+## Session Info {#sec-session-info .appendix .unnumbered}
+
+```{r}
+#| label: session-info
+#| eval: true
+#| echo: true
+session_info()
+```
+
+## Execution Time {#sec-exec-time .appendix .unnumbered}
+
+```{r}
+#| label: exec-time
+#| eval: true
+#| echo: true
+#| include: true
+end_time <- Sys.time()
+exec_time <- end_time - start_time
+cat(paste(
+  "R code execution time:",
+  round(as.numeric(exec_time, units = "secs"), 2),
+  "seconds."
+))
+```
