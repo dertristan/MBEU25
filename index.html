@@ -1,0 +1,1829 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
+
+<meta charset="utf-8">
+<meta name="generator" content="quarto-1.9.36">
+
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+
+<meta name="author" content="Tristan Muno">
+<meta name="author" content="Vera Okisheva">
+<meta name="author" content="Raphael Klöckner">
+<meta name="dcterms.date" content="2026-06-11">
+
+<title>Penalized for Faith: Who Drives the Muslim Penalty?</title>
+<style>
+/* Default styles provided by pandoc.
+** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+*/
+code{white-space: pre-wrap;}
+span.smallcaps{font-variant: small-caps;}
+div.columns{display: flex; gap: min(4vw, 1.5em);}
+div.column{flex: auto; overflow-x: auto;}
+div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+ul.task-list{list-style: none;}
+ul.task-list li input[type="checkbox"] {
+  width: 0.8em;
+  margin: 0 0.8em 0.2em -1em; /* quarto-specific, see https://github.com/quarto-dev/quarto-cli/issues/4556 */ 
+  vertical-align: middle;
+}
+/* CSS for citations */
+div.csl-bib-body { }
+div.csl-entry {
+  clear: both;
+}
+.hanging-indent div.csl-entry {
+  margin-left:2em;
+  text-indent:-2em;
+}
+div.csl-left-margin {
+  min-width:2em;
+  float:left;
+}
+div.csl-right-inline {
+  margin-left:2em;
+  padding-left:1em;
+}
+div.csl-indent {
+  margin-left: 2em;
+}</style>
+
+
+<script src="site_libs/clipboard/clipboard.min.js"></script>
+<script src="site_libs/quarto-html/quarto.js" type="module"></script>
+<script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/popper.min.js"></script>
+<script src="site_libs/quarto-html/tippy.umd.min.js"></script>
+<script src="site_libs/quarto-html/anchor.min.js"></script>
+<link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-845c23b38eaddc0f92fda52bfe77a8c8.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<script src="site_libs/bootstrap/bootstrap.min.js"></script>
+<link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
+<link href="site_libs/bootstrap/bootstrap-67270d1595a62d14f123c043d4fb2f18.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<script src="site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
+<link href="site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
+<link href="site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
+<meta name="robots" content="noindex">
+<meta name="quarto:status" content="draft">
+
+  <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+
+<script type="text/javascript">
+const typesetMath = (el) => {
+  if (window.MathJax) {
+    // MathJax Typeset
+    window.MathJax.typeset([el]);
+  } else if (window.katex) {
+    // KaTeX Render
+    var mathElements = el.getElementsByClassName("math");
+    var macros = [];
+    for (var i = 0; i < mathElements.length; i++) {
+      var texText = mathElements[i].firstChild;
+      if (mathElements[i].tagName == "SPAN" && texText && texText.data) {
+        window.katex.render(texText.data, mathElements[i], {
+          displayMode: mathElements[i].classList.contains('display'),
+          throwOnError: false,
+          macros: macros,
+          fleqn: false
+        });
+      }
+    }
+  }
+}
+window.Quarto = {
+  typesetMath
+};
+</script>
+
+<meta name="citation_title" content="Penalized for Faith: Who Drives the Muslim Penalty?
+">
+<meta name="citation_abstract" content="Conjoint experiments across Europe consistently reveal a Muslim penalty: profiles displayed as Muslim receive systematically fewer resources than otherwise comparable profiles.
+We move beyond this average and ask who drives the penalty.
+Reanalyzing dictator and trust games embedded in a conjoint experiment across 25 European countries, we treat the Muslim attribute as a binary treatment and estimate conditional average treatment effects with Causal Forests.
+The penalty is negative in essentially every subgroup we examine.
+The other attributes of the displayed profile moderate it only weakly.
+Respondent characteristics matter more.
+Evaluations of the European Union form the strongest and most coherent gradient, yet even the most pro-European respondents retain a clear penalty.
+Anti-Muslim bias in Europe emerges as politically structured rather than idiosyncratic, attenuated but nowhere undone.
+">
+<meta name="citation_author" content="Tristan Muno">
+<meta name="citation_author" content="Vera Okisheva">
+<meta name="citation_author" content="Raphael Klöckner">
+<meta name="citation_publication_date" content="2026-06-11">
+<meta name="citation_cover_date" content="2026-06-11">
+<meta name="citation_year" content="2026">
+<meta name="citation_online_date" content="2026-06-11">
+<meta name="citation_language" content="en">
+<meta name="citation_reference" content="citation_title=Divided by europe: Affective polarisation in the context of european elections;,citation_author=Hyeonho Hahm;,citation_author=David Hilpert;,citation_author=Thomas König;,citation_publication_date=2023;,citation_cover_date=2023;,citation_year=2023;,citation_issue=4;,citation_doi=10.1080/01402382.2022.2133277;,citation_volume=46;,citation_journal_title=West European Politics;,citation_publisher=Taylor &amp;amp;amp; Francis;">
+<meta name="citation_reference" content="citation_title=Divided we unite: The nature of partyism and the role of coalition partnership in europe;,citation_author=Hyeonho Hahm;,citation_author=David Hilpert;,citation_author=Thomas König;,citation_publication_date=2024;,citation_cover_date=2024;,citation_year=2024;,citation_issue=1;,citation_doi=10.1017/S0003055423000266;,citation_volume=118;,citation_journal_title=American Political Science Review;,citation_publisher=Cambridge University Press;">
+<meta name="citation_reference" content="citation_title=Islamophobia in the west: Measuring and explaining individual attitudes;,citation_editor=Marc Helbling;,citation_publication_date=2012;,citation_cover_date=2012;,citation_year=2012;,citation_doi=10.4324/9780203841730;">
+<meta name="citation_reference" content="citation_title=Framing immigration in western europe;,citation_author=Marc Helbling;,citation_publication_date=2014;,citation_cover_date=2014;,citation_year=2014;,citation_issue=1;,citation_doi=10.1080/1369183X.2013.830888;,citation_volume=40;,citation_journal_title=Journal of Ethnic and Migration Studies;,citation_publisher=Taylor &amp;amp;amp; Francis;">
+<meta name="citation_reference" content="citation_title=Opposing muslims and the muslim headscarf in western europe;,citation_author=Marc Helbling;,citation_publication_date=2014;,citation_cover_date=2014;,citation_year=2014;,citation_issue=2;,citation_doi=10.1093/esr/jct038;,citation_volume=30;,citation_journal_title=European Sociological Review;,citation_publisher=Oxford University Press;">
+<meta name="citation_reference" content="citation_title=Muslim bias or fear of fundamentalism? A survey experiment in five western european democracies;,citation_author=Marc Helbling;,citation_author=Felix Jäger;,citation_author=Richard Traunmüller;,citation_publication_date=2022;,citation_cover_date=2022;,citation_year=2022;,citation_issue=1;,citation_doi=10.1177/20531680221088491;,citation_volume=9;,citation_journal_title=Research &amp;amp;amp; Politics;,citation_publisher=SAGE Publications Sage UK: London, England;">
+<meta name="citation_reference" content="citation_title=What is islamophobia? Disentangling citizens’ feelings toward ethnicity, religion and religiosity using a survey experiment;,citation_author=Marc Helbling;,citation_author=Richard Traunmüller;,citation_publication_date=2020;,citation_cover_date=2020;,citation_year=2020;,citation_issue=3;,citation_doi=10.1017/S0007123418000054;,citation_volume=50;,citation_journal_title=British Journal of Political Science;,citation_publisher=Cambridge University Press;">
+<meta name="citation_reference" content="citation_title=The hijab penalty: Feminist backlash to muslim immigrants;,citation_author=Donghyun Danny Choi;,citation_author=Mathias Poertner;,citation_author=Nicholas Sambanis;,citation_publication_date=2023;,citation_cover_date=2023;,citation_year=2023;,citation_issue=2;,citation_doi=10.1111/ajps.12627;,citation_volume=67;,citation_journal_title=American Journal of Political Science;,citation_publisher=Wiley Online Library;">
+<meta name="citation_reference" content="citation_title=Anti-muslim bias in foreign policy attitudes: Experimental evidence from thirteen european countries;,citation_author=Andrej Findor;,citation_author=Roman Hlatky;,citation_author=Matej Hruška;,citation_author=Kristı́na Kironská;,citation_publication_date=2025;,citation_cover_date=2025;,citation_year=2025;,citation_doi=10.1017/S0007123425000134;,citation_volume=55;,citation_journal_title=British Journal of Political Science;,citation_publisher=Cambridge University Press;">
+<meta name="citation_reference" content="citation_title=Measuring subgroup preferences in conjoint experiments;,citation_author=Thomas J. Leeper;,citation_author=Sara B. Hobolt;,citation_author=James Tilley;,citation_publication_date=2020;,citation_cover_date=2020;,citation_year=2020;,citation_issue=2;,citation_doi=10.1017/pan.2019.30;,citation_volume=28;,citation_journal_title=Political Analysis;,citation_publisher=Cambridge University Press;">
+<meta name="citation_reference" content="citation_title=Causal inference in conjoint analysis: Understanding multidimensional choices via stated preference experiments;,citation_author=Jens Hainmueller;,citation_author=Daniel J. Hopkins;,citation_author=Teppei Yamamoto;,citation_publication_date=2014;,citation_cover_date=2014;,citation_year=2014;,citation_issue=1;,citation_doi=10.1093/pan/mpt024;,citation_volume=22;,citation_journal_title=Political Analysis;,citation_publisher=Cambridge University Press;">
+<meta name="citation_reference" content="citation_title=How to detect heterogeneity in conjoint experiments;,citation_author=Thomas S. Robinson;,citation_author=Raymond M. Duch;,citation_publication_date=2024;,citation_cover_date=2024;,citation_year=2024;,citation_issue=2;,citation_doi=10.1086/727597;,citation_volume=86;,citation_journal_title=The Journal of Politics;,citation_publisher=The University of Chicago Press Chicago, IL;">
+<meta name="citation_reference" content="citation_title=Estimating heterogeneous causal effects of high-dimensional treatments: Application to conjoint analysis;,citation_author=Max Goplerud;,citation_author=Kosuke Imai;,citation_author=Nicole E Pashley;,citation_publication_date=2025;,citation_cover_date=2025;,citation_year=2025;,citation_issue=2;,citation_doi=10.1214/24-AOAS1994;,citation_volume=19;,citation_journal_title=The Annals of Applied Statistics;,citation_publisher=Institute of Mathematical Statistics;">
+<meta name="citation_reference" content="citation_title=Sparse estimation and uncertainty with application to subgroup analysis;,citation_author=Marc Ratkovic;,citation_author=Dustin Tingley;,citation_publication_date=2017;,citation_cover_date=2017;,citation_year=2017;,citation_issue=1;,citation_doi=10.1017/pan.2016.14 ;,citation_volume=25;,citation_journal_title=Political Analysis;,citation_publisher=Cambridge University Press;">
+<meta name="citation_reference" content="citation_title=Generalized random forests;,citation_author=Susan Athey;,citation_author=Julie Tibshirani;,citation_author=Stefan Wager;,citation_publication_date=2019;,citation_cover_date=2019;,citation_year=2019;,citation_issue=2;,citation_doi=10.1214/18-AOS1709;,citation_volume=47;,citation_journal_title=The Annals of Statistics;">
+<meta name="citation_reference" content="citation_title=Using causal forests to predict treatment heterogeneity: An application to summer jobs;,citation_author=Jonathan M. V. Davis;,citation_author=Sara B. Heller;,citation_publication_date=2017;,citation_cover_date=2017;,citation_year=2017;,citation_issue=5;,citation_doi=10.1257/aer.p20171000;,citation_volume=107;,citation_journal_title=American Economic Review;,citation_publisher=American Economic Association 2014 Broadway, Suite 305, Nashville, TN 37203;">
+<meta name="citation_reference" content="citation_title=Estimation and inference of heterogeneous treatment effects using random forests;,citation_author=Stefan Wager;,citation_author=Susan Athey;,citation_publication_date=2018;,citation_cover_date=2018;,citation_year=2018;,citation_issue=523;,citation_doi=10.1080/01621459.2017.1319839;,citation_volume=113;,citation_journal_title=Journal of the American Statistical Association;,citation_publisher=Taylor &amp;amp;amp; Francis;">
+<meta name="citation_reference" content="citation_title=Practical guide to honest causal forests for identifying heterogeneous treatment effects;,citation_author=Neal Jawadekar;,citation_author=Katrina Kezios;,citation_author=Michelle C. Odden;,citation_author=Jeanette A. Stingone;,citation_author=Sebastian Calonico;,citation_author=Kara Rudolph;,citation_author=Adina Zeki Al Hazzouri;,citation_publication_date=2023;,citation_cover_date=2023;,citation_year=2023;,citation_issue=7;,citation_doi=10.1093/aje/kwad043;,citation_volume=192;,citation_journal_title=American Journal of Epidemiology;,citation_publisher=Oxford University Press;">
+<meta name="citation_reference" content="citation_title=Estimating treatment effects with causal forests: An application;,citation_author=Susan Athey;,citation_author=Stefan Wager;,citation_publication_date=2019;,citation_cover_date=2019;,citation_year=2019;,citation_issue=2;,citation_doi=10.1353/obs.2019.0001;,citation_volume=5;,citation_journal_title=Observational Studies;,citation_publisher=University of Pennsylvania Press;">
+<meta name="citation_reference" content="citation_title=Estimating and evaluating treatment effect heterogeneity: A causal forests approach;,citation_author=Li Zheng;,citation_author=Weiwen Yin;,citation_publication_date=2023;,citation_cover_date=2023;,citation_year=2023;,citation_issue=1;,citation_doi=10.1177/20531680231153080;,citation_volume=10;,citation_journal_title=Research &amp;amp;amp; Politics;,citation_publisher=SAGE Publications Sage UK: London, England;">
+<meta name="citation_reference" content="citation_title=Bayesian additive regression trees: A review and look forward;,citation_author=Jennifer Hill;,citation_author=Antonio Linero;,citation_author=Jared Murray;,citation_publication_date=2020;,citation_cover_date=2020;,citation_year=2020;,citation_issue=1;,citation_doi=10.1146/annurev-statistics-031219-041110;,citation_volume=7;,citation_journal_title=Annual Review of Statistics and Its Application;,citation_publisher=Annual Reviews;">
+<meta name="citation_reference" content="citation_title=BART: Bayesian Additive Regression Trees;,citation_author=Hugh A. Chipman;,citation_author=Edward I. George;,citation_author=Robert E. McCulloch;,citation_publication_date=2010;,citation_cover_date=2010;,citation_year=2010;,citation_issue=1;,citation_doi=10.1214/09-AOAS285;,citation_volume=4;,citation_journal_title=The Annals of Applied Statistics;,citation_publisher=Institute of Mathematical Statistics;">
+<meta name="citation_reference" content="citation_title=Bayesian ensemble learning;,citation_author=Hugh Chipman;,citation_author=Edward George;,citation_author=Robert McCulloch;,citation_publication_date=2006;,citation_cover_date=2006;,citation_year=2006;,citation_volume=19;,citation_journal_title=Advances in Neural Information Processing Systems;">
+<meta name="citation_reference" content="citation_title=Examining treatment effect heterogeneity using BART;,citation_author=Nicole Carnegie;,citation_author=Vincent Dorie;,citation_author=Jennifer L. Hill;,citation_publication_date=2019;,citation_cover_date=2019;,citation_year=2019;,citation_issue=2;,citation_doi=10.1353/obs.2019.0002;,citation_volume=5;,citation_journal_title=Observational Studies;,citation_publisher=University of Pennsylvania Press;">
+<meta name="citation_reference" content="citation_title=Modeling heterogeneous treatment effects in survey experiments with bayesian additive regression trees;,citation_author=Donald P. Green;,citation_author=Holger L. Kern;,citation_publication_date=2012;,citation_cover_date=2012;,citation_year=2012;,citation_issue=3;,citation_doi=10.1093/poq/nfs036;,citation_volume=76;,citation_journal_title=Public opinion quarterly;,citation_publisher=Oxford University Press UK;">
+<meta name="citation_reference" content="citation_title=Model interpretation through lower-dimensional posterior summarization;,citation_author=Spencer Woody;,citation_author=Carlos M. Carvalho;,citation_author=Jared S. Murray;,citation_publication_date=2021;,citation_cover_date=2021;,citation_year=2021;,citation_issue=1;,citation_doi=10.1080/10618600.2020.1796684;,citation_volume=30;,citation_journal_title=Journal of Computational and Graphical Statistics;,citation_publisher=Taylor &amp;amp;amp; Francis;">
+<meta name="citation_reference" content="citation_title=Bayesian regression tree models for causal inference: Regularization, confounding, and heterogeneous effects (with discussion);,citation_author=P. Richard Hahn;,citation_author=Jared S. Murray;,citation_author=Carlos M. Carvalho;,citation_publication_date=2020;,citation_cover_date=2020;,citation_year=2020;,citation_issue=3;,citation_doi=10.1214/19-BA1195;,citation_volume=15;,citation_journal_title=Bayesian Analysis;,citation_publisher=International Society for Bayesian Analysis;">
+<meta name="citation_reference" content="citation_title=Shrinkage bayesian causal forests for heterogeneous treatment effects estimation;,citation_author=Alberto Caron;,citation_author=Gianluca Baio;,citation_author=Ioanna Manolopoulou;,citation_publication_date=2022;,citation_cover_date=2022;,citation_year=2022;,citation_issue=4;,citation_doi=10.1080/10618600.2022.2067549;,citation_volume=31;,citation_journal_title=Journal of Computational and Graphical Statistics;,citation_publisher=Taylor &amp;amp;amp; Francis;">
+<meta name="citation_reference" content="citation_title=Bayesian causal forests for multivariate outcomes: Application to irish data from an international large scale education assessment;,citation_author=Nathan McJames;,citation_author=Ann O’Shea;,citation_author=Yong Chen Goh;,citation_author=Andrew Parnell;,citation_publication_date=2025;,citation_cover_date=2025;,citation_year=2025;,citation_issue=2;,citation_doi=10.1093/jrsssa/qnae049;,citation_volume=188;,citation_journal_title=Journal of the Royal Statistical Society Series A: Statistics in Society;,citation_publisher=Oxford University Press UK;">
+<meta name="citation_reference" content="citation_title=Aggregate bayesian causal forests: The ABCs of flexible causal inference for hierarchically structured data;,citation_author=Dan RC Thal;,citation_author=Lauren V Forrow;,citation_author=Erin R Lipman;,citation_author=Jennifer E Starling;,citation_author=Mariel M Finucane;,citation_publication_date=2024;,citation_cover_date=2024;,citation_year=2024;,citation_doi=10.48550/arXiv.2407.07067;,citation_journal_title=arXiv preprint arXiv:2407.07067;">
+<meta name="citation_reference" content="citation_title=A national experiment reveals where a growth mindset improves achievement;,citation_author=David S Yeager;,citation_author=Paul Hanselman;,citation_author=Gregory M Walton;,citation_author=Jared S Murray;,citation_author=Robert Crosnoe;,citation_author=Chandra Muller;,citation_author=Elizabeth Tipton;,citation_author=Barbara Schneider;,citation_author=Chris S Hulleman;,citation_author=Cintia P Hinojosa;,citation_author=others;,citation_publication_date=2019;,citation_cover_date=2019;,citation_year=2019;,citation_issue=7774;,citation_doi=10.1038/s41586-019-1466-y;,citation_volume=573;,citation_journal_title=Nature;,citation_publisher=Nature Publishing Group UK London;">
+<meta name="citation_reference" content="citation_title=A synergistic mindsets intervention protects adolescents from stress;,citation_author=David S Yeager;,citation_author=Christopher J Bryan;,citation_author=James J Gross;,citation_author=Jared S Murray;,citation_author=Danielle Krettek Cobb;,citation_author=Pedro HF Santos;,citation_author=Hannah Gravelding;,citation_author=Meghann Johnson;,citation_author=Jeremy P Jamieson;,citation_publication_date=2022;,citation_cover_date=2022;,citation_year=2022;,citation_issue=7919;,citation_doi=10.1038/s41586-022-04907-7;,citation_volume=607;,citation_journal_title=Nature;,citation_publisher=Nature Publishing Group UK London;">
+<meta name="citation_reference" content="citation_title=Automated versus do-it-yourself methods for causal inference: Lessons learned from a data analysis competition;,citation_author=Vincent Dorie;,citation_author=Jennifer Hill;,citation_author=Marc Scott;,citation_author=Dan Cervone;,citation_publication_date=2019;,citation_cover_date=2019;,citation_year=2019;,citation_issue=1;,citation_doi=10.1214/18-STS667;,citation_volume=34;,citation_journal_title=Statistical Science;">
+<meta name="citation_reference" content="citation_title=A hierarchical modelling approach for bayesian causal forests on longitudinal data: A case study in multiple sclerosis clinical trials;,citation_author=Emma Prevot;,citation_author=Dieter A Häring;,citation_author=Thomas E Nichols;,citation_author=Chris C Holmes;,citation_author=Habib Ganjgahi;,citation_publication_date=2025;,citation_cover_date=2025;,citation_year=2025;,citation_doi=10.48550/arXiv.2508.08418;,citation_journal_title=arXiv preprint arXiv:2508.08418;">
+<meta name="citation_reference" content="citation_title=Bayesian nonparametric modeling for causal inference;,citation_author=Jennifer L. Hill;,citation_publication_date=2011;,citation_cover_date=2011;,citation_year=2011;,citation_issue=1;,citation_doi=10.1198/jcgs.2010.08162;,citation_volume=20;,citation_journal_title=Journal of Computational and Graphical Statistics;,citation_publisher=Taylor &amp;amp;amp; Francis;">
+<meta name="citation_reference" content="citation_title=Priming bias versus post-treatment bias in experimental designs;,citation_author=Matthew Blackwell;,citation_author=Jacob R. Brown;,citation_author=Sophie Hill;,citation_author=Kosuke Imai;,citation_author=Teppei Yamamoto;,citation_publication_date=2025;,citation_cover_date=2025;,citation_year=2025;,citation_issue=4;,citation_doi=10.1017/pan.2025.3;,citation_volume=33;,citation_journal_title=Political Analysis;,citation_publisher=Cambridge University Press;">
+<meta name="citation_reference" content="citation_title=Estimating individual treatment effects using non-parametric regression models: A review;,citation_author=Alberto Caron;,citation_author=Gianluca Baio;,citation_author=Ioanna Manolopoulou;,citation_publication_date=2022;,citation_cover_date=2022;,citation_year=2022;,citation_issue=3;,citation_doi=10.1111/rssa.12824;,citation_volume=185;,citation_journal_title=Journal of the Royal Statistical Society Series A: Statistics in Society;,citation_publisher=Oxford University Press;">
+<meta name="citation_reference" content="citation_title=Estimating causal effects of treatments in randomized and nonrandomized studies.;,citation_author=Donald B. Rubin;,citation_publication_date=1974;,citation_cover_date=1974;,citation_year=1974;,citation_issue=5;,citation_doi=10.1037/h0037350;,citation_volume=66;,citation_journal_title=Journal of educational Psychology;,citation_publisher=American Psychological Association;">
+<meta name="citation_reference" content="citation_title=Causal inference using potential outcomes: Design, modeling, decisions;,citation_author=Donald B. Rubin;,citation_publication_date=2005;,citation_cover_date=2005;,citation_year=2005;,citation_issue=469;,citation_doi=10.1198/016214504000001880;,citation_volume=100;,citation_journal_title=Journal of the American Statistical Association;,citation_publisher=Taylor &amp;amp;amp; Francis;">
+<meta name="citation_reference" content="citation_title=Statistics and causal inference;,citation_author=Paul W. Holland;,citation_publication_date=1986;,citation_cover_date=1986;,citation_year=1986;,citation_issue=396;,citation_doi=10.1080/01621459.1986.10478354;,citation_volume=81;,citation_journal_title=Journal of the American Statistical Association;,citation_publisher=Taylor &amp;amp;amp; Francis;">
+<meta name="citation_reference" content="citation_title=On the application of probability theory to agricultural experiments. Essay on principles. Section 9;,citation_author=Jerzy Splawa-Neyman;,citation_publication_date=1990;,citation_cover_date=1990;,citation_year=1990;,citation_issue=4;,citation_doi=10.1214/ss/1177012031;,citation_volume=5;,citation_journal_title=Statistical Science;,citation_publisher=Institute of Mathematical Statistics;">
+<meta name="citation_reference" content="citation_title=Relaxing assumptions, improving inference: Integrating machine learning and the linear regression;,citation_author=Marc Ratkovic;,citation_publication_date=2023;,citation_cover_date=2023;,citation_year=2023;,citation_issue=3;,citation_doi=10.1017/S0003055422001022;,citation_volume=117;,citation_journal_title=American Political Science Review;,citation_publisher=Cambridge University Press;">
+<meta name="citation_reference" content="citation_title=Estimating treatment effect heterogeneity in randomized program evaluation;,citation_author=Kosuke Imai;,citation_author=Marc Ratkovic;,citation_publication_date=2013;,citation_cover_date=2013;,citation_year=2013;,citation_doi=10.1214/12-AOAS593;,citation_journal_title=The Annals of Applied Statistics;,citation_publisher=JSTOR;">
+<meta name="citation_reference" content="citation_title=Advances in experimental political science;,citation_author=James N. Druckman;,citation_author=Donald P. Green;,citation_publication_date=2021;,citation_cover_date=2021;,citation_year=2021;,citation_doi=10.1017/9781108777919;">
+<meta name="citation_reference" content="citation_title=Subgroup analysis: Pitfalls, promise, and honesty;,citation_author=Marc Ratkovic;,citation_editor=James N. Druckman;,citation_editor=Donald P. Green;,citation_publication_date=2021;,citation_cover_date=2021;,citation_year=2021;,citation_doi=10.1017/9781108777919.020;,citation_inbook_title=Advances in experimental political science;">
+<meta name="citation_reference" content="citation_title=Double/debiased machine learning for treatment and structural parameters;,citation_author=Victor Chernozhukov;,citation_author=Denis Chetverikov;,citation_author=Mert Demirer;,citation_author=Esther Duflo;,citation_author=Christian Hansen;,citation_author=Whitney Newey;,citation_author=James Robins;,citation_publication_date=2018;,citation_cover_date=2018;,citation_year=2018;,citation_issue=1;,citation_doi=10.1111/ectj.12097;,citation_volume=21;,citation_journal_title=The Econometrics Journal;,citation_publisher=Oxford University Press Oxford, UK;">
+<meta name="citation_reference" content="citation_title=Multibart: A collection of BART models;,citation_author=Jared S. Murray;,citation_publication_date=2021;,citation_cover_date=2021;,citation_year=2021;,citation_fulltext_html_url=https://osf.io/3zmqc/;">
+<meta name="citation_reference" content="citation_title=Random forests;,citation_author=Leo Breiman;,citation_publication_date=2001;,citation_cover_date=2001;,citation_year=2001;,citation_issue=1;,citation_doi=10.1023/A:1010933404324;,citation_volume=45;,citation_journal_title=Machine Learning;,citation_publisher=Springer;">
+<meta name="citation_reference" content="citation_title=Estimating causal moderation effects with randomized treatments and non-randomized moderators;,citation_author=Kirk Bansak;,citation_publication_date=2021;,citation_cover_date=2021;,citation_year=2021;,citation_issue=1;,citation_doi=10.1111/rssa.12614;,citation_volume=184;,citation_journal_title=Journal of the Royal Statistical Society Series A: Statistics in Society;">
+</head>
+
+<body class="quarto-light"><div id="quarto-draft-alert" class="alert alert-warning"><i class="bi bi-pencil-square"></i>Draft</div>
+
+<header id="title-block-header" class="quarto-title-block default toc-left page-columns page-full">
+  <div class="quarto-title-banner page-columns page-full">
+    <div class="quarto-title column-body">
+      <h1 class="title"><p>Penalized for Faith: Who Drives the Muslim Penalty?</p></h1>
+            <p class="subtitle lead">Treatment-Effect Heterogeneity in European Conjoint Behavioral Games</p>
+          </div>
+
+    
+    <div class="quarto-title-meta-container">
+      <div class="quarto-title-meta-column-start">
+            <div class="quarto-title-meta-author">
+          <div class="quarto-title-meta-heading">Authors</div>
+          <div class="quarto-title-meta-heading">Affiliations</div>
+          
+                <div class="quarto-title-meta-contents">
+            <p class="author">Tristan Muno <a href="mailto:tristan.muno@uni-mannheim.de" class="quarto-title-author-email"><i class="bi bi-envelope"></i></a> <a href="https://orcid.org/0009-0002-3078-8436" class="quarto-title-author-orcid"> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA2ZpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo1N0NEMjA4MDI1MjA2ODExOTk0QzkzNTEzRjZEQTg1NyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDozM0NDOEJGNEZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDozM0NDOEJGM0ZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ1M1IE1hY2ludG9zaCI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkZDN0YxMTc0MDcyMDY4MTE5NUZFRDc5MUM2MUUwNEREIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjU3Q0QyMDgwMjUyMDY4MTE5OTRDOTM1MTNGNkRBODU3Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+84NovQAAAR1JREFUeNpiZEADy85ZJgCpeCB2QJM6AMQLo4yOL0AWZETSqACk1gOxAQN+cAGIA4EGPQBxmJA0nwdpjjQ8xqArmczw5tMHXAaALDgP1QMxAGqzAAPxQACqh4ER6uf5MBlkm0X4EGayMfMw/Pr7Bd2gRBZogMFBrv01hisv5jLsv9nLAPIOMnjy8RDDyYctyAbFM2EJbRQw+aAWw/LzVgx7b+cwCHKqMhjJFCBLOzAR6+lXX84xnHjYyqAo5IUizkRCwIENQQckGSDGY4TVgAPEaraQr2a4/24bSuoExcJCfAEJihXkWDj3ZAKy9EJGaEo8T0QSxkjSwORsCAuDQCD+QILmD1A9kECEZgxDaEZhICIzGcIyEyOl2RkgwAAhkmC+eAm0TAAAAABJRU5ErkJggg=="></a></p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        University of Mannheim
+                      </p>
+                  </div>
+                      <div class="quarto-title-meta-contents">
+            <p class="author">Vera Okisheva </p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        University of Mannheim
+                      </p>
+                  </div>
+                      <div class="quarto-title-meta-contents">
+            <p class="author">Raphael Klöckner </p>
+          </div>
+                <div class="quarto-title-meta-contents">
+                    <p class="affiliation">
+                        University of Mannheim
+                      </p>
+                  </div>
+                    </div>
+        
+        <div class="quarto-title-meta">
+
+                      
+                <div>
+            <div class="quarto-title-meta-heading">Published</div>
+            <div class="quarto-title-meta-contents">
+              <p class="date">June 11, 2026</p>
+            </div>
+          </div>
+          
+                
+              </div>
+      </div>
+      <div class="quarto-title-meta-column-end quarto-other-formats-target">
+      <div class="quarto-alternate-formats"><div class="quarto-title-meta-heading">Other Formats</div><div class="quarto-title-meta-contents"><p><a href="index.pdf"><i class="bi bi-file-pdf"></i>PDF</a></p></div><div class="quarto-title-meta-contents"><p><a href="index.docx"><i class="bi bi-file-word"></i>MS Word</a></p></div></div></div>
+    </div>
+
+    <div>
+      <div class="abstract">
+        <div class="block-title">Abstract</div>
+        <p>Conjoint experiments across Europe consistently reveal a Muslim penalty: profiles displayed as Muslim receive systematically fewer resources than otherwise comparable profiles. We move beyond this average and ask who drives the penalty. Reanalyzing dictator and trust games embedded in a conjoint experiment across 25 European countries, we treat the Muslim attribute as a binary treatment and estimate conditional average treatment effects with Causal Forests. The penalty is negative in essentially every subgroup we examine. The other attributes of the displayed profile moderate it only weakly. Respondent characteristics matter more. Evaluations of the European Union form the strongest and most coherent gradient, yet even the most pro-European respondents retain a clear penalty. Anti-Muslim bias in Europe emerges as politically structured rather than idiosyncratic, attenuated but nowhere undone.</p>
+      </div>
+    </div>
+
+
+    <div class="quarto-other-links-text-target">
+    <div class="quarto-other-links"><div class="quarto-title-meta-heading">Other Links</div><div class="quarto-title-meta-contents"><span style="padding-right: 0.5em;"><a href="https://github.com/dertristan/MBEU25"><i class="bi bi-github"></i>View project source</a>,</span><span style="padding-right: 0.5em;"><a href="https://github.com/dertristan/MBEU25/issues"><i class="bi bi-flag"></i>Report an issue</a>,</span><span><a href="https://github.com/ls-konig/eu25games2019"><i class="bi bi-database"></i>Dataset Repository</a></span></div></div></div>  </div>
+</header><div id="quarto-content" class="page-columns page-rows-contents page-layout-article toc-left">
+<div id="quarto-sidebar-toc-left" class="sidebar toc-left">
+  <nav id="TOC" role="doc-toc" class="toc-active">
+    <h2 id="toc-title">Table of contents</h2>
+   
+  <ul>
+  <li><a href="#sec-introduction" id="toc-sec-introduction" class="nav-link active" data-scroll-target="#sec-introduction"><span class="header-section-number">1</span> Introduction</a></li>
+  <li><a href="#sec-design" id="toc-sec-design" class="nav-link" data-scroll-target="#sec-design"><span class="header-section-number">2</span> Research Design</a>
+  <ul class="collapse">
+  <li><a href="#data-and-experiment" id="toc-data-and-experiment" class="nav-link" data-scroll-target="#data-and-experiment"><span class="header-section-number">2.1</span> Data and Experiment</a></li>
+  <li><a href="#causal-estimand" id="toc-causal-estimand" class="nav-link" data-scroll-target="#causal-estimand"><span class="header-section-number">2.2</span> Causal Estimand</a></li>
+  <li><a href="#estimation-strategy" id="toc-estimation-strategy" class="nav-link" data-scroll-target="#estimation-strategy"><span class="header-section-number">2.3</span> Estimation Strategy</a></li>
+  </ul></li>
+  <li><a href="#sec-analysis" id="toc-sec-analysis" class="nav-link" data-scroll-target="#sec-analysis"><span class="header-section-number">3</span> Empirical Analysis</a>
+  <ul class="collapse">
+  <li><a href="#sec-results" id="toc-sec-results" class="nav-link" data-scroll-target="#sec-results"><span class="header-section-number">3.1</span> Results</a></li>
+  <li><a href="#sec-robustness" id="toc-sec-robustness" class="nav-link" data-scroll-target="#sec-robustness"><span class="header-section-number">3.2</span> Robustness</a></li>
+  <li><a href="#sec-limits" id="toc-sec-limits" class="nav-link" data-scroll-target="#sec-limits"><span class="header-section-number">3.3</span> Limitations</a></li>
+  </ul></li>
+  <li><a href="#sec-conclusion" id="toc-sec-conclusion" class="nav-link" data-scroll-target="#sec-conclusion"><span class="header-section-number">4</span> Conclusion</a></li>
+  <li><a href="#references" id="toc-references" class="nav-link" data-scroll-target="#references"><span class="header-section-number">5</span> References</a></li>
+  <li><a href="#appendix" id="toc-appendix" class="nav-link" data-scroll-target="#appendix">Appendix</a>
+  <ul class="collapse">
+  <li><a href="#appendix-a-additional-sample-details" id="toc-appendix-a-additional-sample-details" class="nav-link" data-scroll-target="#appendix-a-additional-sample-details">Appendix A: Additional Sample Details</a></li>
+  <li><a href="#appendix-b-additional-cf-figures" id="toc-appendix-b-additional-cf-figures" class="nav-link" data-scroll-target="#appendix-b-additional-cf-figures">Appendix B: Additional CF Figures</a></li>
+  <li><a href="#appendix-c-main-results-from-bcf-method" id="toc-appendix-c-main-results-from-bcf-method" class="nav-link" data-scroll-target="#appendix-c-main-results-from-bcf-method">Appendix C: Main Results from BCF Method</a></li>
+  </ul></li>
+  </ul>
+<div class="quarto-alternate-notebooks"><h2>Notebooks</h2><ul><li><a href="code\02_data_prep-preview.html"><i class="bi bi-journal-code"></i>1 Data Preparation</a></li><li><a href="code\03_multibart_nested_ri_test-preview.html"><i class="bi bi-journal-code"></i>2 BCF Estimator Test</a></li><li><a href="code\04_grf_nested_test-preview.html"><i class="bi bi-journal-code"></i>3 CF Estimator Test</a></li><li><a href="code\05_bcf_fit-preview.html"><i class="bi bi-journal-code"></i>4 BCF Fits</a></li><li><a href="code\06_grf_fit-preview.html"><i class="bi bi-journal-code"></i>5 CF Fits</a></li><li><a href="code\07_postprocess_grf-preview.html"><i class="bi bi-journal-code"></i>6 CF Post-Processing</a></li><li><a href="code\08_postprocess_bcf-preview.html"><i class="bi bi-journal-code"></i>7 BCF Post-Processing</a></li><li><a href="code\09_additional_figs_tables-preview.html"><i class="bi bi-journal-code"></i>8 Additional Figures &amp; Tables</a></li></ul></div></nav>
+</div>
+<div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
+</div>
+<main class="content quarto-banner-title-block" id="quarto-document-content">
+
+
+
+  
+
+
+<section id="sec-introduction" class="level2" data-number="1">
+<h2 data-number="1" class="anchored" data-anchor-id="sec-introduction"><span class="header-section-number">1</span> Introduction</h2>
+<p>Experimental research has documented a robust Muslim penalty across European societies <span class="citation" data-cites="helbling2012islamophobia">(<a href="#ref-helbling2012islamophobia" role="doc-biblioref">Helbling 2012</a>)</span>. Individuals identified as Muslim receive less help in everyday encounters <span class="citation" data-cites="choi2023hijab">(<a href="#ref-choi2023hijab" role="doc-biblioref">Choi et al. 2023</a>)</span>, are less welcome as labor migrants and refugees <span class="citation" data-cites="helbling2022muslim">(<a href="#ref-helbling2022muslim" role="doc-biblioref">Helbling et al. 2022</a>)</span>, and elicit weaker opposition to their persecution abroad <span class="citation" data-cites="findor2025anti">(<a href="#ref-findor2025anti" role="doc-biblioref">Findor et al. 2025</a>)</span>. Yet establishing the existence of this penalty, that is the systematic disadvantage incurred by individuals identified as Muslim, is only the starting point for a substantive understanding of the phenomenon. The more demanding questions concern who discriminates, against whom, and under which conditions.</p>
+<p>Against this background, this paper revisits a large-scale conjoint survey experiment conducted across 25 European Union member states by <span class="citation" data-cites="hahm2024divided">Hahm et al. (<a href="#ref-hahm2024divided" role="doc-biblioref">2024</a>)</span>. Using a combination of dictator and trust games alongside a conjoint design, they estimate the relative strength of multiple social divides. Their main finding is the dominance of the partisan divide, but religion emerges as the second strongest divide in their analysis. Whenever Muslim identity is experimentally signaled, respondents’ allocation decisions reveal a systematic penalty relative to otherwise comparable non-Muslim profiles (<a href="#tbl-diff-in-means" class="quarto-xref">Table&nbsp;1</a>). What these averages do not reveal is whether and how the magnitude of the penalty varies with the other attributes attached to Muslim profiles, with the characteristics and political orientations of respondents, or with the interaction between the two.</p>
+<p>This paper takes that heterogeneity as its central object of inquiry. Treating the Muslim penalty as the primary quantity of interest, it shifts from the average effects conventionally reported in conjoint analyses toward a conditional average treatment effect logic and distinguishes two sources of variation <span class="citation" data-cites="robinson2024detect">(<a href="#ref-robinson2024detect" role="doc-biblioref">Robinson and Duch 2024</a>)</span>. The first concerns whether the remaining attributes of the displayed Muslim profile, such as class, nationality, or EU stance, moderate the magnitude of the penalty. The second, and substantively more consequential, concerns whether individual-level characteristics of respondents, in particular their populist predispositions and their orientations toward European integration, account for who discriminates more strongly. The literature gives strong reasons to expect that the penalty is conditional rather than uniform. Hostility toward Muslims is driven less by nominal religious affiliation than by perceived religiosity <span class="citation" data-cites="helbling2020islamophobia helbling2022muslim">(<a href="#ref-helbling2020islamophobia" role="doc-biblioref">Helbling and Traunmüller 2020</a>; <a href="#ref-helbling2022muslim" role="doc-biblioref">Helbling et al. 2022</a>)</span>. Discriminatory behavior responds to signals about a Muslim target’s values and differs with the discriminator’s own gender and ideology <span class="citation" data-cites="choi2023hijab">(<a href="#ref-choi2023hijab" role="doc-biblioref">Choi et al. 2023</a>)</span>. And anti-Muslim bias in policy attitudes appears only among respondents holding negative or neutral prior views of Muslims, varying more with individual attitudes than with country context <span class="citation" data-cites="findor2025anti">(<a href="#ref-findor2025anti" role="doc-biblioref">Findor et al. 2025</a>)</span>. What is missing is a systematic account of this variation within a single behavioral design.</p>
+<p>We reanalyze roughly 84,600 allocation decisions per game with Causal Forests (CF), treating the Muslim attribute as a binary treatment and recovering conditional effects across pre-specified profile-level and respondent-level moderators. A hierarchical Bayesian Causal Forest (BCF) serves as a robustness check. Three findings stand out. First, the penalty is negative in essentially every subgroup we examine. Second, the other profile attributes moderate it only weakly, with displayed partisanship the main exception. Third, respondent characteristics matter more, and evaluations of the European Union form the strongest and most coherent gradient. Respondents hostile to the Union penalize Muslim profiles substantially more, yet even the most pro-European retain a clear penalty.</p>
+<p>These results promote a more nuanced understanding of anti-Muslim discrimination in Europe. The variation in penalties tracks the cosmopolitan–populist divide that defines contemporary European politics, suggesting a bias that is less an isolated individual disposition than a politically structured phenomenon. Understanding the conditions that amplify this bias is crucial for grasping the mechanisms that sustain it and the potential avenues for its mitigation.</p>
+<div class="quarto-embed-nb-cell">
+<div class="cell">
+<div id="tbl-diff-in-means" class="cell quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-diff-in-means-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;1: Mean tokens allocated to a profile by the Muslim label, by game. The outcome is the number of tokens the respondent allocates to the displayed profile. Profiles labelled Muslim are contrasted against all other religions pooled. The first two columns show group means with 95% confidence intervals in brackets. The SATE column reports the sample average treatment effect of the Muslim label, estimated by a per-game Welch two-sample difference-in-means t-test, with its 95% confidence interval alongside. The test is intentionally simple and descriptive. Respondent clustering is left to the heterogeneity models.
+</figcaption>
+<div aria-describedby="tbl-diff-in-means-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output cell-output-display cell-output-markdown">
+<table class="cell caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 17%">
+<col style="width: 24%">
+<col style="width: 24%">
+<col style="width: 10%">
+<col style="width: 20%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Game</th>
+<th style="text-align: left;">Muslim</th>
+<th style="text-align: left;">Non-Muslim</th>
+<th style="text-align: left;">SATE</th>
+<th style="text-align: left;">95% CI</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">Dictator game</td>
+<td style="text-align: left;">2.80 [2.77, 2.84]</td>
+<td style="text-align: left;">3.37 [3.36, 3.39]</td>
+<td style="text-align: left;">-0.57</td>
+<td style="text-align: left;">[-0.61, -0.53]</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">Trust game</td>
+<td style="text-align: left;">2.81 [2.78, 2.84]</td>
+<td style="text-align: left;">3.45 [3.43, 3.47]</td>
+<td style="text-align: left;">-0.64</td>
+<td style="text-align: left;">[-0.68, -0.60]</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="sec-design" class="level2" data-number="2">
+<h2 data-number="2" class="anchored" data-anchor-id="sec-design"><span class="header-section-number">2</span> Research Design</h2>
+<section id="data-and-experiment" class="level3" data-number="2.1">
+<h3 data-number="2.1" class="anchored" data-anchor-id="data-and-experiment"><span class="header-section-number">2.1</span> Data and Experiment</h3>
+<p>Our analysis reuses the conjoint survey experiment of <span class="citation" data-cites="hahm2024divided">Hahm et al. (<a href="#ref-hahm2024divided" role="doc-biblioref">2024</a>)</span>, an online study fielded across 25 European Union member states around the 2019 European Parliament elections. The experiment embeds a randomized conjoint within two behavioral games. In each task a respondent is endowed with ten tokens and decides how many to transfer to a fictional co-player whose profile is randomly generated.<a href="#fn1" class="footnote-ref" id="fnref1" role="doc-noteref"><sup>1</sup></a> The Dictator game records this transfer directly, whereas the Trust game adds announced reciprocity, as the experimenter triples the transferred amount and the co-player may return a share. Each respondent completes three rounds of each game, for six decisions in total, with a fresh profile drawn for every round.</p>
+<p>The co-player profile varies seven attributes: age, gender, social class, nationality, partisan affiliation, EU identity, and religion. Both the order in which the attributes appear and the level shown for each are randomized by design.<a href="#fn2" class="footnote-ref" id="fnref2" role="doc-noteref"><sup>2</sup></a> Because some attribute combinations are implausible, <span class="citation" data-cites="hahm2024divided">Hahm et al. (<a href="#ref-hahm2024divided" role="doc-biblioref">2024</a>)</span> restrict which attributes are displayed through four conditions that vary whether EU identity and partisan affiliation appear and whether the co-player is a co-national.<a href="#fn3" class="footnote-ref" id="fnref3" role="doc-noteref"><sup>3</sup></a> For our analysis, we collapse partisan affiliation into a display-aware indicator of whether party was shown, not shown but the co-player was still a co-national, or not applicable because no co-national was displayed. This lets us recover the average effect of merely displaying a partisan affiliation on the Muslim penalty rather than the effect of any particular party. The religion attribute, with the four levels Muslim, Catholic, Protestant, and non-religious, is shown across all four conditions, so the full set of game decisions can be used to estimate the Muslim penalty.</p>
+<p>The design contains no condition in which religion is absent, so there is no pure no-religion control. We do not adopt non-religious as the baseline, because being non-religious is not obviously a neutral reference and may be read differently across contexts, for instance in the post-communist states of eastern Europe. Rather than tying estimates to a single reference category <span class="citation" data-cites="leeper2020measuring">(see <a href="#ref-leeper2020measuring" role="doc-biblioref">Leeper et al. 2020</a>)</span>, and to simplify the causal language, we collapse religion into a binary treatment <span class="math inline">\(T\)</span>, equal to 1 when the co-player is displayed as Muslim and 0 otherwise.<a href="#fn4" class="footnote-ref" id="fnref4" role="doc-noteref"><sup>4</sup></a> This coding follows from our interest in the drivers of the Muslim penalty rather than in the full multidimensional conjoint.</p>
+<p>After standard quality filtering on attention checks and completed games, the analysis sample comprises roughly 28,200 respondents across the 25 countries, yielding about 84,600 decisions per game. These data are inherently hierarchical: decisions (rounds) are nested within respondents, who are in turn nested within countries. We include every covariate measured before the games and exclude those recorded afterward, to avoid post-treatment and collider bias <span class="citation" data-cites="blackwell2025priming">(<a href="#ref-blackwell2025priming" role="doc-biblioref">Blackwell et al. 2025</a>)</span>. The retained set ranges from demographics to attitudinal batteries on national and European attachment, populist, democratic, and technocratic dispositions, and evaluations of the European Union. We make two exceptions for stable demographics drawn from the post-game block, age at which education stopped and residence type, which the experiment cannot plausibly have altered. <a href="#tbl-wordings" class="quarto-xref">Table&nbsp;4</a> in the appendix gives the full set with exact question wordings and scales.</p>
+</section>
+<section id="causal-estimand" class="level3" data-number="2.2">
+<h3 data-number="2.2" class="anchored" data-anchor-id="causal-estimand"><span class="header-section-number">2.2</span> Causal Estimand</h3>
+<p>Our analysis builds on the conjoint survey experiment fielded by <span class="citation" data-cites="hahm2023divided">Hahm et al. (<a href="#ref-hahm2023divided" role="doc-biblioref">2023</a>)</span> and <span class="citation" data-cites="hahm2024divided">Hahm et al. (<a href="#ref-hahm2024divided" role="doc-biblioref">2024</a>)</span>, but our research question differs from theirs. The original study asks how the displayed identity attributes, religion among them, affect token allocations, and answers with the conventional conjoint estimand, the Average Marginal Component Effect <span class="citation" data-cites="hainmueller2014causal">(AMCE, for a definition see <a href="#ref-hainmueller2014causal" role="doc-biblioref">Hainmueller et al. 2014</a>)</span>. Because the AMCE is by definition an average, it conceals how different respondents respond to the same treatment, which is exactly what we are interested in. Following <span class="citation" data-cites="robinson2024detect">Robinson and Duch (<a href="#ref-robinson2024detect" role="doc-biblioref">2024</a>)</span>, we therefore adopt the idea of nested causal quantities <span class="citation" data-cites="goplerud2025estimating">(see also <a href="#ref-goplerud2025estimating" role="doc-biblioref">Goplerud et al. 2025</a>)</span>.</p>
+<p>With the religion attribute collapsed as described above, our treatment variable is binary: <span class="math inline">\(T_{ric} \in \{0,1\}\)</span>, where <span class="math inline">\(T_{ric} = 1\)</span> if the profile is displayed as Muslim and 0 otherwise. This recasts the marginal contrast in standard treatment-effect notation and shifts attention to its conditional counterparts. We observe only the realized outcome <span class="citation" data-cites="holland1986statistics">(<a href="#ref-holland1986statistics" role="doc-biblioref">Holland 1986</a>)</span>, which in potential outcomes notation <span class="citation" data-cites="neyman1923application rubin1974estimating">(<a href="#ref-neyman1923application" role="doc-biblioref">Splawa-Neyman 1990</a>; <a href="#ref-rubin1974estimating" role="doc-biblioref">Rubin 1974</a>)</span> is:</p>
+<p><span id="eq-observed"><span class="math display">\[
+Y_{ric}^{g,\text{obs}} =
+T_{ric} \cdot Y_{ric}^{g}(1) + (1 - T_{ric}) \cdot Y_{ric}^{g}(0)
+\tag{1}\]</span></span></p>
+<p>Since both games reflect different types of discrimination, we estimate separate models for each game <span class="math inline">\(g \in \{D, TR\}\)</span>, where <span class="math inline">\(D\)</span> denotes the Dictator game and <span class="math inline">\(TR\)</span> the Trust game. The population Average Treatment Effect (ATE), <span class="math inline">\(\mathbb{E}[Y_{ric}^{g}(1) - Y_{ric}^{g}(0)]\)</span>, captures the average Muslim penalty, where <span class="math inline">\(Y_{ric}^{g}(t)\)</span> is the number of tokens allocated by respondent <span class="math inline">\(i\)</span> in country <span class="math inline">\(c\)</span> during round <span class="math inline">\(r\)</span> of game <span class="math inline">\(g\)</span> under treatment assignment <span class="math inline">\(t\)</span>. Since the religion attribute is randomly assigned by design, <span class="math inline">\(\{Y_{ric}^{g}(1),\, Y_{ric}^{g}(0)\}  \perp T_{ric}\)</span>.<a href="#fn5" class="footnote-ref" id="fnref5" role="doc-noteref"><sup>5</sup></a> However, as the sample was recruited to be representative of national populations only in terms of age and gender <span class="citation" data-cites="hahm2024divided">(<a href="#ref-hahm2024divided" role="doc-biblioref">Hahm et al. 2024, 73</a>)</span>, our baseline estimand is the more conservative Sample ATE (SATE), which conditions on the observed sample rather than making broader claims about the target population:<a href="#fn6" class="footnote-ref" id="fnref6" role="doc-noteref"><sup>6</sup></a></p>
+<p><span id="eq-sate"><span class="math display">\[
+    \text{SATE}^{g} =
+        \frac{1}{N} \sum_{i}
+        \mathbb{E}_{r}\!\left[Y_{ric}^{g}(1) - Y_{ric}^{g}(0)\right]
+\tag{2}\]</span></span></p>
+<p>As we are interested in factors that explain the heterogeneity in the Muslim penalty, we decompose the SATE into its conditional counterpart, the Conditional Average Treatment Effect (CATE):</p>
+<p><span id="eq-cate1"><span class="math display">\[
+    \tau^{g}(X_{ic},\, A_{ric}) =
+        \mathbb{E}\!\left[
+            Y_{ric}^{g}(1) - Y_{ric}^{g}(0)
+            \;\middle|\;
+            X_{ic},\, A_{ric}
+        \right]
+\tag{3}\]</span></span></p>
+<p>where <span class="math inline">\(X_{ic}\)</span> denotes time-invariant respondent-level covariates (demographic questions, several EU-related items, democratic, populist, and technocratic items, see <a href="#tbl-wordings" class="quarto-xref">Table&nbsp;4</a> in the appendix for the full list), and <span class="math inline">\(A_{ric}\)</span> denotes the remaining profile attributes displayed in round <span class="math inline">\(r\)</span>, namely gender, age, social class, party affiliation and nationality. Importantly, we do not treat these profile attributes as separate treatments as in the AMCE approach, but as potential moderators of the Muslim penalty.</p>
+<p>This single CATE function captures two different sources of heterogeneity. First, we are interested in <em>causal moderation</em>, namely whether the size of the Muslim penalty differs across respondent-level characteristics. Disaggregating to the individual level by averaging over rounds, we define the respondent-level CATE:</p>
+<p><span id="eq-cate-respondent"><span class="math display">\[
+    \tau_{ic}^{g}
+        = \mathbb{E}_{r}\!\left[\tau^{g}(X_{ic},\, A_{ric})\right]
+        = \mathbb{E}\!\left[
+            Y_{ric}^{g}(1) - Y_{ric}^{g}(0)
+            \;\middle|\;
+            X_{ic}
+          \right]
+\tag{4}\]</span></span></p>
+<p>Because these characteristics are not randomized, <span class="math inline">\(\tau_{ic}^{g}\)</span> describes how the penalty varies across subgroups rather than the causal effect of changing a moderator <span class="citation" data-cites="bansak2021estimating">(<a href="#ref-bansak2021estimating" role="doc-biblioref">Bansak 2021</a>)</span>.</p>
+<p>Second, we are interested in <em>causal interaction</em>: whether other profile attributes change the Muslim penalty. Disaggregating to the profile level by averaging over respondents, we define the profile-level CATE:<a href="#fn7" class="footnote-ref" id="fnref7" role="doc-noteref"><sup>7</sup></a></p>
+<p><span id="eq-cate-profile"><span class="math display">\[
+    \tau_{ric}^{g}
+        = \mathbb{E}_{i}\!\left[\tau^{g}(X_{ic},\, A_{ric})\right]
+        = \mathbb{E}\!\left[
+            Y_{ric}^{g}(1) - Y_{ric}^{g}(0)
+            \;\middle|\;
+            A_{ric}
+          \right]
+\tag{5}\]</span></span></p>
+<p>These quantities are linked through the law of iterated expectations, which ensures internal consistency across levels of the hierarchy: <span class="math inline">\(\text{SATE}^{g} = \mathbb{E}_{i}\!\left[\mathbb{E}_{r}[\tau^{g}(X_{ic}, A_{ric})]\right] = \mathbb{E}_{i}[\tau_{ic}^{g}]\)</span>.</p>
+</section>
+<section id="estimation-strategy" class="level3" data-number="2.3">
+<h3 data-number="2.3" class="anchored" data-anchor-id="estimation-strategy"><span class="header-section-number">2.3</span> Estimation Strategy</h3>
+<p>Estimating how a treatment effect varies across units is a different problem from predicting an outcome, and a harder one. The variation in the effect is usually far weaker than the variation in the outcome itself, so a method tuned to prediction spends most of its capacity on the prognostic structure and little on the effect <span class="citation" data-cites="imai2013estimating ratkovic2017sparse">(<a href="#ref-imai2013estimating" role="doc-biblioref">Imai and Ratkovic 2013</a>; <a href="#ref-ratkovic2017sparse" role="doc-biblioref">Ratkovic and Tingley 2017</a>)</span>. The modern tools for this task are tree ensembles <span class="citation" data-cites="breiman2001random dorie2019automated">(<a href="#ref-breiman2001random" role="doc-biblioref">Breiman 2001</a>; <a href="#ref-dorie2019automated" role="doc-biblioref">Dorie et al. 2019</a>)</span>, which learn flexible response surfaces without a pre-specified functional form, adapted to treatment effects along two routes that differ mainly in where they place their corrections. The first disciplines the ensemble with a prior: Bayesian Additive Regression Trees (BART) model the outcome as a regularized sum of trees <span class="citation" data-cites="chipman2006bayesian chipman2010bart">(<a href="#ref-chipman2006bayesian" role="doc-biblioref">Chipman et al. 2006</a>; <a href="#ref-chipman2010bart" role="doc-biblioref">Chipman et al. 2010</a>)</span> and were carried into causal inference by differencing predicted potential outcomes <span class="citation" data-cites="hill2011bayesian hill2020bayesian carnegie2019examining">(<a href="#ref-hill2011bayesian" role="doc-biblioref">Hill 2011</a>; <a href="#ref-hill2020bayesian" role="doc-biblioref">Hill et al. 2020</a>; <a href="#ref-carnegie2019examining" role="doc-biblioref">Carnegie et al. 2019</a>)</span>. The second corrects the data instead: the CF learns the partition on one part of the sample and estimates the effects on another, yielding honest confidence intervals that are asymptotically valid <span class="citation" data-cites="wager2018estimation athey2019estimating jawadekar2023practical">(<a href="#ref-wager2018estimation" role="doc-biblioref">Wager and Athey 2018</a>; <a href="#ref-athey2019estimating" role="doc-biblioref">Athey and Wager 2019</a>; <a href="#ref-jawadekar2023practical" role="doc-biblioref">Jawadekar et al. 2023</a>)</span> and that share their sample-splitting logic with double machine learning <span class="citation" data-cites="chernozhukov2018double ratkovic2023relaxing">(<a href="#ref-chernozhukov2018double" role="doc-biblioref">Chernozhukov et al. 2018</a>; <a href="#ref-ratkovic2023relaxing" role="doc-biblioref">Ratkovic 2023</a>)</span>. Generalized random forests extend this orthogonalized, sample-split estimation to a broad class of estimands <span class="citation" data-cites="athey2019generalized">(<a href="#ref-athey2019generalized" role="doc-biblioref">Athey et al. 2019</a>)</span> and have become a workhorse for heterogeneous-effect analysis in political science <span class="citation" data-cites="davis2017using zheng2023estimating">(<a href="#ref-davis2017using" role="doc-biblioref">Davis and Heller 2017</a>; <a href="#ref-zheng2023estimating" role="doc-biblioref">Zheng and Yin 2023</a>)</span>. Comparing the two families, <span class="citation" data-cites="ratkovic2021subgroup">Ratkovic (<a href="#ref-ratkovic2021subgroup" role="doc-biblioref">2021</a>)</span> raises two concerns about the Bayesian, full-sample approach: it does not model the treatment as a function of the covariates, and it uses the same data to fit the model and to test the effects. The first concern bites mainly when assignment is not randomized, and under the known propensities of our conjoint it loses its force. The second survives randomization, since using the same data to discover an effect surface and to test it can leave the resulting intervals undercovering regardless of how treatment was assigned. The BCF answers the first concern by giving the treatment surface its own prior and regularization, guarding against the regularization-induced confounding that arises when a single prior shrinks both surfaces <span class="citation" data-cites="hahn2020bayesian caron2022shrinkage caron2022estimating">(<a href="#ref-hahn2020bayesian" role="doc-biblioref">Hahn et al. 2020</a>; <a href="#ref-caron2022shrinkage" role="doc-biblioref">Caron et al. 2022b</a>, <a href="#ref-caron2022estimating" role="doc-biblioref">2022a</a>)</span>. They have no analogue for the second: standard BCF, including the hierarchical variants we draw on, fits the trees and forms the posterior intervals on the full sample <span class="citation" data-cites="hahn2020bayesian thal2024aggregate">(<a href="#ref-hahn2020bayesian" role="doc-biblioref">Hahn et al. 2020</a>; <a href="#ref-thal2024aggregate" role="doc-biblioref">Thal et al. 2024</a>)</span>. The sample splitting behind the CF’s confidence intervals is exactly that missing device, and it addresses the concern our randomized design does not dissolve.</p>
+<p>Our design follows from this comparison and from the structure of our data. We observe each respondent over three conjoint rounds, and respondents are themselves grouped within 25 countries, so the observations are clustered at two levels. Treating them as independent would understate our uncertainty. The CF accommodates this structure directly and scales to the full sample. We cluster the sample splitting and the variance estimation by respondent, which absorbs the within-respondent dependence across rounds, and we enter country as fixed effects in the covariate matrix, which absorbs between-country baseline variation <span class="citation" data-cites="athey2019generalized">(<a href="#ref-athey2019generalized" role="doc-biblioref">Athey et al. 2019</a>)</span>.<a href="#fn8" class="footnote-ref" id="fnref8" role="doc-noteref"><sup>8</sup></a> We therefore adopt the CF as our primary estimator, since it delivers the honest, cluster-robust intervals the comparison above favors. We keep the BCF as a robustness check, fit with country random intercepts only.<a href="#fn9" class="footnote-ref" id="fnref9" role="doc-noteref"><sup>9</sup></a> Because the BCF does not model the within-respondent dependence directly, we recover that uncertainty after the fact with a respondent cluster bootstrap. The two fits therefore do not handle the clustered structure identically, a caveat we return to in <a href="#sec-limits" class="quarto-xref">Section&nbsp;3.3</a>. Throughout, we treat the country and respondent variation as a nuisance to absorb rather than a quantity to interpret, in keeping with our interest in heterogeneity within the sample rather than comparison across countries.</p>
+<p>Before turning to heterogeneity, we confirm that the CF recovers the average effect. The CF estimates a SATE of <span class="math inline">\(-0.56\)</span> (95% CI <span class="math inline">\([-0.60, -0.53]\)</span>) in the Dictator game and <span class="math inline">\(-0.64\)</span> (95% CI <span class="math inline">\([-0.68, -0.60]\)</span>) in the Trust game. Both reproduce the difference in means reported above (<a href="#tbl-diff-in-means" class="quarto-xref">Table&nbsp;1</a>), a first sign that the CF behaves as it should before we ask it about heterogeneity.<a href="#fn10" class="footnote-ref" id="fnref10" role="doc-noteref"><sup>10</sup></a> We then gauge that heterogeneity with the targeting operator characteristic curve (<a href="#fig-grf-combined-toc" class="quarto-xref">Figure&nbsp;6</a>, appendix), whose area lies well above zero in both games. Because the curve ranks observations by the forest’s own out-of-bag predictions rather than by a rule estimated on held-out data, we read it as descriptive support for targetable variation rather than a formal test, and it motivates the moderator-by-moderator analysis that follows.</p>
+<p>We present the results in the visual grammar of <span class="citation" data-cites="green2012modeling">Green and Kern (<a href="#ref-green2012modeling" role="doc-biblioref">2012</a>)</span>, plotting the estimated conditional effect as a function of each moderator <span class="citation" data-cites="woody2021model">(<a href="#ref-woody2021model" role="doc-biblioref">Woody et al. 2021</a>)</span>. Each panel shows the <span class="math inline">\(\hat{\tau}\)</span> on the token scale within a level or bin of one moderator, taken over the distribution of the remaining covariates, so it describes how the Muslim penalty varies with that moderator rather than a partial effect with everything else held fixed. For categorical moderators we plot the point estimate and an honest 95% confidence interval at each level, drawn as a shape and a line segment. For continuous moderators and rating scales we estimate the point and interval at each value, binning age and years of education into a pre-specified number of bins, and connect them into a line with a ribbon, which lets the CF reveal any non-linear trend. Throughout, we orient every rating scale so that moving right along the x-axis denotes more agreement, a more positive evaluation, or more attachment, depending on the item, with full wordings and original codings given in <a href="#tbl-wordings" class="quarto-xref">Table&nbsp;4</a>. We overlay the two games within a single panel by color, so that any divergence between them reads directly as a game-specific difference in heterogeneity, and because the games share respondents and the moderator levels are many we read interval comparisons across panels and games as descriptive rather than as formal tests.</p>
+</section>
+</section>
+<section id="sec-analysis" class="level2" data-number="3">
+<h2 data-number="3" class="anchored" data-anchor-id="sec-analysis"><span class="header-section-number">3</span> Empirical Analysis</h2>
+<section id="sec-results" class="level3" data-number="3.1">
+<h3 data-number="3.1" class="anchored" data-anchor-id="sec-results"><span class="header-section-number">3.1</span> Results</h3>
+<p><a href="#fig-grf-combined-prof" class="quarto-xref">Figure&nbsp;1</a> asks whether the remaining profile attributes interact with the Muslim signal, the source of heterogeneity we termed causal interaction, with the Dictator game in blue and the Trust game in orange. Across these attributes the penalty is strikingly stable, since every level of every attribute carries a sizeable and clearly negative effect and none of the accompanying features comes close to neutralizing it. The clearest moderation is partisanship.</p>
+<div class="quarto-embed-nb-cell">
+<div id="cell-fig-grf-combined-prof" class="cell" data-dpi="500" data-fig-width="9" data-fig-height="6">
+<div class="cell-output cell-output-display">
+<div id="fig-grf-combined-prof" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-grf-combined-prof-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="index_files/figure-html/code-07_postprocess_grf-fig-grf-combined-prof-output-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-1" title="Figure&nbsp;1: CF estimates of the profile-level CATE (\hat{\tau}_{ric}) of the Muslim profile across the levels of every conjoint-round moderator (x-axis), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis is \hat{\tau}_{ric} on the token-allocation scale. Each point is a per-level doubly-robust subset estimate with an honest cluster-robust 95% confidence interval, estimated separately on that subset and clustered by respondent. Grey bars along the bottom of each facet show the per-level row count (pooled over games). The y-axis is free per facet. In the Profile partisanship facet, partisanship not shown refers to within the co-national category only, since partisanship is displayed for co-national profiles only."><img src="index_files/figure-html/code-07_postprocess_grf-fig-grf-combined-prof-output-1.png" class="img-fluid figure-img"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-grf-combined-prof-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;1: CF estimates of the profile-level CATE (<span class="math inline">\(\hat{\tau}_{ric}\)</span>) of the Muslim profile across the levels of every conjoint-round moderator (x-axis), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis is <span class="math inline">\(\hat{\tau}_{ric}\)</span> on the token-allocation scale. Each point is a per-level doubly-robust subset estimate with an honest cluster-robust 95% confidence interval, estimated separately on that subset and clustered by respondent. Grey bars along the bottom of each facet show the per-level row count (pooled over games). The y-axis is free per facet. In the Profile partisanship facet, partisanship not shown refers to within the co-national category only, since partisanship is displayed for co-national profiles only.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<p>Among co-nationals, displaying a party affiliation reduces the penalty substantially relative to withholding it, the single largest shift in the figure, and the attenuation holds in both games. Nationality is the only attribute whose moderation differs across the two games. The penalty against non-EU national profiles is deeper in the Trust game than in the Dictator game, the two intervals being disjoint. Within the Dictator game the ordering is itself informative, as non-EU nationals draw the smallest penalty while co-nationals are penalized systematically more, an ordering the Trust game does not reproduce. Social class moves the penalty only at its upper end, where lower- and middle-class profiles are penalized indistinguishably but profiles presented as upper class are penalized somewhat less. The remaining attributes leave the penalty essentially untouched. Whether a profile identifies as an EU citizen or rejects that identity makes no difference, though in the Dictator game both attract a marginally smaller penalty than the condition in which EU identity is not displayed, a gap that lies within sampling error and does not recur in the Trust game. Profile age produces only a minor, non-systematic dip at thirty, with intervals overlapping across the age range, and male and female profiles are penalized alike. As a general pattern the Trust-game point estimates sit slightly below their Dictator-game counterparts, but the two games rarely diverge in a way the intervals can distinguish.</p>
+<p><a href="#fig-grf-combined-resp-1" class="quarto-xref">Figure&nbsp;2</a> and <a href="#fig-grf-combined-resp-2" class="quarto-xref">Figure&nbsp;3</a> turn to causal moderation, the respondent-level characteristics that govern who penalizes more, which the introduction flagged as the substantively more consequential source of variation. These characteristics display more heterogeneity than the profile attributes above. Among the categorical respondent characteristics, the sharpest contrast is by gender, as men penalize Muslim profiles more than women in both games, though only in the Dictator game do the intervals separate. Respondents’ own religion orders the penalty as well, with Catholics and Protestants exhibiting the strongest bias and the Orthodox the weakest by their point estimates. Place of residence matters at the margin, rural respondents penalizing somewhat more than those in large cities and smaller towns falling in between, a gradient that is firmer in the Trust game. Subjective class is largely flat, its main features being the wide intervals and smallest penalty of respondents who decline to place themselves and a slightly but not systematically lower penalty among the working class compared to lower-middle and middle class respondents in the Dictator game. The upper middle class is the interesting exception, drawing the smallest penalty of any class in the Dictator game but the largest in the Trust game by their point estimates, the clearest between-game divergence in the figure.</p>
+<p>The attitudinal scales reveal more structure. The strongest single gradient is attachment to the European Union, which is associated with an almost linear reduction in the penalty. Attachment to one’s own country runs the other way and appears to deepen the penalty, though the scarcity of respondents at the unattached end leaves that pattern uncertain. Attachment to Europe as a whole is weaker and less clear, consistent with a faintly declining penalty in the Dictator game and a flat one in the Trust game, while perceived ability to understand EU politics shows no moderation at all. A second cluster concerns populist and democratic dispositions. Agreement that officials merely talk rather than act, and agreement that compromise amounts to selling out, are each associated with a larger penalty, the latter tracing a clear monotonic gradient. The view that politics is a struggle between good and evil follows the same direction from the middle of the scale upward before flattening near the top. Valuing compromise, its mirror image, is associated with a marginally smaller penalty, although agreement is high throughout the sample and few respondents populate the low end of that item. Respondent age closes the figure and hints at a U-shaped relationship. Among the youngest respondents the intervals brush the zero line repeatedly, and at the very youngest ages the point estimates briefly cross it, the only place in the analysis where the penalty appears to vanish. The penalty then deepens through middle age and lifts again past sixty-five, though that upturn coincides with the thinning of the sample at older ages and may be an artifact of the wider intervals there.</p>
+<p><a href="#fig-grf-combined-resp-2" class="quarto-xref">Figure&nbsp;3</a> continues with the remaining attitudinal scales, where the moderation is dominated by evaluations of the European Union. Across this battery the pattern is consistent, as respondents who judge the Union negatively penalize Muslim profiles more and those who judge it favorably penalize them less. More negative assessments of the EU’s effect on the national economy, on national culture and identity, and on national political status each accompany a larger penalty, as does agreement that the Union would be better abolished and that it should heed the people. Satisfaction with the EU and support for its pursuing long-term goals run the other way toward a smaller penalty, the latter flattening at the top of its scale. The technocratic and remaining populist items move the penalty far less. Leaving decisions to experts and elevating leaders above ordinary citizens are associated with at most a slight increase in the penalty as agreement rises, more visible in the Trust game, and agreement that parties do more harm than good nudges it upward in the same way. Valuing the views of other groups behaves like the compromise item, edging the penalty down over the upper half of the scale. The weakest moderators are the claim that ordinary people do not know what is good for them and the age at which respondents left education, both of which leave the penalty essentially flat.</p>
+<p>Taken together, the respondent-level results describe substantial heterogeneity across demographic subgroups and pre-treatment attitudes, but heterogeneity almost entirely in the magnitude of the Muslim penalty rather than in its presence. In the few subgroups where the penalty comes closest to disappearing, only the upper bound of the interval grazes zero, and no single moderator credibly nullifies the penalty, let alone reverses it. The strongest and most coherent moderation runs through evaluations of European integration, where respondents hostile to the Union or skeptical of its effects penalize Muslim profiles systematically more than those who regard it favorably. Yet even on the pro-European side of these scales a robust penalty remains, attenuated rather than abolished. The variable-importance ranking in the appendix (<a href="#fig-grf-combined-vi" class="quarto-xref">Figure&nbsp;7</a>) corroborates this reading, placing EU-evaluation items in four of the five top positions, though split-frequency importance mechanically favors scales with many values.</p>
+</section>
+<section id="sec-robustness" class="level3" data-number="3.2">
+<h3 data-number="3.2" class="anchored" data-anchor-id="sec-robustness"><span class="header-section-number">3.2</span> Robustness</h3>
+<p>The BCF reproduces the substantive findings of the primary analysis. For the profile-level moderators the two estimators agree closely (<a href="#fig-bcf-combined-prof" class="quarto-xref">Figure&nbsp;8</a>). The Muslim penalty remains uniformly negative across attribute levels, partisanship among co-nationals attenuates it most, and nationality is again the only attribute whose moderation differs across the two games.</p>
+<p>The respondent-level picture replicates as well (<a href="#fig-bcf-combined-resp-1" class="quarto-xref">Figure&nbsp;9</a> and <a href="#fig-bcf-combined-resp-2" class="quarto-xref">Figure&nbsp;10</a>). The penalty is robust throughout, a modest gender gap persists but narrows in the Trust game, evaluations of European integration remain the strongest source of heterogeneity, and the same populist items track differences in its magnitude. The continuous moderators trace smoother gradients under the BCF than under the CF, yet their direction and shape are unchanged.</p>
+<div class="quarto-embed-nb-cell">
+<div id="cell-fig-grf-combined-resp-1" class="cell" data-dpi="500" data-fig-width="11" data-fig-height="14">
+<div class="cell-output cell-output-display">
+<div id="fig-grf-combined-resp-1" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-grf-combined-resp-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="index_files/figure-html/code-07_postprocess_grf-fig-grf-combined-resp-1-output-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-2" title="Figure&nbsp;2: CF estimates of the respondent-level CATE (\hat{\tau}_i) of the Muslim profile across the levels of the first half of the discrete individual-level moderators (top panel) and across age (q_age, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis is \hat{\tau}_i on the token-allocation scale. All item scales are oriented so that higher x-axis values mean more agreement, a more positive evaluation, or more attachment, depending on the item (see Table&nbsp;4). Every point and ribbon value is a doubly-robust subset estimate with an honest cluster-robust 95% interval, computed separately on that subset and clustered by respondent. Top: ordered numeric scales are drawn as a connecting line and interval ribbon per game, categorical moderators as dodged points and intervals. Grey bars show the per-level row count (pooled over games). Bottom: per-grid-cell estimate, interval ribbon, and connecting line per game over a grey histogram of the covariate, on 100 equal intervals across the full 18–75 years. The y-axis is free per facet. Discrete levels comprising less than 1% of a game’s sample are dropped because their estimate is too imprecise to compare."><img src="index_files/figure-html/code-07_postprocess_grf-fig-grf-combined-resp-1-output-1.png" class="img-fluid figure-img"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-grf-combined-resp-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;2: CF estimates of the respondent-level CATE (<span class="math inline">\(\hat{\tau}_i\)</span>) of the Muslim profile across the levels of the first half of the discrete individual-level moderators (top panel) and across age (q_age, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis is <span class="math inline">\(\hat{\tau}_i\)</span> on the token-allocation scale. All item scales are oriented so that higher x-axis values mean more agreement, a more positive evaluation, or more attachment, depending on the item (see <a href="#tbl-wordings" class="quarto-xref">Table&nbsp;4</a>). Every point and ribbon value is a doubly-robust subset estimate with an honest cluster-robust 95% interval, computed separately on that subset and clustered by respondent. Top: ordered numeric scales are drawn as a connecting line and interval ribbon per game, categorical moderators as dodged points and intervals. Grey bars show the per-level row count (pooled over games). Bottom: per-grid-cell estimate, interval ribbon, and connecting line per game over a grey histogram of the covariate, on 100 equal intervals across the full 18–75 years. The y-axis is free per facet. Discrete levels comprising less than 1% of a game’s sample are dropped because their estimate is too imprecise to compare.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<div class="quarto-embed-nb-cell">
+<div id="cell-fig-grf-combined-resp-2" class="cell" data-dpi="500" data-fig-width="11" data-fig-height="14">
+<div class="cell-output cell-output-display">
+<div id="fig-grf-combined-resp-2" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-grf-combined-resp-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="index_files/figure-html/code-07_postprocess_grf-fig-grf-combined-resp-2-output-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-3" title="Figure&nbsp;3: CF estimates of the respondent-level CATE (\hat{\tau}_i) of the Muslim profile across the levels of the second half of the discrete individual-level moderators (top panel) and across age at which education stopped (q_edu_age_stop, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis is \hat{\tau}_i on the token-allocation scale. All item scales are oriented so that higher x-axis values mean more agreement, a more positive evaluation, or more attachment, depending on the item (see Table&nbsp;4). Every ribbon value is a doubly-robust subset estimate with an honest cluster-robust 95% interval, computed separately on that subset and clustered by respondent. Top: ordered numeric scales are drawn as a connecting line and interval ribbon per game. Grey bars show the per-level row count (pooled over games). Bottom: per-year estimate, interval ribbon, and connecting line per game at each integer year of education-stopping age from 15 to 30, over a grey histogram of the covariate. The y-axis is free per facet."><img src="index_files/figure-html/code-07_postprocess_grf-fig-grf-combined-resp-2-output-1.png" class="img-fluid figure-img"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-grf-combined-resp-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;3: CF estimates of the respondent-level CATE (<span class="math inline">\(\hat{\tau}_i\)</span>) of the Muslim profile across the levels of the second half of the discrete individual-level moderators (top panel) and across age at which education stopped (q_edu_age_stop, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis is <span class="math inline">\(\hat{\tau}_i\)</span> on the token-allocation scale. All item scales are oriented so that higher x-axis values mean more agreement, a more positive evaluation, or more attachment, depending on the item (see <a href="#tbl-wordings" class="quarto-xref">Table&nbsp;4</a>). Every ribbon value is a doubly-robust subset estimate with an honest cluster-robust 95% interval, computed separately on that subset and clustered by respondent. Top: ordered numeric scales are drawn as a connecting line and interval ribbon per game. Grey bars show the per-level row count (pooled over games). Bottom: per-year estimate, interval ribbon, and connecting line per game at each integer year of education-stopping age from 15 to 30, over a grey histogram of the covariate. The y-axis is free per facet.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<p>Two differences deserve comment, and both plausibly stem from the same source. The BCF intervals are narrower than the CF’s, most visibly at sparsely populated moderator levels. A respondent cluster bootstrap shows that the sampling variability contributed by within-person dependence across the three rounds accounts for almost none of this narrowness, which we therefore read as a consequence of the absence of sample splitting and the aggressive pooling of the Bayesian prior rather than as evidence of greater precision.<a href="#fn11" class="footnote-ref" id="fnref11" role="doc-noteref"><sup>11</sup></a></p>
+<p>The narrower intervals also make the BCF appear to separate the two games more cleanly than the CF does, a distinction we treat with the same caution. The one genuine disagreement concerns respondent age. The U-shaped pattern recovered by the CF, in which the penalty approaches zero among the youngest and oldest respondents, does not appear under the BCF, whose age gradient neither touches zero at the young end nor lifts at the old end.</p>
+</section>
+<section id="sec-limits" class="level3" data-number="3.3">
+<h3 data-number="3.3" class="anchored" data-anchor-id="sec-limits"><span class="header-section-number">3.3</span> Limitations</h3>
+<p>Several limitations qualify our conclusions. First, our binary treatment pools every non-Muslim religion into a single comparison and reduces partisanship to an indicator of whether a party was displayed. This averages over heterogeneous comparison groups by design and cannot isolate which facet of the Muslim signal drives the penalty. Second, our analysis treats the Muslim attribute as the primary signal respondents respond to. Whether it actually dominates perception in the experimental setting is a question our data cannot answer.</p>
+<p>Third, to guard against post-treatment and collider bias we condition only on pre-treatment covariates, with the two exceptions noted above. Our interpretations therefore hold with respect to this covariate set, which excludes theoretically relevant measures such as general left-right placement, EU integration preferences, and nativist attitudes. Incorporating these in a principled way, for instance through designs that bound the trade-off between post-treatment and priming bias <span class="citation" data-cites="blackwell2025priming">(<a href="#ref-blackwell2025priming" role="doc-biblioref">Blackwell et al. 2025</a>)</span>, is a natural extension. Fourth, we examine the moderating role of each covariate one at a time and do not characterize interactions among moderators. The CF accommodates high-dimensional, non-linear interactions internally, and a fuller treatment of these higher-order patterns is left to future work. Relatedly, the respondent-level moderators are observed rather than randomized, so the gradients describe who penalizes more, not the effect of changing a moderator.</p>
+<p>Fifth, our robustness check is not a fully independent confirmation. The full nested fit was computationally infeasible, so the BCF drops the respondent random effect and recovers the corresponding uncertainty through a cluster bootstrap, and it carries no sample-splitting step. The CF and the BCF therefore do not handle the clustered structure under identical assumptions, and their agreement is reassuring without being two independent verifications.</p>
+<p>Sixth, the sample was recruited to be representative of national populations only in age and gender, which is why we report a sample rather than a population quantity. Our estimates describe the realized sample, and extrapolation to the wider European population should be made with that restriction in mind. The data are also a single cross-section fielded in 2019. Our estimates capture the penalty at that moment, and whether its size or its political gradient has shifted in the years since is a question the design cannot address. Finally, the conjoint is by construction an artificial setting. It isolates the causal effect of individual attributes cleanly, but how these effects translate to less structured real-world encounters, where group membership is inferred rather than labeled, remains a separate question.</p>
+</section>
+</section>
+<section id="sec-conclusion" class="level2" data-number="4">
+<h2 data-number="4" class="anchored" data-anchor-id="sec-conclusion"><span class="header-section-number">4</span> Conclusion</h2>
+<p>A large experimental literature documents that Europeans penalize Muslims. This paper has asked who drives that penalty. Reanalyzing behavioral games from a conjoint experiment across 25 European countries, we moved from the average penalty to its variation across profiles and respondents.</p>
+<p>The answer has two parts. In its reach, the penalty is general. It persists across every profile attribute and every respondent subgroup we examine, and no moderator comes close to undoing it. In its intensity, the penalty is political. The attributes of the displayed profile move it only at the margin, with displayed partisanship the main exception. Who the respondent is matters more, and the strongest and most coherent gradient runs through evaluations of European integration. Respondents hostile to the European Union penalize Muslim profiles substantially more than those who view it favorably, with populist dispositions tracing the same direction more weakly.</p>
+<p>These results suggest that anti-Muslim discrimination in Europe is entangled with the cosmopolitan–populist divide rather than an isolated individual disposition. That the penalty attenuates but nowhere disappears is the sobering counterpart: even the most pro-European respondents allocate fewer tokens to Muslim profiles. A natural next step is to characterize how these moderators interact, a task the CF performs internally but our one-at-a-time presentation does not yet exploit.</p>
+</section>
+<section id="references" class="level2" data-number="5">
+<h2 data-number="5" class="anchored" data-anchor-id="references"><span class="header-section-number">5</span> References</h2>
+<div id="refs" class="references csl-bib-body hanging-indent" role="list">
+<div id="ref-athey2019generalized" class="csl-entry" role="listitem">
+Athey, Susan, Julie Tibshirani, and Stefan Wager. 2019. <span>“Generalized Random Forests.”</span> <em>The Annals of Statistics</em> 47 (2): 1148–78. <a href="https://doi.org/10.1214/18-AOS1709">https://doi.org/10.1214/18-AOS1709</a>.
+</div>
+<div id="ref-athey2019estimating" class="csl-entry" role="listitem">
+Athey, Susan, and Stefan Wager. 2019. <span>“Estimating Treatment Effects with Causal Forests: An Application.”</span> <em>Observational Studies</em> 5 (2): 37–51. <a href="https://doi.org/10.1353/obs.2019.0001">https://doi.org/10.1353/obs.2019.0001</a>.
+</div>
+<div id="ref-bansak2021estimating" class="csl-entry" role="listitem">
+Bansak, Kirk. 2021. <span>“Estimating Causal Moderation Effects with Randomized Treatments and Non-Randomized Moderators.”</span> <em>Journal of the Royal Statistical Society Series A: Statistics in Society</em> 184 (1): 65–86. <a href="https://doi.org/10.1111/rssa.12614">https://doi.org/10.1111/rssa.12614</a>.
+</div>
+<div id="ref-blackwell2025priming" class="csl-entry" role="listitem">
+Blackwell, Matthew, Jacob R. Brown, Sophie Hill, Kosuke Imai, and Teppei Yamamoto. 2025. <span>“Priming Bias Versus Post-Treatment Bias in Experimental Designs.”</span> <em>Political Analysis</em> 33 (4): 361–77. <a href="https://doi.org/10.1017/pan.2025.3">https://doi.org/10.1017/pan.2025.3</a>.
+</div>
+<div id="ref-breiman2001random" class="csl-entry" role="listitem">
+Breiman, Leo. 2001. <span>“Random Forests.”</span> <em>Machine Learning</em> 45 (1): 5–32. <a href="https://doi.org/10.1023/A:1010933404324">https://doi.org/10.1023/A:1010933404324</a>.
+</div>
+<div id="ref-carnegie2019examining" class="csl-entry" role="listitem">
+Carnegie, Nicole, Vincent Dorie, and Jennifer L. Hill. 2019. <span>“Examining Treatment Effect Heterogeneity Using BART.”</span> <em>Observational Studies</em> 5 (2): 52–70. <a href="https://doi.org/10.1353/obs.2019.0002">https://doi.org/10.1353/obs.2019.0002</a>.
+</div>
+<div id="ref-caron2022estimating" class="csl-entry" role="listitem">
+Caron, Alberto, Gianluca Baio, and Ioanna Manolopoulou. 2022a. <span>“Estimating Individual Treatment Effects Using Non-Parametric Regression Models: A Review.”</span> <em>Journal of the Royal Statistical Society Series A: Statistics in Society</em> 185 (3): 1115–49. <a href="https://doi.org/10.1111/rssa.12824">https://doi.org/10.1111/rssa.12824</a>.
+</div>
+<div id="ref-caron2022shrinkage" class="csl-entry" role="listitem">
+Caron, Alberto, Gianluca Baio, and Ioanna Manolopoulou. 2022b. <span>“Shrinkage Bayesian Causal Forests for Heterogeneous Treatment Effects Estimation.”</span> <em>Journal of Computational and Graphical Statistics</em> 31 (4): 1202–14. <a href="https://doi.org/10.1080/10618600.2022.2067549">https://doi.org/10.1080/10618600.2022.2067549</a>.
+</div>
+<div id="ref-chernozhukov2018double" class="csl-entry" role="listitem">
+Chernozhukov, Victor, Denis Chetverikov, Mert Demirer, et al. 2018. <span>“Double/Debiased Machine Learning for Treatment and Structural Parameters.”</span> <em>The Econometrics Journal</em> 21 (1): C1–68. <a href="https://doi.org/10.1111/ectj.12097">https://doi.org/10.1111/ectj.12097</a>.
+</div>
+<div id="ref-chipman2010bart" class="csl-entry" role="listitem">
+Chipman, Hugh A., Edward I. George, and Robert E. McCulloch. 2010. <span>“<span>BART: Bayesian Additive Regression Trees</span>.”</span> <em>The Annals of Applied Statistics</em> 4 (1): 266–98. <a href="https://doi.org/10.1214/09-AOAS285">https://doi.org/10.1214/09-AOAS285</a>.
+</div>
+<div id="ref-chipman2006bayesian" class="csl-entry" role="listitem">
+Chipman, Hugh, Edward George, and Robert McCulloch. 2006. <span>“Bayesian Ensemble Learning.”</span> <em>Advances in Neural Information Processing Systems</em> 19.
+</div>
+<div id="ref-choi2023hijab" class="csl-entry" role="listitem">
+Choi, Donghyun Danny, Mathias Poertner, and Nicholas Sambanis. 2023. <span>“The Hijab Penalty: Feminist Backlash to Muslim Immigrants.”</span> <em>American Journal of Political Science</em> 67 (2): 291–306. <a href="https://doi.org/10.1111/ajps.12627">https://doi.org/10.1111/ajps.12627</a>.
+</div>
+<div id="ref-davis2017using" class="csl-entry" role="listitem">
+Davis, Jonathan M. V., and Sara B. Heller. 2017. <span>“Using Causal Forests to Predict Treatment Heterogeneity: An Application to Summer Jobs.”</span> <em>American Economic Review</em> 107 (5): 546–50. <a href="https://doi.org/10.1257/aer.p20171000">https://doi.org/10.1257/aer.p20171000</a>.
+</div>
+<div id="ref-dorie2019automated" class="csl-entry" role="listitem">
+Dorie, Vincent, Jennifer Hill, Marc Scott, and Dan Cervone. 2019. <span>“Automated Versus Do-It-Yourself Methods for Causal Inference: Lessons Learned from a Data Analysis Competition.”</span> <em>Statistical Science</em> 34 (1): 43–68. <a href="https://doi.org/10.1214/18-STS667">https://doi.org/10.1214/18-STS667</a>.
+</div>
+<div id="ref-findor2025anti" class="csl-entry" role="listitem">
+Findor, Andrej, Roman Hlatky, Matej Hruška, and Kristı́na Kironská. 2025. <span>“Anti-Muslim Bias in Foreign Policy Attitudes: Experimental Evidence from Thirteen European Countries.”</span> <em>British Journal of Political Science</em> 55: e41. <a href="https://doi.org/10.1017/S0007123425000134">https://doi.org/10.1017/S0007123425000134</a>.
+</div>
+<div id="ref-goplerud2025estimating" class="csl-entry" role="listitem">
+Goplerud, Max, Kosuke Imai, and Nicole E Pashley. 2025. <span>“Estimating Heterogeneous Causal Effects of High-Dimensional Treatments: Application to Conjoint Analysis.”</span> <em>The Annals of Applied Statistics</em> 19 (2): 866–88. <a href="https://doi.org/10.1214/24-AOAS1994">https://doi.org/10.1214/24-AOAS1994</a>.
+</div>
+<div id="ref-green2012modeling" class="csl-entry" role="listitem">
+Green, Donald P., and Holger L. Kern. 2012. <span>“Modeling Heterogeneous Treatment Effects in Survey Experiments with Bayesian Additive Regression Trees.”</span> <em>Public Opinion Quarterly</em> 76 (3): 491–511. <a href="https://doi.org/10.1093/poq/nfs036">https://doi.org/10.1093/poq/nfs036</a>.
+</div>
+<div id="ref-hahm2023divided" class="csl-entry" role="listitem">
+Hahm, Hyeonho, David Hilpert, and Thomas König. 2023. <span>“Divided by Europe: Affective Polarisation in the Context of European Elections.”</span> <em>West European Politics</em> 46 (4): 705–31. <a href="https://doi.org/10.1080/01402382.2022.2133277">https://doi.org/10.1080/01402382.2022.2133277</a>.
+</div>
+<div id="ref-hahm2024divided" class="csl-entry" role="listitem">
+Hahm, Hyeonho, David Hilpert, and Thomas König. 2024. <span>“Divided We Unite: The Nature of Partyism and the Role of Coalition Partnership in Europe.”</span> <em>American Political Science Review</em> 118 (1): 69–87. <a href="https://doi.org/10.1017/S0003055423000266">https://doi.org/10.1017/S0003055423000266</a>.
+</div>
+<div id="ref-hahn2020bayesian" class="csl-entry" role="listitem">
+Hahn, P. Richard, Jared S. Murray, and Carlos M. Carvalho. 2020. <span>“Bayesian Regression Tree Models for Causal Inference: Regularization, Confounding, and Heterogeneous Effects (with Discussion).”</span> <em>Bayesian Analysis</em> 15 (3): 965–1056. <a href="https://doi.org/10.1214/19-BA1195">https://doi.org/10.1214/19-BA1195</a>.
+</div>
+<div id="ref-hainmueller2014causal" class="csl-entry" role="listitem">
+Hainmueller, Jens, Daniel J. Hopkins, and Teppei Yamamoto. 2014. <span>“Causal Inference in Conjoint Analysis: Understanding Multidimensional Choices via Stated Preference Experiments.”</span> <em>Political Analysis</em> 22 (1): 1–30. <a href="https://doi.org/10.1093/pan/mpt024">https://doi.org/10.1093/pan/mpt024</a>.
+</div>
+<div id="ref-helbling2012islamophobia" class="csl-entry" role="listitem">
+Helbling, Marc, ed. 2012. <em>Islamophobia in the West: Measuring and Explaining Individual Attitudes</em>. 1st ed. Routledge. <a href="https://doi.org/10.4324/9780203841730">https://doi.org/10.4324/9780203841730</a>.
+</div>
+<div id="ref-helbling2022muslim" class="csl-entry" role="listitem">
+Helbling, Marc, Felix Jäger, and Richard Traunmüller. 2022. <span>“Muslim Bias or Fear of Fundamentalism? A Survey Experiment in Five Western European Democracies.”</span> <em>Research &amp; Politics</em> 9 (1): 20531680221088491. <a href="https://doi.org/10.1177/20531680221088491">https://doi.org/10.1177/20531680221088491</a>.
+</div>
+<div id="ref-helbling2020islamophobia" class="csl-entry" role="listitem">
+Helbling, Marc, and Richard Traunmüller. 2020. <span>“What Is Islamophobia? Disentangling Citizens’ Feelings Toward Ethnicity, Religion and Religiosity Using a Survey Experiment.”</span> <em>British Journal of Political Science</em> 50 (3): 811–28. <a href="https://doi.org/10.1017/S0007123418000054">https://doi.org/10.1017/S0007123418000054</a>.
+</div>
+<div id="ref-hill2011bayesian" class="csl-entry" role="listitem">
+Hill, Jennifer L. 2011. <span>“Bayesian Nonparametric Modeling for Causal Inference.”</span> <em>Journal of Computational and Graphical Statistics</em> 20 (1): 217–40. <a href="https://doi.org/10.1198/jcgs.2010.08162">https://doi.org/10.1198/jcgs.2010.08162</a>.
+</div>
+<div id="ref-hill2020bayesian" class="csl-entry" role="listitem">
+Hill, Jennifer, Antonio Linero, and Jared Murray. 2020. <span>“Bayesian Additive Regression Trees: A Review and Look Forward.”</span> <em>Annual Review of Statistics and Its Application</em> 7 (1): 251–78. <a href="https://doi.org/10.1146/annurev-statistics-031219-041110">https://doi.org/10.1146/annurev-statistics-031219-041110</a>.
+</div>
+<div id="ref-holland1986statistics" class="csl-entry" role="listitem">
+Holland, Paul W. 1986. <span>“Statistics and Causal Inference.”</span> <em>Journal of the American Statistical Association</em> 81 (396): 945–60. <a href="https://doi.org/10.1080/01621459.1986.10478354">https://doi.org/10.1080/01621459.1986.10478354</a>.
+</div>
+<div id="ref-imai2013estimating" class="csl-entry" role="listitem">
+Imai, Kosuke, and Marc Ratkovic. 2013. <span>“Estimating Treatment Effect Heterogeneity in Randomized Program Evaluation.”</span> <em>The Annals of Applied Statistics</em>, 443–70. <a href="https://doi.org/10.1214/12-AOAS593">https://doi.org/10.1214/12-AOAS593</a>.
+</div>
+<div id="ref-jawadekar2023practical" class="csl-entry" role="listitem">
+Jawadekar, Neal, Katrina Kezios, Michelle C. Odden, et al. 2023. <span>“Practical Guide to Honest Causal Forests for Identifying Heterogeneous Treatment Effects.”</span> <em>American Journal of Epidemiology</em> 192 (7): 1155–65. <a href="https://doi.org/10.1093/aje/kwad043">https://doi.org/10.1093/aje/kwad043</a>.
+</div>
+<div id="ref-leeper2020measuring" class="csl-entry" role="listitem">
+Leeper, Thomas J., Sara B. Hobolt, and James Tilley. 2020. <span>“Measuring Subgroup Preferences in Conjoint Experiments.”</span> <em>Political Analysis</em> 28 (2): 207–21. <a href="https://doi.org/10.1017/pan.2019.30">https://doi.org/10.1017/pan.2019.30</a>.
+</div>
+<div id="ref-mcjames2025bayesian" class="csl-entry" role="listitem">
+McJames, Nathan, Ann O’Shea, Yong Chen Goh, and Andrew Parnell. 2025. <span>“Bayesian Causal Forests for Multivariate Outcomes: Application to Irish Data from an International Large Scale Education Assessment.”</span> <em>Journal of the Royal Statistical Society Series A: Statistics in Society</em> 188 (2): 428–50. <a href="https://doi.org/10.1093/jrsssa/qnae049">https://doi.org/10.1093/jrsssa/qnae049</a>.
+</div>
+<div id="ref-murray2021multibart" class="csl-entry" role="listitem">
+Murray, Jared S. 2021. <em>Multibart: A Collection of BART Models</em>. <a href="https://osf.io/3zmqc/">https://osf.io/3zmqc/</a>.
+</div>
+<div id="ref-prevot2025hierarchical" class="csl-entry" role="listitem">
+Prevot, Emma, Dieter A Häring, Thomas E Nichols, Chris C Holmes, and Habib Ganjgahi. 2025. <span>“A Hierarchical Modelling Approach for Bayesian Causal Forests on Longitudinal Data: A Case Study in Multiple Sclerosis Clinical Trials.”</span> <em>arXiv Preprint arXiv:2508.08418</em>, ahead of print. <a href="https://doi.org/10.48550/arXiv.2508.08418">https://doi.org/10.48550/arXiv.2508.08418</a>.
+</div>
+<div id="ref-ratkovic2021subgroup" class="csl-entry" role="listitem">
+Ratkovic, Marc. 2021. <span>“Subgroup Analysis: Pitfalls, Promise, and Honesty.”</span> In <em>Advances in Experimental Political Science</em>, edited by James N. Druckman and Donald P. Green. Cambridge University Press Cambridge. <a href="https://doi.org/10.1017/9781108777919.020">https://doi.org/10.1017/9781108777919.020</a>.
+</div>
+<div id="ref-ratkovic2023relaxing" class="csl-entry" role="listitem">
+Ratkovic, Marc. 2023. <span>“Relaxing Assumptions, Improving Inference: Integrating Machine Learning and the Linear Regression.”</span> <em>American Political Science Review</em> 117 (3): 1053–69. <a href="https://doi.org/10.1017/S0003055422001022">https://doi.org/10.1017/S0003055422001022</a>.
+</div>
+<div id="ref-ratkovic2017sparse" class="csl-entry" role="listitem">
+Ratkovic, Marc, and Dustin Tingley. 2017. <span>“Sparse Estimation and Uncertainty with Application to Subgroup Analysis.”</span> <em>Political Analysis</em> 25 (1): 1–40. <a href="https://doi.org/10.1017/pan.2016.14 ">https://doi.org/10.1017/pan.2016.14 </a>.
+</div>
+<div id="ref-robinson2024detect" class="csl-entry" role="listitem">
+Robinson, Thomas S., and Raymond M. Duch. 2024. <span>“How to Detect Heterogeneity in Conjoint Experiments.”</span> <em>The Journal of Politics</em> 86 (2): 412–27. <a href="https://doi.org/10.1086/727597">https://doi.org/10.1086/727597</a>.
+</div>
+<div id="ref-rubin1974estimating" class="csl-entry" role="listitem">
+Rubin, Donald B. 1974. <span>“Estimating Causal Effects of Treatments in Randomized and Nonrandomized Studies.”</span> <em>Journal of Educational Psychology</em> 66 (5): 688. <a href="https://doi.org/10.1037/h0037350">https://doi.org/10.1037/h0037350</a>.
+</div>
+<div id="ref-neyman1923application" class="csl-entry" role="listitem">
+Splawa-Neyman, Jerzy. 1990. <span>“On the Application of Probability Theory to Agricultural Experiments. Essay on Principles. Section 9.”</span> <em>Statistical Science</em> 5 (4): 465–72. <a href="https://doi.org/10.1214/ss/1177012031">https://doi.org/10.1214/ss/1177012031</a>.
+</div>
+<div id="ref-thal2024aggregate" class="csl-entry" role="listitem">
+Thal, Dan RC, Lauren V Forrow, Erin R Lipman, Jennifer E Starling, and Mariel M Finucane. 2024. <span>“Aggregate Bayesian Causal Forests: The ABCs of Flexible Causal Inference for Hierarchically Structured Data.”</span> <em>arXiv Preprint arXiv:2407.07067</em>, ahead of print. <a href="https://doi.org/10.48550/arXiv.2407.07067">https://doi.org/10.48550/arXiv.2407.07067</a>.
+</div>
+<div id="ref-wager2018estimation" class="csl-entry" role="listitem">
+Wager, Stefan, and Susan Athey. 2018. <span>“Estimation and Inference of Heterogeneous Treatment Effects Using Random Forests.”</span> <em>Journal of the American Statistical Association</em> 113 (523): 1228–42. <a href="https://doi.org/10.1080/01621459.2017.1319839">https://doi.org/10.1080/01621459.2017.1319839</a>.
+</div>
+<div id="ref-woody2021model" class="csl-entry" role="listitem">
+Woody, Spencer, Carlos M. Carvalho, and Jared S. Murray. 2021. <span>“Model Interpretation Through Lower-Dimensional Posterior Summarization.”</span> <em>Journal of Computational and Graphical Statistics</em> 30 (1): 144–61. <a href="https://doi.org/10.1080/10618600.2020.1796684">https://doi.org/10.1080/10618600.2020.1796684</a>.
+</div>
+<div id="ref-yeager2022synergistic" class="csl-entry" role="listitem">
+Yeager, David S, Christopher J Bryan, James J Gross, et al. 2022. <span>“A Synergistic Mindsets Intervention Protects Adolescents from Stress.”</span> <em>Nature</em> 607 (7919): 512–20. <a href="https://doi.org/10.1038/s41586-022-04907-7">https://doi.org/10.1038/s41586-022-04907-7</a>.
+</div>
+<div id="ref-yeager2019national" class="csl-entry" role="listitem">
+<span class="nocase">Yeager, David S, Paul Hanselman, Gregory M Walton, et al.</span> 2019. <span>“A National Experiment Reveals Where a Growth Mindset Improves Achievement.”</span> <em>Nature</em> 573 (7774): 364–69. <a href="https://doi.org/10.1038/s41586-019-1466-y">https://doi.org/10.1038/s41586-019-1466-y</a>.
+</div>
+<div id="ref-zheng2023estimating" class="csl-entry" role="listitem">
+Zheng, Li, and Weiwen Yin. 2023. <span>“Estimating and Evaluating Treatment Effect Heterogeneity: A Causal Forests Approach.”</span> <em>Research &amp; Politics</em> 10 (1): 20531680231153080. <a href="https://doi.org/10.1177/20531680231153080">https://doi.org/10.1177/20531680231153080</a>.
+</div>
+</div>
+</section>
+<section id="appendix" class="level2 unnumbered">
+<h2 class="unnumbered anchored" data-anchor-id="appendix">Appendix</h2>
+<section id="appendix-a-additional-sample-details" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="appendix-a-additional-sample-details">Appendix A: Additional Sample Details</h3>
+<section id="example-profile-from-conjoint-experiment" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="example-profile-from-conjoint-experiment">Example Profile From Conjoint Experiment</h4>
+<div id="fig-profile" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-profile-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="https://static.cambridge.org/binary/version/id/urn:cambridge.org:id:binary:20240123150926403-0273:S0003055423000266:S0003055423000266_fig1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-4" title="Figure&nbsp;4: Player 2 Profile Example. Note: Figure embedded from Hahm et al. (2024), Figure 1."><img src="https://static.cambridge.org/binary/version/id/urn:cambridge.org:id:binary:20240123150926403-0273:S0003055423000266:S0003055423000266_fig1.png" class="img-fluid figure-img"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-profile-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;4: Player 2 Profile Example. <em>Note:</em> Figure embedded from <span class="citation" data-cites="hahm2024divided">Hahm et al. (<a href="#ref-hahm2024divided" role="doc-biblioref">2024</a>)</span>, Figure 1.
+</figcaption>
+</figure>
+</div>
+</section>
+<section id="distribution-of-outcome-variable" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="distribution-of-outcome-variable">Distribution of Outcome Variable</h4>
+<div class="quarto-embed-nb-cell">
+<div id="cell-fig-outcome-distr" class="cell" data-fig-dpi="500" data-fig-width="5.5" data-fig-height="3.4">
+<div class="cell-output cell-output-display">
+<div id="fig-outcome-distr" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-outcome-distr-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="index_files/figure-html/code-09_additional_figs_tables-fig-outcome-distr-output-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-5" title="Figure&nbsp;5: Distribution of outcomes (tokens allocated to the displayed profile) by game. Points are the within-game share of decisions at each integer token value, connected within game. N=84.603 in both games."><img src="index_files/figure-html/code-09_additional_figs_tables-fig-outcome-distr-output-1.png" class="img-fluid figure-img"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-outcome-distr-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;5: Distribution of outcomes (tokens allocated to the displayed profile) by game. Points are the within-game share of decisions at each integer token value, connected within game. <span class="math inline">\(N=84.603\)</span> in both games.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section id="distribution-of-profile-level-covariates" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="distribution-of-profile-level-covariates">Distribution of Profile-level Covariates</h4>
+<div class="quarto-embed-nb-cell">
+<div class="cell">
+<div id="tbl-balance-round-mods" class="cell quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-balance-round-mods-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;2: Profile level covariates distributions by treatment. Cells show raw counts with column percentages in parentheses for categorical variables, and the median with the first and third quartiles (Q1, Q3) in parentheses for numeric variables.
+</figcaption>
+<div aria-describedby="tbl-balance-round-mods-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output cell-output-display cell-output-markdown">
+<table class="cell caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 28%">
+<col style="width: 37%">
+<col style="width: 31%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;"><strong>Variable</strong></th>
+<th style="text-align: center;"><strong>Non-Muslim</strong> N = 126,663</th>
+<th style="text-align: center;"><strong>Muslim</strong> N = 42,543</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">cj_nat</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">eu</td>
+<td style="text-align: center;">31,620 (25%)</td>
+<td style="text-align: center;">10,483 (25%)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">non_eu</td>
+<td style="text-align: center;">31,952 (25%)</td>
+<td style="text-align: center;">10,548 (25%)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">own_country</td>
+<td style="text-align: center;">63,091 (50%)</td>
+<td style="text-align: center;">21,512 (51%)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">der_cj_eu_identity</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">eu_citizen</td>
+<td style="text-align: center;">34,470 (27%)</td>
+<td style="text-align: center;">11,558 (27%)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">not_displayed</td>
+<td style="text-align: center;">57,469 (45%)</td>
+<td style="text-align: center;">19,544 (46%)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">not_eu_citizen</td>
+<td style="text-align: center;">34,724 (27%)</td>
+<td style="text-align: center;">11,441 (27%)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">der_cj_partisanship</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">not_applicable</td>
+<td style="text-align: center;">40,206 (32%)</td>
+<td style="text-align: center;">13,560 (32%)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">not_shown</td>
+<td style="text-align: center;">17,130 (14%)</td>
+<td style="text-align: center;">5,874 (14%)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">shown</td>
+<td style="text-align: center;">69,327 (55%)</td>
+<td style="text-align: center;">23,109 (54%)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">cj_age</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">18</td>
+<td style="text-align: center;">25,347 (20%)</td>
+<td style="text-align: center;">8,539 (20%)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">30</td>
+<td style="text-align: center;">25,348 (20%)</td>
+<td style="text-align: center;">8,373 (20%)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">42</td>
+<td style="text-align: center;">25,244 (20%)</td>
+<td style="text-align: center;">8,611 (20%)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">53</td>
+<td style="text-align: center;">25,521 (20%)</td>
+<td style="text-align: center;">8,622 (20%)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">65</td>
+<td style="text-align: center;">25,203 (20%)</td>
+<td style="text-align: center;">8,398 (20%)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">cj_sex</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">female</td>
+<td style="text-align: center;">63,308 (50%)</td>
+<td style="text-align: center;">21,338 (50%)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">male</td>
+<td style="text-align: center;">63,355 (50%)</td>
+<td style="text-align: center;">21,205 (50%)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">cj_class</td>
+<td style="text-align: center;"></td>
+<td style="text-align: center;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">lower</td>
+<td style="text-align: center;">42,023 (33%)</td>
+<td style="text-align: center;">14,048 (33%)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">middle</td>
+<td style="text-align: center;">42,393 (33%)</td>
+<td style="text-align: center;">14,294 (34%)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">upper</td>
+<td style="text-align: center;">42,247 (33%)</td>
+<td style="text-align: center;">14,201 (33%)</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="distribution-of-respondent-level-covariates" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="distribution-of-respondent-level-covariates">Distribution of Respondent-level Covariates</h4>
+<div class="quarto-embed-nb-cell">
+<div class="cell" data-message="false">
+<div id="tbl-balance-resp-mods" class="cell quarto-float quarto-figure quarto-figure-center anchored" data-message="false">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-balance-resp-mods-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;3: Individual level covariate distributions by treatment. Cells show raw counts with column percentages in parentheses for categorical variables, and the median with the first and third quartiles (Q1, Q3) in parentheses for numeric variables.
+</figcaption>
+<div aria-describedby="tbl-balance-resp-mods-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output cell-output-display cell-output-markdown">
+<table class="cell caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 34%">
+<col style="width: 34%">
+<col style="width: 28%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;"><strong>Variable</strong></th>
+<th style="text-align: left;"><strong>Non-Muslim</strong> N = 16,622</th>
+<th style="text-align: left;"><strong>Muslim</strong> N = 5,537</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;">q_gender</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">female</td>
+<td style="text-align: left;">8,770 (53%)</td>
+<td style="text-align: left;">2,985 (54%)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">male</td>
+<td style="text-align: left;">7,826 (47%)</td>
+<td style="text-align: left;">2,548 (46%)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">other</td>
+<td style="text-align: left;">26 (0.2%)</td>
+<td style="text-align: left;">4 (&lt;0.1%)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">q_age</td>
+<td style="text-align: left;">46 (34, 57)</td>
+<td style="text-align: left;">46 (34, 58)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">q_identity_country</td>
+<td style="text-align: left;">1 (1, 2)</td>
+<td style="text-align: left;">1 (1, 2)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">q_identity_eu</td>
+<td style="text-align: left;">3 (2, 4)</td>
+<td style="text-align: left;">3 (2, 4)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">q_identity_europe</td>
+<td style="text-align: left;">2 (2, 3)</td>
+<td style="text-align: left;">2 (2, 3)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">q_religion</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">atheist</td>
+<td style="text-align: left;">1,996 (12%)</td>
+<td style="text-align: left;">634 (11%)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">buddhist</td>
+<td style="text-align: left;">64 (0.4%)</td>
+<td style="text-align: left;">20 (0.4%)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">catholic</td>
+<td style="text-align: left;">5,592 (34%)</td>
+<td style="text-align: left;">1,911 (35%)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">dont_know</td>
+<td style="text-align: left;">687 (4.1%)</td>
+<td style="text-align: left;">209 (3.8%)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">hindu</td>
+<td style="text-align: left;">22 (0.1%)</td>
+<td style="text-align: left;">2 (&lt;0.1%)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">jewish</td>
+<td style="text-align: left;">37 (0.2%)</td>
+<td style="text-align: left;">9 (0.2%)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">muslim</td>
+<td style="text-align: left;">80 (0.5%)</td>
+<td style="text-align: left;">33 (0.6%)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">nonbeliever_agnostic</td>
+<td style="text-align: left;">3,559 (21%)</td>
+<td style="text-align: left;">1,214 (22%)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">orthodox</td>
+<td style="text-align: left;">1,823 (11%)</td>
+<td style="text-align: left;">570 (10%)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">other</td>
+<td style="text-align: left;">589 (3.5%)</td>
+<td style="text-align: left;">177 (3.2%)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">other_christian</td>
+<td style="text-align: left;">729 (4.4%)</td>
+<td style="text-align: left;">239 (4.3%)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">protestant</td>
+<td style="text-align: left;">1,439 (8.7%)</td>
+<td style="text-align: left;">518 (9.4%)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">sikh</td>
+<td style="text-align: left;">5 (&lt;0.1%)</td>
+<td style="text-align: left;">1 (&lt;0.1%)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">q_class</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">dont_know</td>
+<td style="text-align: left;">540 (3.2%)</td>
+<td style="text-align: left;">210 (3.8%)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">higher_class</td>
+<td style="text-align: left;">106 (0.6%)</td>
+<td style="text-align: left;">35 (0.6%)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">lower_middle_class</td>
+<td style="text-align: left;">3,217 (19%)</td>
+<td style="text-align: left;">1,088 (20%)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">middle_class</td>
+<td style="text-align: left;">7,848 (47%)</td>
+<td style="text-align: left;">2,537 (46%)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">other</td>
+<td style="text-align: left;">7 (&lt;0.1%)</td>
+<td style="text-align: left;">2 (&lt;0.1%)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">upper_middle_class</td>
+<td style="text-align: left;">1,541 (9.3%)</td>
+<td style="text-align: left;">551 (10.0%)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">working_class</td>
+<td style="text-align: left;">3,363 (20%)</td>
+<td style="text-align: left;">1,114 (20%)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">q_eu_efficacy_understand</td>
+<td style="text-align: left;">5 (4, 6)</td>
+<td style="text-align: left;">5 (4, 6)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">q_pop_reps</td>
+<td style="text-align: left;">6 (5, 7)</td>
+<td style="text-align: left;">6 (5, 7)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">q_pop_goodevil</td>
+<td style="text-align: left;">4 (3, 5)</td>
+<td style="text-align: left;">4 (3, 5)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">q_pop_compromise</td>
+<td style="text-align: left;">5 (4, 6)</td>
+<td style="text-align: left;">5 (4, 6)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">q_dem_compromise</td>
+<td style="text-align: left;">5 (5, 6)</td>
+<td style="text-align: left;">5 (5, 6)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">q_dem_listen</td>
+<td style="text-align: left;">6 (5, 7)</td>
+<td style="text-align: left;">6 (5, 7)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">q_tech_experts</td>
+<td style="text-align: left;">5 (4, 6)</td>
+<td style="text-align: left;">5 (4, 6)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">q_tech_leaders</td>
+<td style="text-align: left;">6 (5, 7)</td>
+<td style="text-align: left;">6 (5, 7)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">q_party_harm</td>
+<td style="text-align: left;">5 (4, 6)</td>
+<td style="text-align: left;">5 (4, 6)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">q_people_incompetent</td>
+<td style="text-align: left;">4 (3, 5)</td>
+<td style="text-align: left;">4 (3, 6)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">q_eu_longterm</td>
+<td style="text-align: left;">5 (4, 6)</td>
+<td style="text-align: left;">5 (4, 6)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">q_eu_responsive</td>
+<td style="text-align: left;">6 (5, 7)</td>
+<td style="text-align: left;">6 (5, 7)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">q_eu_imp_nat_econ</td>
+<td style="text-align: left;">3 (2, 3)</td>
+<td style="text-align: left;">3 (2, 3)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">q_eu_imp_nat_cul</td>
+<td style="text-align: left;">3 (2, 4)</td>
+<td style="text-align: left;">3 (2, 4)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">q_eu_imp_nat_pol</td>
+<td style="text-align: left;">3 (2, 4)</td>
+<td style="text-align: left;">3 (2, 4)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">q_eu_abolish</td>
+<td style="text-align: left;">5 (3, 6)</td>
+<td style="text-align: left;">5 (3, 6)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">q_eu_satisfaction</td>
+<td style="text-align: left;">4 (3, 5)</td>
+<td style="text-align: left;">4 (3, 5)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">q_rural_urban</td>
+<td style="text-align: left;"></td>
+<td style="text-align: left;"></td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">large_city</td>
+<td style="text-align: left;">6,320 (38%)</td>
+<td style="text-align: left;">2,123 (38%)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">rural</td>
+<td style="text-align: left;">2,969 (18%)</td>
+<td style="text-align: left;">1,042 (19%)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;">small_med_town</td>
+<td style="text-align: left;">7,333 (44%)</td>
+<td style="text-align: left;">2,372 (43%)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;">q_edu_age_stop</td>
+<td style="text-align: left;">21.0 (18.0, 24.0)</td>
+<td style="text-align: left;">21.0 (18.0, 24.0)</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</figure>
+</div>
+</div>
+</div>
+</section>
+<section id="question-wordings-and-scales" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="question-wordings-and-scales">Question Wordings and Scales</h4>
+<div class="quarto-embed-nb-cell">
+<div class="cell">
+<div id="tbl-wordings" class="cell quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-tbl figure">
+<figcaption class="quarto-float-caption-top quarto-float-caption quarto-float-tbl" id="tbl-wordings-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Table&nbsp;4: Question wordings and scales of individual-level covariates used in the analysis.
+</figcaption>
+<div aria-describedby="tbl-wordings-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<div class="cell-output cell-output-display cell-output-markdown">
+<table class="cell caption-top table table-sm table-striped small">
+<colgroup>
+<col style="width: 26%">
+<col style="width: 58%">
+<col style="width: 12%">
+</colgroup>
+<thead>
+<tr class="header">
+<th style="text-align: left;">Variable</th>
+<th style="text-align: left;">Question wording</th>
+<th style="text-align: left;">Scale coding</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td style="text-align: left;"><code>q_gender</code></td>
+<td style="text-align: left;">Please indicate your gender.</td>
+<td style="text-align: left;">Categorical</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>q_religion</code></td>
+<td style="text-align: left;">Do you consider yourself to be…?</td>
+<td style="text-align: left;">Categorical</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>q_class</code></td>
+<td style="text-align: left;">Do you see yourself and your household belonging to…?</td>
+<td style="text-align: left;">Categorical</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>q_rural_urban</code></td>
+<td style="text-align: left;">Would you say you live in a…?</td>
+<td style="text-align: left;">Categorical</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>q_identity_country</code></td>
+<td style="text-align: left;">Please tell me how attached you feel to… - [SURVEY COUNTRY]</td>
+<td style="text-align: left;">1 (very attached) to 5 (not at all attached)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>q_identity_eu</code></td>
+<td style="text-align: left;">Please tell me how attached you feel to… - The European Union (EU)</td>
+<td style="text-align: left;">1 (very attached) to 5 (not at all attached)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>q_identity_europe</code></td>
+<td style="text-align: left;">Please tell me how attached you feel to… - Europe</td>
+<td style="text-align: left;">1 (very attached) to 5 (not at all attached)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>q_eu_efficacy_understand</code></td>
+<td style="text-align: left;">Please tell me to what extent you agree or disagree with each of the following statements. - I can understand and evaluate important political questions about the EU</td>
+<td style="text-align: left;">1 (strongly disagree) to 7 (strongly agree)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>q_pop_reps</code></td>
+<td style="text-align: left;">Please indicate how much you agree with each of the following statements. - Elected officials talk too much and take too little action.</td>
+<td style="text-align: left;">1 (strongly disagree) to 7 (strongly agree)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>q_pop_goodevil</code></td>
+<td style="text-align: left;">Please indicate how much you agree with each of the following statements. - Politics is ultimately a struggle between good and evil.</td>
+<td style="text-align: left;">1 (strongly disagree) to 7 (strongly agree)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>q_pop_compromise</code></td>
+<td style="text-align: left;">Please indicate how much you agree with each of the following statements. - What people call “compromise” in politics is really just selling out on one’s principles.</td>
+<td style="text-align: left;">1 (strongly disagree) to 7 (strongly agree)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>q_dem_compromise</code></td>
+<td style="text-align: left;">Please indicate how much you agree with each of the following statements. - In a democracy it is important to make compromises among differing viewpoints.</td>
+<td style="text-align: left;">1 (strongly disagree) to 7 (strongly agree)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>q_age</code></td>
+<td style="text-align: left;">How old are you?</td>
+<td style="text-align: left;">Age in years</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>q_dem_listen</code></td>
+<td style="text-align: left;">Please indicate how much you agree with each of the following statements. - It is important to listen to the opinion of other groups.</td>
+<td style="text-align: left;">1 (strongly disagree) to 7 (strongly agree)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>q_tech_experts</code></td>
+<td style="text-align: left;">Please indicate how much you agree with each of the following statements. - Our country would run better if political decisions were left up to experts instead of politicians and citizens.</td>
+<td style="text-align: left;">1 (strongly disagree) to 7 (strongly agree)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>q_tech_leaders</code></td>
+<td style="text-align: left;">Please indicate how much you agree with each of the following statements. - The leaders of our country should be more educated and skilled than ordinary citizens.</td>
+<td style="text-align: left;">1 (strongly disagree) to 7 (strongly agree)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>q_party_harm</code></td>
+<td style="text-align: left;">Please indicate how much you agree with each of the following statements. - Political parties do more harm than good to society</td>
+<td style="text-align: left;">1 (strongly disagree) to 7 (strongly agree)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>q_people_incompetent</code></td>
+<td style="text-align: left;">Please indicate how much you agree with each of the following statements. - Ordinary people don’t know what policies are good for them.</td>
+<td style="text-align: left;">1 (strongly disagree) to 7 (strongly agree)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>q_eu_longterm</code></td>
+<td style="text-align: left;">In thinking about the European Union (EU) and its decisions more generally, some people argue that it should act upon its long-term goals without pandering to the demand of the people. On the other hand, others argue that the EU should listen to the demand of people, rather than to act upon its long-term goals. When it comes to the question of whether the EU should act upon its long-term goals or it should listen to the demand of the people, what is your opinion? - The EU should act upon its long-term goals</td>
+<td style="text-align: left;">1 (strongly disagree) to 7 (strongly agree)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>q_eu_responsive</code></td>
+<td style="text-align: left;">In thinking about the European Union (EU) and its decisions more generally, some people argue that it should act upon its long-term goals without pandering to the demand of the people. On the other hand, others argue that the EU should listen to the demand of people, rather than to act upon its long-term goals. When it comes to the question of whether the EU should act upon its long-term goals or it should listen to the demand of the people, what is your opinion? - The EU should listen to the demand of the people</td>
+<td style="text-align: left;">1 (strongly disagree) to 7 (strongly agree)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>q_eu_imp_nat_econ</code></td>
+<td style="text-align: left;">Could you tell me whether you think that the EU has a rather positive or rather negative effect on each of the following domains? - UK economy</td>
+<td style="text-align: left;">1 (very positive) to 5 (very negative)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>q_eu_imp_nat_cul</code></td>
+<td style="text-align: left;">Could you tell me whether you think that the EU has a rather positive or rather negative effect on each of the following domains? - Our culture and identity</td>
+<td style="text-align: left;">1 (very positive) to 5 (very negative)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>q_eu_imp_nat_pol</code></td>
+<td style="text-align: left;">Could you tell me whether you think that the EU has a rather positive or rather negative effect on each of the following domains? - UK’s political status and influence</td>
+<td style="text-align: left;">1 (very positive) to 5 (very negative)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>q_eu_abolish</code></td>
+<td style="text-align: left;">Please tell me to what extent you agree or disagree with each of the following statements. - If the EU started making a lot of decisions that most people disagreed with, it might be better to do away with the EU altogether</td>
+<td style="text-align: left;">1 (strongly disagree) to 7 (strongly agree)</td>
+</tr>
+<tr class="odd">
+<td style="text-align: left;"><code>q_eu_satisfaction</code></td>
+<td style="text-align: left;">Please tell me to what extent you agree or disagree with each of the following statements. - I am satisfied with the performance of the EU</td>
+<td style="text-align: left;">1 (strongly disagree) to 7 (strongly agree)</td>
+</tr>
+<tr class="even">
+<td style="text-align: left;"><code>q_edu_age_stop</code></td>
+<td style="text-align: left;">How old were you when you stopped full-time education?</td>
+<td style="text-align: left;">Years</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</figure>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="appendix-b-additional-cf-figures" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="appendix-b-additional-cf-figures">Appendix B: Additional CF Figures</h3>
+<section id="toc-autoc-curve" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="toc-autoc-curve">TOC / AUTOC Curve</h4>
+<div class="quarto-embed-nb-cell">
+<div id="cell-fig-grf-combined-toc" class="cell" data-dpi="500" data-fig-width="6.5" data-fig-height="4">
+<div class="cell-output cell-output-display">
+<div id="fig-grf-combined-toc" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-grf-combined-toc-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="index_files/figure-html/code-07_postprocess_grf-fig-grf-combined-toc-output-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-6" title="Figure&nbsp;6: CF Targeting Operator Characteristic curve, both games overlaid: ATE among the top-q fraction by predicted CATE minus the overall ATE, with 95% CI ribbon. The area under each curve is the AUTOC, reported in the title."><img src="index_files/figure-html/code-07_postprocess_grf-fig-grf-combined-toc-output-1.png" class="img-fluid figure-img"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-grf-combined-toc-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;6: CF Targeting Operator Characteristic curve, both games overlaid: ATE among the top-q fraction by predicted CATE minus the overall ATE, with 95% CI ribbon. The area under each curve is the AUTOC, reported in the title.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<!-- #### Best Linear Projection {.unnumbered} -->
+<!-- {{< embed code/07_postprocess_grf.qmd#fig-grf-combined-blp >}} -->
+</section>
+<section id="variable-importance" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="variable-importance">Variable Importance</h4>
+<div class="quarto-embed-nb-cell">
+<div id="cell-fig-grf-combined-vi" class="cell" data-dpi="500" data-fig-width="7" data-fig-height="9">
+<div class="cell-output cell-output-display">
+<div id="fig-grf-combined-vi" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-grf-combined-vi-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="index_files/figure-html/code-07_postprocess_grf-fig-grf-combined-vi-output-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-7" title="Figure&nbsp;7: CF variable importance aggregated to the original moderators, both games overlaid (dodged bars by game). Profile-level and respondent-level moderators are separated into facets. Within each facet moderators are ordered by their mean importance across the two games. Country fixed-effect columns excluded."><img src="index_files/figure-html/code-07_postprocess_grf-fig-grf-combined-vi-output-1.png" class="img-fluid figure-img"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-grf-combined-vi-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;7: CF variable importance aggregated to the original moderators, both games overlaid (dodged bars by game). Profile-level and respondent-level moderators are separated into facets. Within each facet moderators are ordered by their mean importance across the two games. Country fixed-effect columns excluded.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</div>
+</section>
+</section>
+<section id="appendix-c-main-results-from-bcf-method" class="level3 unnumbered">
+<h3 class="unnumbered anchored" data-anchor-id="appendix-c-main-results-from-bcf-method">Appendix C: Main Results from BCF Method</h3>
+<section id="bcf-moderation-by-profile-level-covariates" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="bcf-moderation-by-profile-level-covariates">BCF Moderation by Profile-level Covariates</h4>
+<div class="quarto-embed-nb-cell">
+<div id="cell-fig-bcf-combined-prof" class="cell" data-dpi="500" data-fig-width="9" data-fig-height="6">
+<div class="cell-output cell-output-display">
+<div id="fig-bcf-combined-prof" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-bcf-combined-prof-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="index_files/figure-html/code-08_postprocess_bcf-fig-bcf-combined-prof-output-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-8" title="Figure&nbsp;8: BCF posterior estimates of the profile-level CATE (\hat{\tau}_{ric}) of the Muslim profile across the levels of every conjoint-round moderator (x-axis), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis is \hat{\tau}_{ric} on the token-allocation scale. Each point is a per-level posterior median with a cluster-robust 95% interval, formed as the median plus or minus 1.96 times a combined standard error (a normal approximation) that adds the posterior SD of the within-level mean to a respondent cluster-bootstrap SD. Grey bars along the bottom of each facet show the per-level row count (pooled over games). The y-axis is free per facet. In the Profile partisanship facet, partisanship not shown refers to within the co-national category only, since partisanship is displayed for co-national profiles only."><img src="index_files/figure-html/code-08_postprocess_bcf-fig-bcf-combined-prof-output-1.png" class="img-fluid figure-img"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-bcf-combined-prof-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;8: BCF posterior estimates of the profile-level CATE (<span class="math inline">\(\hat{\tau}_{ric}\)</span>) of the Muslim profile across the levels of every conjoint-round moderator (x-axis), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis is <span class="math inline">\(\hat{\tau}_{ric}\)</span> on the token-allocation scale. Each point is a per-level posterior median with a cluster-robust 95% interval, formed as the median plus or minus 1.96 times a combined standard error (a normal approximation) that adds the posterior SD of the within-level mean to a respondent cluster-bootstrap SD. Grey bars along the bottom of each facet show the per-level row count (pooled over games). The y-axis is free per facet. In the Profile partisanship facet, partisanship not shown refers to within the co-national category only, since partisanship is displayed for co-national profiles only.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</div>
+</section>
+<section id="bcf-moderation-by-respondent-level-covariates" class="level4 unnumbered">
+<h4 class="unnumbered anchored" data-anchor-id="bcf-moderation-by-respondent-level-covariates">BCF Moderation by Respondent-level Covariates</h4>
+<div class="quarto-embed-nb-cell">
+<div id="cell-fig-bcf-combined-resp-1" class="cell" data-dpi="500" data-fig-width="11" data-fig-height="14">
+<div class="cell-output cell-output-display">
+<div id="fig-bcf-combined-resp-1" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-bcf-combined-resp-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="index_files/figure-html/code-08_postprocess_bcf-fig-bcf-combined-resp-1-output-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-9" title="Figure&nbsp;9: BCF posterior estimates of the respondent-level CATE (\hat{\tau}_i) of the Muslim profile across the levels of the first half of the discrete individual-level moderators (top panel) and across age (q_age, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis is \hat{\tau}_i on the token-allocation scale. All item scales are oriented so that higher x-axis values mean more agreement, a more positive evaluation, or more attachment, depending on the item (see Table&nbsp;4). Every point and ribbon value is a posterior median with a cluster-robust 95% interval, formed as the median plus or minus 1.96 times a combined standard error (a normal approximation) that adds the posterior SD to a respondent cluster-bootstrap SD. Top: ordered numeric scales are drawn as a connecting line and interval ribbon per game, categorical moderators as dodged points and intervals. Grey bars show the per-level row count (pooled over games). Bottom: per-grid-cell estimate, interval ribbon, and connecting line per game over a grey histogram of the covariate, on 100 equal intervals across the full 18-75 years. The y-axis is free per facet. Discrete levels comprising less than 1% of a game’s sample are dropped because their CATE is too imprecise to compare."><img src="index_files/figure-html/code-08_postprocess_bcf-fig-bcf-combined-resp-1-output-1.png" class="img-fluid figure-img"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-bcf-combined-resp-1-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;9: BCF posterior estimates of the respondent-level CATE (<span class="math inline">\(\hat{\tau}_i\)</span>) of the Muslim profile across the levels of the first half of the discrete individual-level moderators (top panel) and across age (q_age, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis is <span class="math inline">\(\hat{\tau}_i\)</span> on the token-allocation scale. All item scales are oriented so that higher x-axis values mean more agreement, a more positive evaluation, or more attachment, depending on the item (see <a href="#tbl-wordings" class="quarto-xref">Table&nbsp;4</a>). Every point and ribbon value is a posterior median with a cluster-robust 95% interval, formed as the median plus or minus 1.96 times a combined standard error (a normal approximation) that adds the posterior SD to a respondent cluster-bootstrap SD. Top: ordered numeric scales are drawn as a connecting line and interval ribbon per game, categorical moderators as dodged points and intervals. Grey bars show the per-level row count (pooled over games). Bottom: per-grid-cell estimate, interval ribbon, and connecting line per game over a grey histogram of the covariate, on 100 equal intervals across the full 18-75 years. The y-axis is free per facet. Discrete levels comprising less than 1% of a game’s sample are dropped because their CATE is too imprecise to compare.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</div>
+<div class="quarto-embed-nb-cell">
+<div id="cell-fig-bcf-combined-resp-2" class="cell" data-dpi="500" data-fig-width="11" data-fig-height="14">
+<div class="cell-output cell-output-display">
+<div id="fig-bcf-combined-resp-2" class="quarto-float quarto-figure quarto-figure-center anchored">
+<figure class="quarto-float quarto-float-fig figure">
+<div aria-describedby="fig-bcf-combined-resp-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+<a href="index_files/figure-html/code-08_postprocess_bcf-fig-bcf-combined-resp-2-output-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-10" title="Figure&nbsp;10: BCF posterior estimates of the respondent-level CATE (\hat{\tau}_i) of the Muslim profile across the levels of the second half of the discrete individual-level moderators (top panel) and across age at which education stopped (q_edu_age_stop, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis is \hat{\tau}_i on the token-allocation scale. All item scales are oriented so that higher x-axis values mean more agreement, a more positive evaluation, or more attachment, depending on the item (see Table&nbsp;4). Every ribbon value is a posterior median with a cluster-robust 95% interval, formed as the median plus or minus 1.96 times a combined standard error (a normal approximation) that adds the posterior SD to a respondent cluster-bootstrap SD. Top: ordered numeric scales are drawn as a connecting line and interval ribbon per game. Grey bars show the per-level row count (pooled over games). Bottom: per-year posterior median, interval ribbon, and connecting line per game at each integer year of education-stopping age from 15 to 30, over a grey histogram of the covariate. The y-axis is free per facet. Discrete levels comprising less than 1% of a game’s sample are dropped because their CATE is too imprecise to compare."><img src="index_files/figure-html/code-08_postprocess_bcf-fig-bcf-combined-resp-2-output-1.png" class="img-fluid figure-img"></a>
+</div>
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-bcf-combined-resp-2-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+Figure&nbsp;10: BCF posterior estimates of the respondent-level CATE (<span class="math inline">\(\hat{\tau}_i\)</span>) of the Muslim profile across the levels of the second half of the discrete individual-level moderators (top panel) and across age at which education stopped (q_edu_age_stop, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis is <span class="math inline">\(\hat{\tau}_i\)</span> on the token-allocation scale. All item scales are oriented so that higher x-axis values mean more agreement, a more positive evaluation, or more attachment, depending on the item (see <a href="#tbl-wordings" class="quarto-xref">Table&nbsp;4</a>). Every ribbon value is a posterior median with a cluster-robust 95% interval, formed as the median plus or minus 1.96 times a combined standard error (a normal approximation) that adds the posterior SD to a respondent cluster-bootstrap SD. Top: ordered numeric scales are drawn as a connecting line and interval ribbon per game. Grey bars show the per-level row count (pooled over games). Bottom: per-year posterior median, interval ribbon, and connecting line per game at each integer year of education-stopping age from 15 to 30, over a grey histogram of the covariate. The y-axis is free per facet. Discrete levels comprising less than 1% of a game’s sample are dropped because their CATE is too imprecise to compare.
+</figcaption>
+</figure>
+</div>
+</div>
+</div>
+</div>
+</section>
+</section>
+</section>
+
+
+<div id="quarto-appendix" class="default"><section id="footnotes" class="footnotes footnotes-end-of-document" role="doc-endnotes"><h2 class="anchored quarto-appendix-heading">Footnotes</h2>
+
+<ol>
+<li id="fn1"><p><a href="#fig-outcome-distr" class="quarto-xref">Figure&nbsp;5</a> in the appendix shows the distribution of the allocated tokens by game.<a href="#fnref1" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn2"><p><a href="#fig-profile" class="quarto-xref">Figure&nbsp;4</a> in the appendix shows an example profile.<a href="#fnref2" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn3"><p>These randomly assigned conditions are: a co-national with both EU identity and partisan affiliation, a co-national with party but not EU identity, an EU national with EU identity but not party, and a co-player of some nationality with neither. Partisan affiliation is displayed only for co-nationals, since assigning a national party to a co-player ineligible to vote for it would be implausible.<a href="#fnref3" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn4"><p>This coding effectively averages the non-Muslim religion features against the Muslim one. As we are interested in the drivers of Muslim bias rather than in particular facets of that bias, we adopt this simpler approach.<a href="#fnref4" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn5"><p><a href="#tbl-balance-round-mods" class="quarto-xref">Table&nbsp;2</a> and <a href="#tbl-balance-resp-mods" class="quarto-xref">Table&nbsp;3</a> in the appendix report the profile-level attributes and respondent-level covariates by treatment status. Both sets are balanced across Muslim and non-Muslim profiles, consistent with random assignment of the religion attribute holding in the realized sample. Identification further relies on the usual conjoint stability assumptions of no carryover across rounds and no profile-order effects <span class="citation" data-cites="hainmueller2014causal">(<a href="#ref-hainmueller2014causal" role="doc-biblioref">Hainmueller et al. 2014</a>)</span>.<a href="#fnref5" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn6"><p>All quantities we report are sample quantities. We return to the implications for external validity in <a href="#sec-limits" class="quarto-xref">Section&nbsp;3.3</a>.<a href="#fnref6" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn7"><p>The subscripts <span class="math inline">\(r, i, c\)</span> reflect the hierarchical structure of the outcome <span class="math inline">\(Y_{ric}^g\)</span> (round <span class="math inline">\(r\)</span>, nested in respondent <span class="math inline">\(i\)</span>, nested in country <span class="math inline">\(c\)</span>), not the conditioning set in the expectation. The same convention applies to the covariates and the disaggregated CATEs: <span class="math inline">\(X_{ic}\)</span> carries the country index because <span class="math inline">\(c\)</span> is determined by <span class="math inline">\(i\)</span>, and <span class="math inline">\(\tau_{ric}^g\)</span> retains <span class="math inline">\(i\)</span> even though only <span class="math inline">\(A_{ric}\)</span> remains in the conditioning set after marginalizing over respondents. <span class="math inline">\(\mathbb{E}_r\)</span> denotes expectation over the design distribution of the displayed attributes, which randomization makes identical across respondents. <span class="math inline">\(\mathbb{E}_i\)</span> denotes averaging over the <span class="math inline">\(N\)</span> sampled respondents, with <span class="math inline">\(N\)</span> as in <a href="#eq-sate" class="quarto-xref">Equation&nbsp;2</a>.<a href="#fnref7" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn8"><p>Any residual within-country dependence beyond these fixed effects is not reflected in the variance estimates.<a href="#fnref8" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn9"><p>The Bayesian branch absorbs the clustered structure through random intercepts and partial pooling, and an active literature extends BCF to such hierarchical and longitudinal settings <span class="citation" data-cites="thal2024aggregate prevot2025hierarchical mcjames2025bayesian">(<a href="#ref-thal2024aggregate" role="doc-biblioref">Thal et al. 2024</a>; <a href="#ref-prevot2025hierarchical" role="doc-biblioref">Prevot et al. 2025</a>; <a href="#ref-mcjames2025bayesian" role="doc-biblioref">McJames et al. 2025</a>)</span>. A working implementation places a single random intercept on the prognostic surface for clustered, multisite trials <span class="citation" data-cites="yeager2019national yeager2022synergistic">(<a href="#ref-yeager2019national" role="doc-biblioref"><span class="nocase">Yeager et al.</span> 2019</a>, <a href="#ref-yeager2022synergistic" role="doc-biblioref">2022</a>)</span>, built on the <code>multibart</code> package <span class="citation" data-cites="murray2021multibart">(<a href="#ref-murray2021multibart" role="doc-biblioref">Murray 2021</a>)</span>, whose sampler accommodates an arbitrary random-effects design. We extended that implementation to the two nested levels our data require, respondent within country, and checked both estimators on synthetic data with the same two-level structure and a known, planted treatment surface, a smoke test of the machinery rather than a validation against realistic confounding. Each estimator recovered the planted effects within sampling error, but the nested BCF did so only at small scale. Its sampler solves a dense random-effects precision matrix at every Gibbs sweep, a cost that grows with the cube of the number of random-effect levels, and with tens of thousands of respondent intercepts the full nested fit proved computationally infeasible. The CF recovered the same quantities at a fraction of the cost, while restricting the BCF random effects to countries reduces its precision block to a trivial <span class="math inline">\(25 \times 25\)</span> solve.<a href="#fnref9" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn10"><p>The BCF posterior means for the same quantity agree with these estimates.<a href="#fnref10" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+<li id="fn11"><p>The bootstrap quantifies only one of the two channels through which the respondent structure enters. It resamples respondents and recomputes each bin’s mean of the estimated effects, capturing the design and sampling variability of the displayed point estimates, and on the real fits this component is roughly an order of magnitude below the posterior standard deviation, so it adds at most one to three percent to the bands. It cannot, however, repair the second channel. The BCF likelihood treats the roughly 84,600 rows as conditionally independent given the trees and the country random intercept, so if there is residual within-respondent correlation beyond what the country intercept absorbs, the posterior over <span class="math inline">\(\tau(x)\)</span> concentrates on too much information and the posterior standard deviation is internally deflated. An additive bootstrap term cannot detect or correct this. In the worst case of near-perfect within-respondent correlation the deflation could reach <span class="math inline">\(\sqrt{3} \approx 1.7\)</span>, which is not negligible.<a href="#fnref11" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
+</ol>
+</section></div></main>
+<!-- /main column -->
+<script id="quarto-html-after-body" type="application/javascript">
+  window.document.addEventListener("DOMContentLoaded", function (event) {
+    const icon = "";
+    const anchorJS = new window.AnchorJS();
+    anchorJS.options = {
+      placement: 'right',
+      icon: icon
+    };
+    anchorJS.add('.anchored');
+    const isCodeAnnotation = (el) => {
+      for (const clz of el.classList) {
+        if (clz.startsWith('code-annotation-')) {                     
+          return true;
+        }
+      }
+      return false;
+    }
+    const onCopySuccess = function(e) {
+      // button target
+      const button = e.trigger;
+      // don't keep focus
+      button.blur();
+      // flash "checked"
+      button.classList.add('code-copy-button-checked');
+      var currentTitle = button.getAttribute("title");
+      button.setAttribute("title", "Copied!");
+      let tooltip;
+      if (window.bootstrap) {
+        button.setAttribute("data-bs-toggle", "tooltip");
+        button.setAttribute("data-bs-placement", "left");
+        button.setAttribute("data-bs-title", "Copied!");
+        tooltip = new bootstrap.Tooltip(button, 
+          { trigger: "manual", 
+            customClass: "code-copy-button-tooltip",
+            offset: [0, -8]});
+        tooltip.show();    
+      }
+      setTimeout(function() {
+        if (tooltip) {
+          tooltip.hide();
+          button.removeAttribute("data-bs-title");
+          button.removeAttribute("data-bs-toggle");
+          button.removeAttribute("data-bs-placement");
+        }
+        button.setAttribute("title", currentTitle);
+        button.classList.remove('code-copy-button-checked');
+      }, 1000);
+      // clear code selection
+      e.clearSelection();
+    }
+    const getTextToCopy = function(trigger) {
+      const outerScaffold = trigger.parentElement.cloneNode(true);
+      const codeEl = outerScaffold.querySelector('code');
+      for (const childEl of codeEl.children) {
+        if (isCodeAnnotation(childEl)) {
+          childEl.remove();
+        }
+      }
+      return codeEl.innerText;
+    }
+    const clipboard = new window.ClipboardJS('.code-copy-button:not([data-in-quarto-modal])', {
+      text: getTextToCopy
+    });
+    clipboard.on('success', onCopySuccess);
+    if (window.document.getElementById('quarto-embedded-source-code-modal')) {
+      const clipboardModal = new window.ClipboardJS('.code-copy-button[data-in-quarto-modal]', {
+        text: getTextToCopy,
+        container: window.document.getElementById('quarto-embedded-source-code-modal')
+      });
+      clipboardModal.on('success', onCopySuccess);
+    }
+      var localhostRegex = new RegExp(/^(?:http|https):\/\/localhost\:?[0-9]*\//);
+      var mailtoRegex = new RegExp(/^mailto:/);
+        var filterRegex = new RegExp('/' + window.location.host + '/');
+      var isInternal = (href) => {
+          return filterRegex.test(href) || localhostRegex.test(href) || mailtoRegex.test(href);
+      }
+      // Inspect non-navigation links and adorn them if external
+     var links = window.document.querySelectorAll('a[href]:not(.nav-link):not(.navbar-brand):not(.toc-action):not(.sidebar-link):not(.sidebar-item-toggle):not(.pagination-link):not(.no-external):not([aria-hidden]):not(.dropdown-item):not(.quarto-navigation-tool):not(.about-link)');
+      for (var i=0; i<links.length; i++) {
+        const link = links[i];
+        if (!isInternal(link.href)) {
+          // undo the damage that might have been done by quarto-nav.js in the case of
+          // links that we want to consider external
+          if (link.dataset.originalHref !== undefined) {
+            link.href = link.dataset.originalHref;
+          }
+        }
+      }
+    function tippyHover(el, contentFn, onTriggerFn, onUntriggerFn) {
+      const config = {
+        allowHTML: true,
+        maxWidth: 500,
+        delay: 100,
+        arrow: false,
+        appendTo: function(el) {
+            return el.parentElement;
+        },
+        interactive: true,
+        interactiveBorder: 10,
+        theme: 'quarto',
+        placement: 'bottom-start',
+      };
+      if (contentFn) {
+        config.content = contentFn;
+      }
+      if (onTriggerFn) {
+        config.onTrigger = onTriggerFn;
+      }
+      if (onUntriggerFn) {
+        config.onUntrigger = onUntriggerFn;
+      }
+      window.tippy(el, config); 
+    }
+    const noterefs = window.document.querySelectorAll('a[role="doc-noteref"]');
+    for (var i=0; i<noterefs.length; i++) {
+      const ref = noterefs[i];
+      tippyHover(ref, function() {
+        // use id or data attribute instead here
+        let href = ref.getAttribute('data-footnote-href') || ref.getAttribute('href');
+        try { href = new URL(href).hash; } catch {}
+        const id = href.replace(/^#\/?/, "");
+        const note = window.document.getElementById(id);
+        if (note) {
+          return note.innerHTML;
+        } else {
+          return "";
+        }
+      });
+    }
+    const xrefs = window.document.querySelectorAll('a.quarto-xref');
+    const processXRef = (id, note) => {
+      // Strip column container classes
+      const stripColumnClz = (el) => {
+        el.classList.remove("page-full", "page-columns");
+        if (el.children) {
+          for (const child of el.children) {
+            stripColumnClz(child);
+          }
+        }
+      }
+      stripColumnClz(note)
+      if (id === null || id.startsWith('sec-')) {
+        // Special case sections, only their first couple elements
+        const container = document.createElement("div");
+        if (note.children && note.children.length > 2) {
+          container.appendChild(note.children[0].cloneNode(true));
+          for (let i = 1; i < note.children.length; i++) {
+            const child = note.children[i];
+            if (child.tagName === "P" && child.innerText === "") {
+              continue;
+            } else {
+              container.appendChild(child.cloneNode(true));
+              break;
+            }
+          }
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(container);
+          }
+          return container.innerHTML
+        } else {
+          if (window.Quarto?.typesetMath) {
+            window.Quarto.typesetMath(note);
+          }
+          return note.innerHTML;
+        }
+      } else {
+        // Remove any anchor links if they are present
+        const anchorLink = note.querySelector('a.anchorjs-link');
+        if (anchorLink) {
+          anchorLink.remove();
+        }
+        if (window.Quarto?.typesetMath) {
+          window.Quarto.typesetMath(note);
+        }
+        if (note.classList.contains("callout")) {
+          return note.outerHTML;
+        } else {
+          return note.innerHTML;
+        }
+      }
+    }
+    for (var i=0; i<xrefs.length; i++) {
+      const xref = xrefs[i];
+      tippyHover(xref, undefined, function(instance) {
+        instance.disable();
+        let url = xref.getAttribute('href');
+        let hash = undefined; 
+        if (url.startsWith('#')) {
+          hash = url;
+        } else {
+          try { hash = new URL(url).hash; } catch {}
+        }
+        if (hash) {
+          const id = hash.replace(/^#\/?/, "");
+          const note = window.document.getElementById(id);
+          if (note !== null) {
+            try {
+              const html = processXRef(id, note.cloneNode(true));
+              instance.setContent(html);
+            } finally {
+              instance.enable();
+              instance.show();
+            }
+          } else {
+            // See if we can fetch this
+            fetch(url.split('#')[0])
+            .then(res => res.text())
+            .then(html => {
+              const parser = new DOMParser();
+              const htmlDoc = parser.parseFromString(html, "text/html");
+              const note = htmlDoc.getElementById(id);
+              if (note !== null) {
+                const html = processXRef(id, note);
+                instance.setContent(html);
+              } 
+            }).finally(() => {
+              instance.enable();
+              instance.show();
+            });
+          }
+        } else {
+          // See if we can fetch a full url (with no hash to target)
+          // This is a special case and we should probably do some content thinning / targeting
+          fetch(url)
+          .then(res => res.text())
+          .then(html => {
+            const parser = new DOMParser();
+            const htmlDoc = parser.parseFromString(html, "text/html");
+            const note = htmlDoc.querySelector('main.content');
+            if (note !== null) {
+              // This should only happen for chapter cross references
+              // (since there is no id in the URL)
+              // remove the first header
+              if (note.children.length > 0 && note.children[0].tagName === "HEADER") {
+                note.children[0].remove();
+              }
+              const html = processXRef(null, note);
+              instance.setContent(html);
+            } 
+          }).finally(() => {
+            instance.enable();
+            instance.show();
+          });
+        }
+      }, function(instance) {
+      });
+    }
+        let selectedAnnoteEl;
+        const selectorForAnnotation = ( cell, annotation) => {
+          let cellAttr = 'data-code-cell="' + cell + '"';
+          let lineAttr = 'data-code-annotation="' +  annotation + '"';
+          const selector = 'span[' + cellAttr + '][' + lineAttr + ']';
+          return selector;
+        }
+        const selectCodeLines = (annoteEl) => {
+          const doc = window.document;
+          const targetCell = annoteEl.getAttribute("data-target-cell");
+          const targetAnnotation = annoteEl.getAttribute("data-target-annotation");
+          const annoteSpan = window.document.querySelector(selectorForAnnotation(targetCell, targetAnnotation));
+          const lines = annoteSpan.getAttribute("data-code-lines").split(",");
+          const lineIds = lines.map((line) => {
+            return targetCell + "-" + line;
+          })
+          let top = null;
+          let height = null;
+          let parent = null;
+          if (lineIds.length > 0) {
+              //compute the position of the single el (top and bottom and make a div)
+              const el = window.document.getElementById(lineIds[0]);
+              top = el.offsetTop;
+              height = el.offsetHeight;
+              parent = el.parentElement.parentElement;
+            if (lineIds.length > 1) {
+              const lastEl = window.document.getElementById(lineIds[lineIds.length - 1]);
+              const bottom = lastEl.offsetTop + lastEl.offsetHeight;
+              height = bottom - top;
+            }
+            if (top !== null && height !== null && parent !== null) {
+              // cook up a div (if necessary) and position it 
+              let div = window.document.getElementById("code-annotation-line-highlight");
+              if (div === null) {
+                div = window.document.createElement("div");
+                div.setAttribute("id", "code-annotation-line-highlight");
+                div.style.position = 'absolute';
+                parent.appendChild(div);
+              }
+              div.style.top = top - 2 + "px";
+              div.style.height = height + 4 + "px";
+              div.style.left = 0;
+              let gutterDiv = window.document.getElementById("code-annotation-line-highlight-gutter");
+              if (gutterDiv === null) {
+                gutterDiv = window.document.createElement("div");
+                gutterDiv.setAttribute("id", "code-annotation-line-highlight-gutter");
+                gutterDiv.style.position = 'absolute';
+                const codeCell = window.document.getElementById(targetCell);
+                const gutter = codeCell.querySelector('.code-annotation-gutter');
+                gutter.appendChild(gutterDiv);
+              }
+              gutterDiv.style.top = top - 2 + "px";
+              gutterDiv.style.height = height + 4 + "px";
+            }
+            selectedAnnoteEl = annoteEl;
+          }
+        };
+        const unselectCodeLines = () => {
+          const elementsIds = ["code-annotation-line-highlight", "code-annotation-line-highlight-gutter"];
+          elementsIds.forEach((elId) => {
+            const div = window.document.getElementById(elId);
+            if (div) {
+              div.remove();
+            }
+          });
+          selectedAnnoteEl = undefined;
+        };
+          // Handle positioning of the toggle
+      window.addEventListener(
+        "resize",
+        throttle(() => {
+          elRect = undefined;
+          if (selectedAnnoteEl) {
+            selectCodeLines(selectedAnnoteEl);
+          }
+        }, 10)
+      );
+      function throttle(fn, ms) {
+      let throttle = false;
+      let timer;
+        return (...args) => {
+          if(!throttle) { // first call gets through
+              fn.apply(this, args);
+              throttle = true;
+          } else { // all the others get throttled
+              if(timer) clearTimeout(timer); // cancel #2
+              timer = setTimeout(() => {
+                fn.apply(this, args);
+                timer = throttle = false;
+              }, ms);
+          }
+        };
+      }
+        // Attach click handler to the DT
+        const annoteDls = window.document.querySelectorAll('dt[data-target-cell]');
+        for (const annoteDlNode of annoteDls) {
+          annoteDlNode.addEventListener('click', (event) => {
+            const clickedEl = event.target;
+            if (clickedEl !== selectedAnnoteEl) {
+              unselectCodeLines();
+              const activeEl = window.document.querySelector('dt[data-target-cell].code-annotation-active');
+              if (activeEl) {
+                activeEl.classList.remove('code-annotation-active');
+              }
+              selectCodeLines(clickedEl);
+              clickedEl.classList.add('code-annotation-active');
+            } else {
+              // Unselect the line
+              unselectCodeLines();
+              clickedEl.classList.remove('code-annotation-active');
+            }
+          });
+        }
+    const findCites = (el) => {
+      const parentEl = el.parentElement;
+      if (parentEl) {
+        const cites = parentEl.dataset.cites;
+        if (cites) {
+          return {
+            el,
+            cites: cites.split(' ')
+          };
+        } else {
+          return findCites(el.parentElement)
+        }
+      } else {
+        return undefined;
+      }
+    };
+    var bibliorefs = window.document.querySelectorAll('a[role="doc-biblioref"]');
+    for (var i=0; i<bibliorefs.length; i++) {
+      const ref = bibliorefs[i];
+      const citeInfo = findCites(ref);
+      if (citeInfo) {
+        tippyHover(citeInfo.el, function() {
+          var popup = window.document.createElement('div');
+          citeInfo.cites.forEach(function(cite) {
+            var citeDiv = window.document.createElement('div');
+            citeDiv.classList.add('hanging-indent');
+            citeDiv.classList.add('csl-entry');
+            var biblioDiv = window.document.getElementById('ref-' + cite);
+            if (biblioDiv) {
+              citeDiv.innerHTML = biblioDiv.innerHTML;
+            }
+            popup.appendChild(citeDiv);
+          });
+          return popup.innerHTML;
+        });
+      }
+    }
+  });
+  </script>
+</div> <!-- /content -->
+<script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});
+(function() {
+  let previousOnload = window.onload;
+  window.onload = () => {
+    if (previousOnload) {
+      previousOnload();
+    }
+    lightboxQuarto.on('slide_before_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      const href = trigger.getAttribute('href');
+      if (href !== null) {
+        const imgEl = window.document.querySelector(`a[href="${href}"] img`);
+        if (imgEl !== null) {
+          const srcAttr = imgEl.getAttribute("src");
+          if (srcAttr && srcAttr.startsWith("data:")) {
+            slideConfig.href = srcAttr;
+          }
+        }
+      } 
+    });
+  
+    lightboxQuarto.on('slide_after_load', (data) => {
+      const { slideIndex, slideNode, slideConfig, player, trigger } = data;
+      if (window.Quarto?.typesetMath) {
+        window.Quarto.typesetMath(slideNode);
+      }
+    });
+  
+  };
+  
+})();
+          </script>
+
+
+
+
+</body></html>
