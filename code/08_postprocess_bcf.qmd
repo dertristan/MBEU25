@@ -127,7 +127,7 @@ reconstructed moderator design matches fit-time row order and columns exactly.
 ```{r}
 #| label: moderators
 prof_mods <- c(
-  "cj_nat",
+  "cj_nationality_shown",
   "der_cj_eu_identity",
   "der_cj_partisanship",
   "cj_age",

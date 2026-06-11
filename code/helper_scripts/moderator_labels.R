@@ -5,7 +5,7 @@
 # Concise construct labels (facet strip titles), drafted from the Survey Item
 # Reference table in 09_additional_figs_tables.qmd#tbl-wordings.
 mod_labels <- c(
-  cj_nat                   = "Profile nationality",
+  cj_nationality_shown     = "Profile nationality",
   der_cj_eu_identity       = "Profile EU identity",
   der_cj_partisanship      = "Profile partisanship",
   cj_age                   = "Profile age",
@@ -42,7 +42,7 @@ mod_labels <- c(
 # Categorical moderators (push these facets first). cj_age is numeric-but-
 # discrete (fixed conjoint ages, numeric ticks), so it carries no value relabel.
 cat_mods <- c(
-  "cj_nat", "der_cj_eu_identity", "der_cj_partisanship",
+  "cj_nationality_shown", "der_cj_eu_identity", "der_cj_partisanship",
   "cj_age", "cj_sex", "cj_class",
   "q_gender", "q_religion", "q_class", "q_rural_urban"
 )
@@ -50,7 +50,7 @@ cat_mods <- c(
 # Readable value labels for categorical moderators (raw level -> display),
 # covering exactly the observed levels in eu25_long.
 value_labels <- list(
-  cj_nat = c(
+  cj_nationality_shown = c(
     own_country = "co-national", eu = "EU national", non_eu = "Non-EU national"
   ),
   cj_sex = c(female = "Female", male = "Male"),
