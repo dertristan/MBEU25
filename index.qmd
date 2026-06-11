@@ -108,7 +108,7 @@ Following @robinson2024detect, we therefore adopt the idea of nested causal quan
 
 With the religion attribute collapsed as described above, our treatment variable is binary: $T_{ric} \in \{0,1\}$, where $T_{ric} = 1$ if the profile is displayed as Muslim and 0 otherwise.
 This recasts the marginal contrast in standard treatment-effect notation and shifts attention to its conditional counterparts.
-We observe only the realized outcome [@holland1986statistics], which in potential outcomes notation [@neyman1923application; @rubin1974estimating] is:
+We observe only the realized outcome [@holland1986statistics], which in potential outcomes notation [@neyman1990application; @rubin1974estimating] is:
 
 $$
 Y_{ric}^{g,\text{obs}} =
@@ -118,7 +118,6 @@ $${#eq-observed}
 Since both games reflect different types of discrimination, we estimate separate models for each game $g \in \{D, TR\}$, where $D$ denotes the Dictator game and $TR$ the Trust game.
 The population Average Treatment Effect (ATE), $\mathbb{E}[Y_{ric}^{g}(1) - Y_{ric}^{g}(0)]$, captures the average Muslim penalty, where $Y_{ric}^{g}(t)$ is the number of tokens allocated by respondent $i$ in country $c$ during round $r$ of game $g$ under treatment assignment $t$.
 Since the religion attribute is randomly assigned by design, $\{Y_{ric}^{g}(1),\, Y_{ric}^{g}(0)\}  \perp T_{ric}$.[^balance]
-Identification further relies on the usual conjoint stability assumptions of no carryover across rounds and no profile-order effects [@hainmueller2014causal].
 However, as the sample was recruited to be representative of national populations only in terms of age and gender [@hahm2024divided, p. 73], our baseline estimand is the more conservative Sample ATE (SATE), which conditions on the observed sample rather than making broader claims about the target population:[^sate-choice]
 
 $$
@@ -173,6 +172,7 @@ $${#eq-cate-profile}
 These quantities are linked through the law of iterated expectations, which ensures internal consistency across levels of the hierarchy: $\text{SATE}^{g} = \mathbb{E}_{i}\!\left[\mathbb{E}_{r}[\tau^{g}(X_{ic}, A_{ric})]\right] = \mathbb{E}_{i}[\tau_{ic}^{g}]$.
 
 [^balance]: @tbl-balance-round-mods and @tbl-balance-resp-mods in the appendix report the profile-level attributes and respondent-level covariates by treatment status. Both sets are balanced across Muslim and non-Muslim profiles, consistent with random assignment of the religion attribute holding in the realized sample.
+Identification further relies on the usual conjoint stability assumptions of no carryover across rounds and no profile-order effects [@hainmueller2014causal].
 
 [^sate-choice]: All quantities we report are sample quantities. We return to the implications for external validity in @sec-limits.
 
@@ -200,12 +200,14 @@ Our design follows from this comparison and from the structure of our data.
 We observe each respondent over three conjoint rounds, and respondents are themselves grouped within 25 countries, so the observations are clustered at two levels.
 Treating them as independent would understate our uncertainty.
 The CF accommodates this structure directly and scales to the full sample.
-We cluster the sample splitting and the variance estimation by respondent, which absorbs the within-respondent dependence across rounds, and we enter country as fixed effects in the covariate matrix, which absorbs between-country baseline variation [@athey2019generalized], though any residual within-country dependence beyond these fixed effects is not reflected in the variance estimates.
+We cluster the sample splitting and the variance estimation by respondent, which absorbs the within-respondent dependence across rounds, and we enter country as fixed effects in the covariate matrix, which absorbs between-country baseline variation [@athey2019generalized].[^country-dependence]
 We therefore adopt the CF as our primary estimator, since it delivers the honest, cluster-robust intervals the comparison above favors.
 We keep the BCF as a robustness check, fit with country random intercepts only.[^nested-history]
 Because the BCF does not model the within-respondent dependence directly, we recover that uncertainty after the fact with a respondent cluster bootstrap.
 The two fits therefore do not handle the clustered structure identically, a caveat we return to in @sec-limits.
 Throughout, we treat the country and respondent variation as a nuisance to absorb rather than a quantity to interpret, in keeping with our interest in heterogeneity within the sample rather than comparison across countries.
+
+[^country-dependence]: Any residual within-country dependence beyond these fixed effects is not reflected in the variance estimates.
 
 [^nested-history]: The Bayesian branch absorbs the clustered structure through random intercepts and partial pooling, and an active literature extends BCF to such hierarchical and longitudinal settings [@thal2024aggregate; @prevot2025hierarchical; @mcjames2025bayesian].
 A working implementation places a single random intercept on the prognostic surface for clustered, multisite trials [@yeager2019national; @yeager2022synergistic], built on the `multibart` package [@murray2021multibart], whose sampler accommodates an arbitrary random-effects design.
@@ -227,8 +229,7 @@ Each panel shows the $\hat{\tau}$ on the token scale within a level or bin of on
 For categorical moderators we plot the point estimate and an honest 95% confidence interval at each level, drawn as a shape and a line segment.
 For continuous moderators and rating scales we estimate the point and interval at each value, binning age and years of education into a pre-specified number of bins, and connect them into a line with a ribbon, which lets the CF reveal any non-linear trend.
 Throughout, we orient every rating scale so that moving right along the x-axis denotes more agreement, a more positive evaluation, or more attachment, depending on the item, with full wordings and original codings given in @tbl-wordings.
-We overlay the two games within a single panel by color, so that any divergence between them reads directly as a game-specific difference in heterogeneity.
-Because the two games are played by the same respondents and we inspect many moderator levels, we read comparisons of intervals across panels and games as descriptive rather than as formal tests.
+We overlay the two games within a single panel by color, so that any divergence between them reads directly as a game-specific difference in heterogeneity, and because the games share respondents and the moderator levels are many we read interval comparisons across panels and games as descriptive rather than as formal tests.
 
 ## Empirical Analysis {#sec-analysis}
 
@@ -237,6 +238,9 @@ Because the two games are played by the same respondents and we inspect many mod
 @fig-grf-combined-prof asks whether the remaining profile attributes interact with the Muslim signal, the source of heterogeneity we termed causal interaction, with the Dictator game in blue and the Trust game in orange.
 Across these attributes the penalty is strikingly stable, since every level of every attribute carries a sizeable and clearly negative effect and none of the accompanying features comes close to neutralizing it.
 The clearest moderation is partisanship.
+
+{{< embed code/07_postprocess_grf.qmd#fig-grf-combined-prof >}}
+
 Among co-nationals, displaying a party affiliation reduces the penalty substantially relative to withholding it, the single largest shift in the figure, and the attenuation holds in both games.
 Nationality is the only attribute whose moderation differs across the two games.
 The penalty against non-EU national profiles is deeper in the Trust game than in the Dictator game, the two intervals being disjoint.
@@ -246,8 +250,6 @@ The remaining attributes leave the penalty essentially untouched.
 Whether a profile identifies as an EU citizen or rejects that identity makes no difference, though in the Dictator game both attract a marginally smaller penalty than the condition in which EU identity is not displayed, a gap that lies within sampling error and does not recur in the Trust game.
 Profile age produces only a minor, non-systematic dip at thirty, with intervals overlapping across the age range, and male and female profiles are penalized alike.
 As a general pattern the Trust-game point estimates sit slightly below their Dictator-game counterparts, but the two games rarely diverge in a way the intervals can distinguish.
-
-{{< embed code/07_postprocess_grf.qmd#fig-grf-combined-prof >}}
 
 @fig-grf-combined-resp-1 and @fig-grf-combined-resp-2 turn to causal moderation, the respondent-level characteristics that govern who penalizes more, which the introduction flagged as the substantively more consequential source of variation.
 These characteristics display more heterogeneity than the profile attributes above.
@@ -294,13 +296,13 @@ The respondent-level picture replicates as well (@fig-bcf-combined-resp-1 and @f
 The penalty is robust throughout, a modest gender gap persists but narrows in the Trust game, evaluations of European integration remain the strongest source of heterogeneity, and the same populist items track differences in its magnitude.
 The continuous moderators trace smoother gradients under the BCF than under the CF, yet their direction and shape are unchanged.
 
-Two differences deserve comment, and both plausibly stem from the same source.
-The BCF intervals are narrower than the CF's, most visibly at sparsely populated moderator levels.
-A respondent cluster bootstrap shows that the sampling variability contributed by within-person dependence across the three rounds accounts for almost none of this narrowness, which we therefore read as a consequence of the absence of sample splitting and the aggressive pooling of the Bayesian prior rather than as evidence of greater precision.[^bcf-clustering]
-
 {{< embed code/07_postprocess_grf.qmd#fig-grf-combined-resp-1 >}}
 
 {{< embed code/07_postprocess_grf.qmd#fig-grf-combined-resp-2 >}}
+
+Two differences deserve comment, and both plausibly stem from the same source.
+The BCF intervals are narrower than the CF's, most visibly at sparsely populated moderator levels.
+A respondent cluster bootstrap shows that the sampling variability contributed by within-person dependence across the three rounds accounts for almost none of this narrowness, which we therefore read as a consequence of the absence of sample splitting and the aggressive pooling of the Bayesian prior rather than as evidence of greater precision.[^bcf-clustering]
 
 The narrower intervals also make the BCF appear to separate the two games more cleanly than the CF does, a distinction we treat with the same caution.
 The one genuine disagreement concerns respondent age.
