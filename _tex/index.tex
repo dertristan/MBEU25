@@ -484,18 +484,17 @@ religion attribute is randomly assigned by design,
   and Table~\ref{tbl-balance-resp-mods} in the appendix report the
   profile-level attributes and respondent-level covariates by treatment
   status. Both sets are balanced across Muslim and non-Muslim profiles,
-  consistent with random assignment of the religion attribute holding in
-  the realized sample. Identification further relies on the usual
-  conjoint stability assumptions of no carryover across rounds and no
-  profile-order effects
+  consistent with random assignment of the religion attribute, which
+  identifies the penalty jointly with the usual conjoint stability
+  assumptions of no carryover and no profile-order effects
   (\citeproc{ref-hainmueller2014causal}{Hainmueller et al. 2014}).}
 However, as the sample was recruited to be representative of national
 populations only in terms of age and gender
 (\citeproc{ref-hahm2024divided}{Hahm et al. 2024, 73}), our baseline
 estimand is the more conservative Sample ATE (SATE), which conditions on
 the observed sample rather than making broader claims about the target
-population:\footnote{All quantities we report are sample quantities. We
-  return to the implications for external validity in
+population:\footnote{All quantities we report are sample quantities, and
+  we return to the implications for external validity in
   Section~\ref{sec-limits}.}
 
 \begin{equation}\protect\phantomsection\label{eq-sate}{
@@ -529,8 +528,11 @@ but as potential moderators of the Muslim penalty.
 This single CATE function captures two different sources of
 heterogeneity. First, we are interested in \emph{causal moderation},
 namely whether the size of the Muslim penalty differs across
-respondent-level characteristics. Disaggregating to the individual level
-by averaging over rounds, we define the respondent-level CATE:
+respondent-level characteristics, which are not randomized, so these
+gradients describe who penalizes more, not the effect of changing a
+moderator (\citeproc{ref-bansak2021estimating}{Bansak 2021}).
+Disaggregating to the individual level by averaging over rounds, we
+define the respondent-level CATE:
 
 \begin{equation}\protect\phantomsection\label{eq-cate-respondent}{
     \tau_{ic}^{g}
@@ -542,11 +544,6 @@ by averaging over rounds, we define the respondent-level CATE:
           \right]
 }\end{equation}
 
-Because these characteristics are not randomized, \(\tau_{ic}^{g}\)
-describes how the penalty varies across subgroups rather than the causal
-effect of changing a moderator
-(\citeproc{ref-bansak2021estimating}{Bansak 2021}).
-
 Second, we are interested in \emph{causal interaction}: whether other
 profile attributes change the Muslim penalty. Disaggregating to the
 profile level by averaging over respondents, we define the profile-level
@@ -557,11 +554,9 @@ CATE:\footnote{The subscripts \(r, i, c\) reflect the hierarchical
   the disaggregated CATEs: \(X_{ic}\) carries the country index because
   \(c\) is determined by \(i\), and \(\tau_{ric}^g\) retains \(i\) even
   though only \(A_{ric}\) remains in the conditioning set after
-  marginalizing over respondents. \(\mathbb{E}_r\) denotes expectation
-  over the design distribution of the displayed attributes, which
-  randomization makes identical across respondents. \(\mathbb{E}_i\)
-  denotes averaging over the \(N\) sampled respondents, with \(N\) as in
-  Equation~\ref{eq-sate}.}
+  marginalizing over respondents, with \(\mathbb{E}_r\) taken over the
+  randomized design distribution of the attributes and \(\mathbb{E}_i\)
+  over the \(N\) respondents of Equation~\ref{eq-sate}.}
 
 \begin{equation}\protect\phantomsection\label{eq-cate-profile}{
     \tau_{ric}^{g}
@@ -632,23 +627,21 @@ that arises when a single prior shrinks both surfaces
 the second: standard BCF, including the hierarchical variants we draw
 on, fits the trees and forms the posterior intervals on the full sample
 (\citeproc{ref-hahn2020bayesian}{Hahn et al. 2020};
-\citeproc{ref-thal2024aggregate}{Thal et al. 2024}). The sample
-splitting behind the CF's confidence intervals is exactly that missing
-device, and it addresses the concern our randomized design does not
-dissolve.
+\citeproc{ref-thal2024aggregate}{Thal et al. 2024}). The CF's sample
+splitting is exactly that missing device, addressing the concern our
+randomized design does not dissolve.
 
 Our design follows from this comparison and from the structure of our
 data. We observe each respondent over three conjoint rounds, and
-respondents are themselves grouped within 25 countries, so the
-observations are clustered at two levels. Treating them as independent
-would understate our uncertainty. The CF accommodates this structure
-directly and scales to the full sample. We cluster the sample splitting
-and the variance estimation by respondent, which absorbs the
-within-respondent dependence across rounds, and we enter country as
-fixed effects in the covariate matrix, which absorbs between-country
-baseline variation (\citeproc{ref-athey2019generalized}{Athey et al.
-2019}).\footnote{Any residual within-country dependence beyond these
-  fixed effects is not reflected in the variance estimates.} We
+respondents are grouped within 25 countries, so the observations are
+clustered at two levels. Treating them as independent would understate
+our uncertainty. The CF accommodates this structure directly and scales
+to the full sample. We cluster the sample splitting and the variance
+estimation by respondent, which absorbs the within-respondent dependence
+across rounds, and we enter country as fixed effects in the covariate
+matrix, which absorbs between-country baseline variation, though
+residual within-country dependence is not reflected in the variance
+estimates (\citeproc{ref-athey2019generalized}{Athey et al. 2019}). We
 therefore adopt the CF as our primary estimator, since it delivers the
 honest, cluster-robust intervals the comparison above favors. We keep
 the BCF as a robustness check, fit with country random intercepts
@@ -690,15 +683,13 @@ average effect. The CF estimates a SATE of \(-0.56\) (95\% CI
 \([-0.60, -0.53]\)) in the Dictator game and \(-0.64\) (95\% CI
 \([-0.68, -0.60]\)) in the Trust game. Both reproduce the difference in
 means reported above (Table~\ref{tbl-diff-in-means}), a first sign that
-the CF behaves as it should before we ask it about
-heterogeneity.\footnote{The BCF posterior means for the same quantity
-  agree with these estimates.} We then gauge that heterogeneity with the
-targeting operator characteristic curve
+the CF behaves as it should.\footnote{The BCF posterior means for the
+  same quantity agree with these estimates.} We then gauge that
+heterogeneity with the targeting operator characteristic curve
 (Figure~\ref{fig-grf-combined-toc}, appendix), whose area lies well
 above zero in both games. Because the curve ranks observations by the
-forest's own out-of-bag predictions rather than by a rule estimated on
-held-out data, we read it as descriptive support for targetable
-variation rather than a formal test, and it motivates the
+forest's own out-of-bag predictions, we read it as descriptive support
+for targetable variation rather than a formal test, motivating the
 moderator-by-moderator analysis that follows.
 
 We present the results in the visual grammar of Green and Kern
@@ -708,22 +699,20 @@ conditional effect as a function of each moderator
 \(\hat{\tau}\) on the token scale within a level or bin of one
 moderator, taken over the distribution of the remaining covariates, so
 it describes how the Muslim penalty varies with that moderator rather
-than a partial effect with everything else held fixed. For categorical
+than a partial effect with all else held fixed. For categorical
 moderators we plot the point estimate and an honest 95\% confidence
 interval at each level, drawn as a shape and a line segment. For
 continuous moderators and rating scales we estimate the point and
 interval at each value, binning age and years of education into a
 pre-specified number of bins, and connect them into a line with a
-ribbon, which lets the CF reveal any non-linear trend. Throughout, we
+ribbon, letting the CF reveal any non-linear trend. Throughout, we
 orient every rating scale so that moving right along the x-axis denotes
-more agreement, a more positive evaluation, or more attachment,
-depending on the item, with full wordings and original codings given in
-Table~\ref{tbl-wordings}. We overlay the two games within a single panel
-by color, so that any divergence between them reads directly as a
-game-specific difference in heterogeneity, and because the games share
-respondents and the moderator levels are many we read interval
-comparisons across panels and games as descriptive rather than as formal
-tests.
+more agreement, a more positive evaluation, or more attachment, with
+full wordings and original codings in Table~\ref{tbl-wordings}. We
+overlay the two games within a single panel by color, so that any
+divergence between them reads directly as a game-specific difference in
+heterogeneity, and because the games share respondents we read interval
+comparisons as descriptive rather than as formal tests.
 
 \section{Empirical Analysis}\label{sec-analysis}
 
@@ -733,9 +722,29 @@ Figure~\ref{fig-grf-combined-prof} asks whether the remaining profile
 attributes interact with the Muslim signal, the source of heterogeneity
 we termed causal interaction, with the Dictator game in blue and the
 Trust game in orange. Across these attributes the penalty is strikingly
-stable, since every level of every attribute carries a sizeable and
-clearly negative effect and none of the accompanying features comes
-close to neutralizing it. The clearest moderation is partisanship.
+stable, since every level carries a sizeable, clearly negative effect
+and no accompanying feature comes close to neutralizing it. The clearest
+moderation is partisanship. Among co-nationals, displaying a party
+affiliation reduces the penalty substantially relative to withholding
+it, the single largest shift in the figure, and the attenuation holds in
+both games. Nationality is the only attribute whose moderation differs
+across the two games. The penalty against non-EU national profiles is
+deeper in the Trust game than in the Dictator game, the two intervals
+being disjoint. Within the Dictator game non-EU nationals draw the
+smallest penalty while co-nationals are penalized systematically more,
+an informative ordering the Trust game does not reproduce. Social class
+moves the penalty only at its upper end, where lower- and middle-class
+profiles are penalized indistinguishably but upper-class profiles
+somewhat less. The remaining attributes leave the penalty essentially
+untouched. Whether a profile identifies as an EU citizen or rejects that
+identity makes no difference, though in the Dictator game both attract a
+marginally smaller penalty than the condition in which EU identity is
+not displayed, a gap within sampling error that does not recur in the
+Trust game. Profile age produces only a minor, non-systematic dip at
+thirty, with intervals overlapping across the age range, and male and
+female profiles are penalized alike. As a general pattern the Trust-game
+point estimates sit slightly below their Dictator-game counterparts, but
+the two games rarely diverge in a way the intervals can distinguish.
 
 \begin{figure}[H]
 
@@ -764,112 +773,85 @@ is displayed for co-national profiles only.}
 \href{https://dertristan.github.io/MBEU25/code/07_postprocess_grf-preview.html\#cell-fig-grf-combined-prof}{GRF
 Post-Processing}}
 
-Among co-nationals, displaying a party affiliation reduces the penalty
-substantially relative to withholding it, the single largest shift in
-the figure, and the attenuation holds in both games. Nationality is the
-only attribute whose moderation differs across the two games. The
-penalty against non-EU national profiles is deeper in the Trust game
-than in the Dictator game, the two intervals being disjoint. Within the
-Dictator game the ordering is itself informative, as non-EU nationals
-draw the smallest penalty while co-nationals are penalized
-systematically more, an ordering the Trust game does not reproduce.
-Social class moves the penalty only at its upper end, where lower- and
-middle-class profiles are penalized indistinguishably but profiles
-presented as upper class are penalized somewhat less. The remaining
-attributes leave the penalty essentially untouched. Whether a profile
-identifies as an EU citizen or rejects that identity makes no
-difference, though in the Dictator game both attract a marginally
-smaller penalty than the condition in which EU identity is not
-displayed, a gap that lies within sampling error and does not recur in
-the Trust game. Profile age produces only a minor, non-systematic dip at
-thirty, with intervals overlapping across the age range, and male and
-female profiles are penalized alike. As a general pattern the Trust-game
-point estimates sit slightly below their Dictator-game counterparts, but
-the two games rarely diverge in a way the intervals can distinguish.
-
 Figure~\ref{fig-grf-combined-resp-1} and
 Figure~\ref{fig-grf-combined-resp-2} turn to causal moderation, the
-respondent-level characteristics that govern who penalizes more, which
-the introduction flagged as the substantively more consequential source
-of variation. These characteristics display more heterogeneity than the
-profile attributes above. Among the categorical respondent
-characteristics, the sharpest contrast is by gender, as men penalize
-Muslim profiles more than women in both games, though only in the
-Dictator game do the intervals separate. Respondents' own religion
-orders the penalty as well, with Catholics and Protestants exhibiting
-the strongest bias and the Orthodox the weakest by their point
-estimates. Place of residence matters at the margin, rural respondents
-penalizing somewhat more than those in large cities and smaller towns
-falling in between, a gradient that is firmer in the Trust game.
-Subjective class is largely flat, its main features being the wide
-intervals and smallest penalty of respondents who decline to place
-themselves and a slightly but not systematically lower penalty among the
-working class compared to lower-middle and middle class respondents in
-the Dictator game. The upper middle class is the interesting exception,
+respondent-level characteristics that govern who penalizes more, the
+source the introduction flagged as substantively more consequential.
+These characteristics display more heterogeneity than the profile
+attributes above. Among the categorical respondent characteristics, the
+sharpest contrast is by gender, as men penalize Muslim profiles more
+than women in both games, though only in the Dictator game do the
+intervals separate. Respondents' own religion orders the penalty as
+well, with Catholics and Protestants exhibiting the strongest bias and
+the Orthodox the weakest by their point estimates. Place of residence
+matters at the margin, rural respondents penalizing somewhat more than
+those in large cities and smaller towns falling in between, a gradient
+that is firmer in the Trust game. Subjective class is largely flat, its
+main features the wide intervals and smallest penalty of respondents who
+decline to place themselves and a slightly lower penalty among the
+working class than lower-middle and middle class respondents in the
+Dictator game. The upper middle class is the interesting exception,
 drawing the smallest penalty of any class in the Dictator game but the
-largest in the Trust game by their point estimates, the clearest
-between-game divergence in the figure.
+largest in the Trust game, the clearest between-game divergence in the
+figure.
 
 The attitudinal scales reveal more structure. The strongest single
 gradient is attachment to the European Union, which is associated with
 an almost linear reduction in the penalty. Attachment to one's own
-country runs the other way and appears to deepen the penalty, though the
-scarcity of respondents at the unattached end leaves that pattern
-uncertain. Attachment to Europe as a whole is weaker and less clear,
-consistent with a faintly declining penalty in the Dictator game and a
-flat one in the Trust game, while perceived ability to understand EU
-politics shows no moderation at all. A second cluster concerns populist
-and democratic dispositions. Agreement that officials merely talk rather
-than act, and agreement that compromise amounts to selling out, are each
-associated with a larger penalty, the latter tracing a clear monotonic
-gradient. The view that politics is a struggle between good and evil
-follows the same direction from the middle of the scale upward before
-flattening near the top. Valuing compromise, its mirror image, is
-associated with a marginally smaller penalty, although agreement is high
-throughout the sample and few respondents populate the low end of that
-item. Respondent age closes the figure and hints at a U-shaped
+country runs the other way and appears to deepen the penalty, though few
+respondents populate the unattached end, leaving that pattern uncertain.
+Attachment to Europe as a whole is weaker, consistent with a faintly
+declining penalty in the Dictator game and a flat one in the Trust game,
+while perceived ability to understand EU politics shows no moderation at
+all. A second cluster concerns populist and democratic dispositions.
+Agreement that officials merely talk rather than act, and agreement that
+compromise amounts to selling out, are each associated with a larger
+penalty, the latter a clear monotonic gradient. The view that politics
+is a struggle between good and evil follows the same direction from
+mid-scale upward before flattening near the top. Valuing compromise, its
+mirror image, is associated with a marginally smaller penalty, although
+agreement is high throughout and few respondents populate the item's low
+end. Respondent age closes the figure and hints at a U-shaped
 relationship. Among the youngest respondents the intervals brush the
-zero line repeatedly, and at the very youngest ages the point estimates
-briefly cross it, the only place in the analysis where the penalty
-appears to vanish. The penalty then deepens through middle age and lifts
-again past sixty-five, though that upturn coincides with the thinning of
-the sample at older ages and may be an artifact of the wider intervals
-there.
+zero line repeatedly and the point estimates briefly cross it, the only
+place in the analysis where the penalty appears to vanish. The penalty
+then deepens through middle age and lifts again past sixty-five, though
+that upturn coincides with the thinning sample at older ages and may be
+an artifact of the wider intervals there.
 
 Figure~\ref{fig-grf-combined-resp-2} continues with the remaining
 attitudinal scales, where the moderation is dominated by evaluations of
 the European Union. Across this battery the pattern is consistent, as
 respondents who judge the Union negatively penalize Muslim profiles more
-and those who judge it favorably penalize them less. More negative
-assessments of the EU's effect on the national economy, on national
-culture and identity, and on national political status each accompany a
-larger penalty, as does agreement that the Union would be better
-abolished and that it should heed the people. Satisfaction with the EU
-and support for its pursuing long-term goals run the other way toward a
-smaller penalty, the latter flattening at the top of its scale. The
-technocratic and remaining populist items move the penalty far less.
-Leaving decisions to experts and elevating leaders above ordinary
-citizens are associated with at most a slight increase in the penalty as
-agreement rises, more visible in the Trust game, and agreement that
-parties do more harm than good nudges it upward in the same way. Valuing
-the views of other groups behaves like the compromise item, edging the
-penalty down over the upper half of the scale. The weakest moderators
-are the claim that ordinary people do not know what is good for them and
-the age at which respondents left education, both of which leave the
+and those who judge it favorably less. More negative assessments of the
+EU's effect on the national economy, culture and identity, and political
+status each accompany a larger penalty, as does agreement that the Union
+would be better abolished and that it should heed the people.
+Satisfaction with the EU and support for its pursuing long-term goals
+run the other way toward a smaller penalty, the latter flattening at the
+scale's top. The technocratic and remaining populist items move the
+penalty far less. Leaving decisions to experts and elevating leaders
+above ordinary citizens are associated with at most a slight increase in
+the penalty as agreement rises, more visible in the Trust game, and
+agreement that parties do more harm than good nudges it upward
+similarly. Valuing the views of other groups behaves like the compromise
+item, edging the penalty down over the scale's upper half. The weakest
+moderators are the claim that ordinary people do not know what is good
+for them and the age respondents left education, both leaving the
 penalty essentially flat.
 
 Taken together, the respondent-level results describe substantial
-heterogeneity across demographic subgroups and pre-treatment attitudes,
-but heterogeneity almost entirely in the magnitude of the Muslim penalty
-rather than in its presence. In the few subgroups where the penalty
-comes closest to disappearing, only the upper bound of the interval
-grazes zero, and no single moderator credibly nullifies the penalty, let
-alone reverses it. The strongest and most coherent moderation runs
-through evaluations of European integration, where respondents hostile
-to the Union or skeptical of its effects penalize Muslim profiles
-systematically more than those who regard it favorably. Yet even on the
-pro-European side of these scales a robust penalty remains, attenuated
-rather than abolished. The variable-importance ranking in the appendix
+heterogeneity across subgroups and pre-treatment attitudes, but almost
+entirely in the magnitude of the Muslim penalty rather than in its
+presence. Where the penalty comes closest to disappearing, only the
+upper bound of the interval grazes zero, and no single moderator
+credibly nullifies it, let alone reverses it. The strongest and most
+coherent moderation runs through evaluations of European integration,
+where respondents hostile to the Union or skeptical of its effects
+penalize Muslim profiles systematically more than those who regard it
+favorably. Yet even on the pro-European side of these scales a robust
+penalty remains, attenuated rather than abolished. The
+variable-importance ranking in the appendix
 (Figure~\ref{fig-grf-combined-vi}) corroborates this reading, placing
 EU-evaluation items in four of the five top positions, though
 split-frequency importance mechanically favors scales with many values.
@@ -888,9 +870,33 @@ The respondent-level picture replicates as well
 Figure~\ref{fig-bcf-combined-resp-2}). The penalty is robust throughout,
 a modest gender gap persists but narrows in the Trust game, evaluations
 of European integration remain the strongest source of heterogeneity,
-and the same populist items track differences in its magnitude. The
-continuous moderators trace smoother gradients under the BCF than under
-the CF, yet their direction and shape are unchanged.
+and the same populist items track its magnitude. The continuous
+moderators trace smoother gradients under the BCF than under the CF, yet
+their direction and shape are unchanged.
+
+Two differences deserve comment, and both plausibly share one source.
+The BCF intervals are narrower than the CF's, most visibly at sparsely
+populated moderator levels. A respondent cluster bootstrap shows that
+within-person dependence across the three rounds accounts for almost
+none of this narrowness, which we therefore attribute to the absence of
+sample splitting and the aggressive pooling of the Bayesian prior rather
+than to greater precision.\footnote{The bootstrap quantifies only one of
+  the two channels through which the respondent structure enters. It
+  resamples respondents and recomputes each bin's mean of the estimated
+  effects, capturing the design and sampling variability of the
+  displayed point estimates, and on the real fits this component is
+  roughly an order of magnitude below the posterior standard deviation,
+  so it adds at most one to three percent to the bands. It cannot,
+  however, repair the second channel. The BCF likelihood treats the
+  roughly 84,600 rows as conditionally independent given the trees and
+  the country random intercept, so if there is residual
+  within-respondent correlation beyond what the country intercept
+  absorbs, the posterior over \(\tau(x)\) concentrates on too much
+  information and the posterior standard deviation is internally
+  deflated. An additive bootstrap term cannot detect or correct this. In
+  the worst case of near-perfect within-respondent correlation the
+  deflation could reach \(\sqrt{3} \approx 1.7\), which is not
+  negligible.}
 
 \begin{figure}[H]
 
@@ -958,31 +964,6 @@ grey histogram of the covariate. The y-axis is free per facet.}
 \href{https://dertristan.github.io/MBEU25/code/07_postprocess_grf-preview.html\#cell-fig-grf-combined-resp-2}{GRF
 Post-Processing}}
 
-Two differences deserve comment, and both plausibly stem from the same
-source. The BCF intervals are narrower than the CF's, most visibly at
-sparsely populated moderator levels. A respondent cluster bootstrap
-shows that the sampling variability contributed by within-person
-dependence across the three rounds accounts for almost none of this
-narrowness, which we therefore read as a consequence of the absence of
-sample splitting and the aggressive pooling of the Bayesian prior rather
-than as evidence of greater precision.\footnote{The bootstrap quantifies
-  only one of the two channels through which the respondent structure
-  enters. It resamples respondents and recomputes each bin's mean of the
-  estimated effects, capturing the design and sampling variability of
-  the displayed point estimates, and on the real fits this component is
-  roughly an order of magnitude below the posterior standard deviation,
-  so it adds at most one to three percent to the bands. It cannot,
-  however, repair the second channel. The BCF likelihood treats the
-  roughly 84,600 rows as conditionally independent given the trees and
-  the country random intercept, so if there is residual
-  within-respondent correlation beyond what the country intercept
-  absorbs, the posterior over \(\tau(x)\) concentrates on too much
-  information and the posterior standard deviation is internally
-  deflated. An additive bootstrap term cannot detect or correct this. In
-  the worst case of near-perfect within-respondent correlation the
-  deflation could reach \(\sqrt{3} \approx 1.7\), which is not
-  negligible.}
-
 The narrower intervals also make the BCF appear to separate the two
 games more cleanly than the CF does, a distinction we treat with the
 same caution. The one genuine disagreement concerns respondent age. The
@@ -1014,9 +995,7 @@ natural extension. Fourth, we examine the moderating role of each
 covariate one at a time and do not characterize interactions among
 moderators. The CF accommodates high-dimensional, non-linear
 interactions internally, and a fuller treatment of these higher-order
-patterns is left to future work. Relatedly, the respondent-level
-moderators are observed rather than randomized, so the gradients
-describe who penalizes more, not the effect of changing a moderator.
+patterns is left to future work.
 
 Fifth, our robustness check is not a fully independent confirmation. The
 full nested fit was computationally infeasible, so the BCF drops the
