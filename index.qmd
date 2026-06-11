@@ -85,7 +85,7 @@ Partisan affiliation is displayed only for co-nationals, since assigning a natio
 
 The design contains no condition in which religion is absent, so there is no pure no-religion control.
 We do not adopt non-religious as the baseline, because being non-religious is not obviously a neutral reference and may be read differently across contexts, for instance in the post-communist states of eastern Europe.
-To avoid the dependence of conjoint estimates on a chosen reference category [see @leeper2020measuring] and to simplify the causal language, we collapse religion into a binary treatment $T$, equal to 1 when the co-player is displayed as Muslim and 0 otherwise.[^binary-coding]
+Rather than tying estimates to a single reference category [see @leeper2020measuring], and to simplify the causal language, we collapse religion into a binary treatment $T$, equal to 1 when the co-player is displayed as Muslim and 0 otherwise.[^binary-coding]
 This coding follows from our interest in the drivers of the Muslim penalty rather than in the full multidimensional conjoint.
 
 After standard quality filtering on attention checks and completed games, the analysis sample comprises roughly 28,200 respondents across the 25 countries, yielding about 84,600 decisions per game.
@@ -107,7 +107,7 @@ Because the AMCE is by definition an average, it conceals how different responde
 Following @robinson2024detect, we therefore adopt the idea of nested causal quantities [see also @goplerud2025estimating].
 
 With the religion attribute collapsed as described above, our treatment variable is binary: $T_{ric} \in \{0,1\}$, where $T_{ric} = 1$ if the profile is displayed as Muslim and 0 otherwise.
-This shifts our estimand from the AMCE framework to a standard treatment effect logic.
+This recasts the marginal contrast in standard treatment-effect notation and shifts attention to its conditional counterparts.
 We observe only the realized outcome [@holland1986statistics], which in potential outcomes notation [@neyman1923application; @rubin1974estimating] is:
 
 $$
@@ -118,6 +118,7 @@ $${#eq-observed}
 Since both games reflect different types of discrimination, we estimate separate models for each game $g \in \{D, TR\}$, where $D$ denotes the Dictator game and $TR$ the Trust game.
 The population Average Treatment Effect (ATE), $\mathbb{E}[Y_{ric}^{g}(1) - Y_{ric}^{g}(0)]$, captures the average Muslim penalty, where $Y_{ric}^{g}(t)$ is the number of tokens allocated by respondent $i$ in country $c$ during round $r$ of game $g$ under treatment assignment $t$.
 Since the religion attribute is randomly assigned by design, $\{Y_{ric}^{g}(1),\, Y_{ric}^{g}(0)\}  \perp T_{ric}$.[^balance]
+Identification further relies on the usual conjoint stability assumptions of no carryover across rounds and no profile-order effects [@hainmueller2014causal].
 However, as the sample was recruited to be representative of national populations only in terms of age and gender [@hahm2024divided, p. 73], our baseline estimand is the more conservative Sample ATE (SATE), which conditions on the observed sample rather than making broader claims about the target population:[^sate-choice]
 
 $$
@@ -126,7 +127,7 @@ $$
         \mathbb{E}_{r}\!\left[Y_{ric}^{g}(1) - Y_{ric}^{g}(0)\right]
 $${#eq-sate}
 
-As we are interested in factors that explain the heterogeneity in  Muslim penalty,  we decompose the SATE into its conditional counterpart, the Conditional Average Treatment Effect (CATE):
+As we are interested in factors that explain the heterogeneity in the Muslim penalty, we decompose the SATE into its conditional counterpart, the Conditional Average Treatment Effect (CATE):
 
 $$
     \tau^{g}(X_{ic},\, A_{ric}) =
@@ -141,7 +142,7 @@ $${#eq-cate1}
 Importantly, we do not treat these profile attributes as separate treatments as in the AMCE approach, but as potential moderators of the Muslim penalty.
 
 This single CATE function captures two different sources of heterogeneity.
-First, we are interested in *causal moderation*, namely whether and how respondent-level characteristics shape the size of the Muslim penalty.
+First, we are interested in *causal moderation*, namely whether the size of the Muslim penalty differs across respondent-level characteristics.
 Disaggregating to the individual level by averaging over rounds, we define the respondent-level CATE:
 
 $$
@@ -153,6 +154,8 @@ $$
             X_{ic}
           \right]
 $${#eq-cate-respondent}
+
+Because these characteristics are not randomized, $\tau_{ic}^{g}$ describes how the penalty varies across subgroups rather than the causal effect of changing a moderator [@bansak2021estimating].
 
 Second, we are interested in *causal interaction*: whether other profile attributes change the Muslim penalty.
 Disaggregating to the profile level by averaging over respondents, we define the profile-level CATE:[^subscripts]
@@ -169,11 +172,13 @@ $${#eq-cate-profile}
 
 These quantities are linked through the law of iterated expectations, which ensures internal consistency across levels of the hierarchy: $\text{SATE}^{g} = \mathbb{E}_{i}\!\left[\mathbb{E}_{r}[\tau^{g}(X_{ic}, A_{ric})]\right] = \mathbb{E}_{i}[\tau_{ic}^{g}]$.
 
-[^balance]: @tbl-balance-round-mods and @tbl-balance-resp-mods in the appendix report the profile-level attributes and respondent-level covariates by treatment status. Both sets are balanced across Muslim and non-Muslim profiles, confirming that random assignment of the religion attribute holds in the realized sample.
+[^balance]: @tbl-balance-round-mods and @tbl-balance-resp-mods in the appendix report the profile-level attributes and respondent-level covariates by treatment status. Both sets are balanced across Muslim and non-Muslim profiles, consistent with random assignment of the religion attribute holding in the realized sample.
 
-[^sate-choice]: Since we are interested in treatment effect heterogeneity and not the average penalty itself, the choice between ATE and SATE is inconsequential for the main analysis.
+[^sate-choice]: All quantities we report are sample quantities. We return to the implications for external validity in @sec-limits.
 
 [^subscripts]: The subscripts $r, i, c$ reflect the hierarchical structure of the outcome $Y_{ric}^g$ (round $r$, nested in respondent $i$, nested in country $c$), not the conditioning set in the expectation. The same convention applies to the covariates and the disaggregated CATEs: $X_{ic}$ carries the country index because $c$ is determined by $i$, and $\tau_{ric}^g$ retains $i$ even though only $A_{ric}$ remains in the conditioning set after marginalizing over respondents.
+$\mathbb{E}_r$ denotes expectation over the design distribution of the displayed attributes, which randomization makes identical across respondents.
+$\mathbb{E}_i$ denotes averaging over the $N$ sampled respondents, with $N$ as in @eq-sate.
 
 
 ### Estimation Strategy
@@ -186,7 +191,7 @@ The second corrects the data instead: the CF learns the partition on one part of
 Generalized random forests extend this orthogonalized, sample-split estimation to a broad class of estimands [@athey2019generalized] and have become a workhorse for heterogeneous-effect analysis in political science [@davis2017using; @zheng2023estimating].
 Comparing the two families, @ratkovic2021subgroup raises two concerns about the Bayesian, full-sample approach: it does not model the treatment as a function of the covariates, and it uses the same data to fit the model and to test the effects.
 The first concern bites mainly when assignment is not randomized, and under the known propensities of our conjoint it loses its force.
-The second survives randomization, since using the same data to discover an effect surface and to test it invalidates the resulting intervals regardless of how treatment was assigned.
+The second survives randomization, since using the same data to discover an effect surface and to test it can leave the resulting intervals undercovering regardless of how treatment was assigned.
 The BCF answers the first concern by giving the treatment surface its own prior and regularization, guarding against the regularization-induced confounding that arises when a single prior shrinks both surfaces [@hahn2020bayesian; @caron2022shrinkage; @caron2022estimating].
 They have no analogue for the second: standard BCF, including the hierarchical variants we draw on, fits the trees and forms the posterior intervals on the full sample [@hahn2020bayesian; @thal2024aggregate].
 The sample splitting behind the CF's confidence intervals is exactly that missing device, and it addresses the concern our randomized design does not dissolve.
@@ -195,7 +200,7 @@ Our design follows from this comparison and from the structure of our data.
 We observe each respondent over three conjoint rounds, and respondents are themselves grouped within 25 countries, so the observations are clustered at two levels.
 Treating them as independent would understate our uncertainty.
 The CF accommodates this structure directly and scales to the full sample.
-We cluster the sample splitting and the variance estimation by respondent, which absorbs the within-respondent dependence across rounds, and we enter country as fixed effects in the covariate matrix, which absorbs between-country baseline variation [@athey2019generalized].
+We cluster the sample splitting and the variance estimation by respondent, which absorbs the within-respondent dependence across rounds, and we enter country as fixed effects in the covariate matrix, which absorbs between-country baseline variation [@athey2019generalized], though any residual within-country dependence beyond these fixed effects is not reflected in the variance estimates.
 We therefore adopt the CF as our primary estimator, since it delivers the honest, cluster-robust intervals the comparison above favors.
 We keep the BCF as a robustness check, fit with country random intercepts only.[^nested-history]
 Because the BCF does not model the within-respondent dependence directly, we recover that uncertainty after the fact with a respondent cluster bootstrap.
@@ -212,8 +217,8 @@ The CF recovered the same quantities at a fraction of the cost, while restrictin
 Before turning to heterogeneity, we confirm that the CF recovers the average effect.
 The CF estimates a SATE of $-0.56$ (95% CI $[-0.60, -0.53]$) in the Dictator game and $-0.64$ (95% CI $[-0.68, -0.60]$) in the Trust game.
 Both reproduce the difference in means reported above (@tbl-diff-in-means), a first sign that the CF behaves as it should before we ask it about heterogeneity.[^bcf-sate]
-We then test whether that heterogeneity is real with the targeting operator characteristic curve (@fig-grf-combined-toc, appendix), whose area lies well above zero in both games.
-This indicates that the variation in the Muslim penalty is targetable rather than noise, which motivates the moderator-by-moderator analysis that follows.
+We then gauge that heterogeneity with the targeting operator characteristic curve (@fig-grf-combined-toc, appendix), whose area lies well above zero in both games.
+Because the curve ranks observations by the forest's own out-of-bag predictions rather than by a rule estimated on held-out data, we read it as descriptive support for targetable variation rather than a formal test, and it motivates the moderator-by-moderator analysis that follows.
 
 [^bcf-sate]: The BCF posterior means for the same quantity agree with these estimates.
 
@@ -223,6 +228,7 @@ For categorical moderators we plot the point estimate and an honest 95% confiden
 For continuous moderators and rating scales we estimate the point and interval at each value, binning age and years of education into a pre-specified number of bins, and connect them into a line with a ribbon, which lets the CF reveal any non-linear trend.
 Throughout, we orient every rating scale so that moving right along the x-axis denotes more agreement, a more positive evaluation, or more attachment, depending on the item, with full wordings and original codings given in @tbl-wordings.
 We overlay the two games within a single panel by color, so that any divergence between them reads directly as a game-specific difference in heterogeneity.
+Because the two games are played by the same respondents and we inspect many moderator levels, we read comparisons of intervals across panels and games as descriptive rather than as formal tests.
 
 ## Empirical Analysis {#sec-analysis}
 
@@ -249,7 +255,7 @@ Among the categorical respondent characteristics, the sharpest contrast is by ge
 Respondents' own religion orders the penalty as well, with Catholics and Protestants exhibiting the strongest bias and the Orthodox the weakest by their point estimates.
 Place of residence matters at the margin, rural respondents penalizing somewhat more than those in large cities and smaller towns falling in between, a gradient that is firmer in the Trust game.
 Subjective class is largely flat, its main features being the wide intervals and smallest penalty of respondents who decline to place themselves and a slightly but not systematically lower penalty among the working class compared to lower-middle and middle class respondents in the Dictator game.
-The upper middle class is the interesting exception, drawing the smallest penalty of any class in the Dictator game but the largest in the Trust game by their point estimates, a between-game difference that is systematic.
+The upper middle class is the interesting exception, drawing the smallest penalty of any class in the Dictator game but the largest in the Trust game by their point estimates, the clearest between-game divergence in the figure.
 
 The attitudinal scales reveal more structure.
 The strongest single gradient is attachment to the European Union, which is associated with an almost linear reduction in the penalty.
@@ -276,7 +282,7 @@ Taken together, the respondent-level results describe substantial heterogeneity 
 In the few subgroups where the penalty comes closest to disappearing, only the upper bound of the interval grazes zero, and no single moderator credibly nullifies the penalty, let alone reverses it.
 The strongest and most coherent moderation runs through evaluations of European integration, where respondents hostile to the Union or skeptical of its effects penalize Muslim profiles systematically more than those who regard it favorably.
 Yet even on the pro-European side of these scales a robust penalty remains, attenuated rather than abolished.
-The variable-importance ranking in the appendix (@fig-grf-combined-vi) corroborates this reading, placing EU-evaluation items among the four most influential moderators of the five.
+The variable-importance ranking in the appendix (@fig-grf-combined-vi) corroborates this reading, placing EU-evaluation items in four of the five top positions, though split-frequency importance mechanically favors scales with many values.
 
 ### Robustness {#sec-robustness}
 
@@ -320,6 +326,7 @@ Our interpretations therefore hold with respect to this covariate set, which exc
 Incorporating these in a principled way, for instance through designs that bound the trade-off between post-treatment and priming bias [@blackwell2025priming], is a natural extension.
 Fourth, we examine the moderating role of each covariate one at a time and do not characterize interactions among moderators.
 The CF accommodates high-dimensional, non-linear interactions internally, and a fuller treatment of these higher-order patterns is left to future work.
+Relatedly, the respondent-level moderators are observed rather than randomized, so the gradients describe who penalizes more, not the effect of changing a moderator.
 
 Fifth, our robustness check is not a fully independent confirmation.
 The full nested fit was computationally infeasible, so the BCF drops the respondent random effect and recovers the corresponding uncertainty through a cluster bootstrap, and it carries no sample-splitting step.

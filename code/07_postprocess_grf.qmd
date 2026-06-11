@@ -205,9 +205,9 @@ cat(sprintf(
 traces the ATE among the top-`q` fraction against the overall ATE.
 The area under this curve is the AUTOC; a curve and AUTOC clearly above zero is evidence of
 targetable heterogeneity.
-Priorities here are the forest's own out-of-bag predictions, which is acceptable because they
-are honest (out-of-bag); a separate train/evaluate split would be the stricter alternative
-but is out of scope.
+Priorities here are the forest's own out-of-bag predictions.
+Because the prioritization rule is not estimated on data independent of the evaluation data, the AUTOC is read as descriptive support for targetable heterogeneity rather than a strictly valid test.
+A separate train/evaluate split would be required for formal inference and is out of scope.
 
 ```{r}
 #| label: fig-grf-dict-toc
@@ -3264,9 +3264,15 @@ game_cols <- c("Dictator game" = "#0072B2", "Trust game" = "#D55E00")
 game_shapes <- c("Dictator game" = 16, "Trust game" = 17) # circle / triangle
 game_ltys <- c("Dictator game" = "solid", "Trust game" = "longdash")
 
-scale_colour_game <- function() scale_colour_manual(values = game_cols, name = NULL)
-scale_shape_game <- function() scale_shape_manual(values = game_shapes, name = NULL)
-scale_linetype_game <- function() scale_linetype_manual(values = game_ltys, name = NULL)
+scale_colour_game <- function() {
+  scale_colour_manual(values = game_cols, name = NULL)
+}
+scale_shape_game <- function() {
+  scale_shape_manual(values = game_shapes, name = NULL)
+}
+scale_linetype_game <- function() {
+  scale_linetype_manual(values = game_ltys, name = NULL)
+}
 
 # shared moderator labels + categorical-first ordering for the facets
 source(here::here("code", "helper_scripts", "moderator_labels.R"))
@@ -3300,34 +3306,46 @@ The three "EU effect on" items (`q_eu_imp_nat_econ`, `q_eu_imp_nat_cul`, `q_eu_i
 ```{r}
 #| label: combined-transforms
 class_order <- c(
-  "working_class", "lower_middle_class", "middle_class",
-  "upper_middle_class", "higher_class", "dont_know", "other"
+  "working_class",
+  "lower_middle_class",
+  "middle_class",
+  "upper_middle_class",
+  "higher_class",
+  "dont_know",
+  "other"
 )
 flip5 <- \(x) 6 - x # 5-point scales: reverse so higher = more of the construct
 for (nm in c("m_dict", "m_trust")) {
-  assign(nm, get(nm) |>
-    mutate(
-      across(
-        c(
-          q_identity_country, q_identity_eu, q_identity_europe,
-          q_eu_imp_nat_econ, q_eu_imp_nat_cul, q_eu_imp_nat_pol
+  assign(
+    nm,
+    get(nm) |>
+      mutate(
+        across(
+          c(
+            q_identity_country,
+            q_identity_eu,
+            q_identity_europe,
+            q_eu_imp_nat_econ,
+            q_eu_imp_nat_cul,
+            q_eu_imp_nat_pol
+          ),
+          flip5
         ),
-        flip5
-      ),
-      q_class = factor(q_class, levels = class_order),
-      q_rural_urban = factor(
-        q_rural_urban,
-        levels = c("rural", "small_med_town", "large_city")
-      ),
-      der_cj_eu_identity = factor(
-        der_cj_eu_identity,
-        levels = c("eu_citizen", "not_eu_citizen", "not_displayed")
-      ),
-      der_cj_partisanship = factor(
-        der_cj_partisanship,
-        levels = c("not_shown", "shown", "not_applicable")
+        q_class = factor(q_class, levels = class_order),
+        q_rural_urban = factor(
+          q_rural_urban,
+          levels = c("rural", "small_med_town", "large_city")
+        ),
+        der_cj_eu_identity = factor(
+          der_cj_eu_identity,
+          levels = c("eu_citizen", "not_eu_citizen", "not_displayed")
+        ),
+        der_cj_partisanship = factor(
+          der_cj_partisanship,
+          levels = c("not_shown", "shown", "not_applicable")
+        )
       )
-    ))
+  )
 }
 ```
 
@@ -3369,18 +3387,24 @@ cate_one <- function(cf, mm, mod, game_label) {
       br <- cont_grids[[mod]]
       cell <- cut(v, breaks = br, include.lowest = TRUE)
       mids <- (head(br, -1) + tail(br, -1)) / 2
-      rows <- lapply(which(tabulate(cell, nbins = length(mids)) > 0), function(k) {
-        sel <- !is.na(cell) & as.integer(cell) == k
-        a <- grf::average_treatment_effect(cf, subset = sel)
-        tibble(
-          mod = mod, level = as.character(round(mids[k])),
-          order = mids[k], is_scale = TRUE, game = game_label,
-          n = sum(sel),
-          estimate = a["estimate"],
-          lower = a["estimate"] - 1.96 * a["std.err"],
-          upper = a["estimate"] + 1.96 * a["std.err"]
-        )
-      })
+      rows <- lapply(
+        which(tabulate(cell, nbins = length(mids)) > 0),
+        function(k) {
+          sel <- !is.na(cell) & as.integer(cell) == k
+          a <- grf::average_treatment_effect(cf, subset = sel)
+          tibble(
+            mod = mod,
+            level = as.character(round(mids[k])),
+            order = mids[k],
+            is_scale = TRUE,
+            game = game_label,
+            n = sum(sel),
+            estimate = a["estimate"],
+            lower = a["estimate"] - 1.96 * a["std.err"],
+            upper = a["estimate"] + 1.96 * a["std.err"]
+          )
+        }
+      )
       return(bind_rows(rows))
     }
     # fallback: decile bins, integer labels
@@ -3389,8 +3413,11 @@ cate_one <- function(cf, mm, mod, game_label) {
       sel <- bin == k
       a <- grf::average_treatment_effect(cf, subset = sel)
       tibble(
-        mod = mod, level = as.character(round(mean(v[sel]))),
-        order = mean(v[sel]), is_scale = TRUE, game = game_label,
+        mod = mod,
+        level = as.character(round(mean(v[sel]))),
+        order = mean(v[sel]),
+        is_scale = TRUE,
+        game = game_label,
         n = sum(sel),
         estimate = a["estimate"],
         lower = a["estimate"] - 1.96 * a["std.err"],
@@ -3416,9 +3443,11 @@ cate_one <- function(cf, mm, mod, game_label) {
     }
     a <- grf::average_treatment_effect(cf, subset = sel)
     tibble(
-      mod = mod, level = as.character(lev),
+      mod = mod,
+      level = as.character(lev),
       order = if (is_num) as.numeric(lev) else i,
-      is_scale = is_num && mod != "cj_age", game = game_label,
+      is_scale = is_num && mod != "cj_age",
+      game = game_label,
       n = sum(sel),
       estimate = a["estimate"],
       lower = a["estimate"] - 1.96 * a["std.err"],
@@ -3439,10 +3468,12 @@ build_comb <- function(mods) {
 plot_comb <- function(df, ncol, title, ylab = yl_i) {
   d <- df |>
     arrange(mod, order) |>
-    mutate(key = factor(
-      paste0(mod, "@@", level),
-      levels = unique(paste0(mod, "@@", level))
-    ))
+    mutate(
+      key = factor(
+        paste0(mod, "@@", level),
+        levels = unique(paste0(mod, "@@", level))
+      )
+    )
   # per-facet grey count bars (pooled over games shown)
   band <- d |>
     summarise(cnt = sum(n), .by = c(mod, key)) |>
@@ -3491,7 +3522,12 @@ plot_comb <- function(df, ncol, title, ylab = yl_i) {
       geom_point(data = d_cat, position = dodge)
   }
   p +
-    facet_wrap(~mod, scales = "free", ncol = ncol, labeller = labeller(mod = mod_strip)) +
+    facet_wrap(
+      ~mod,
+      scales = "free",
+      ncol = ncol,
+      labeller = labeller(mod = mod_strip)
+    ) +
     scale_colour_game() +
     scale_shape_game() +
     scale_linetype_game() +
@@ -3516,7 +3552,12 @@ cont_panel <- function(mod, xlim, ylab = yl_i) {
   ggplot(d, aes(x = order, y = estimate, colour = game, shape = game)) +
     geom_rect(
       data = hd,
-      aes(xmin = mid - w / 2, xmax = mid + w / 2, ymin = floor_y, ymax = bar_top),
+      aes(
+        xmin = mid - w / 2,
+        xmax = mid + w / 2,
+        ymin = floor_y,
+        ymax = bar_top
+      ),
       fill = "grey80",
       inherit.aes = FALSE
     ) +
@@ -3556,7 +3597,9 @@ comb_prof <- build_comb(prof_mods)
 plot_comb(
   comb_prof,
   ncol = 3,
-  title = bquote("CATE by conjoint-round moderator, both games" ~ (hat(tau)[ric])),
+  title = bquote(
+    "CATE by conjoint-round moderator, both games" ~ (hat(tau)[ric])
+  ),
   ylab = yl_ric
 )
 ```
@@ -3609,7 +3652,7 @@ p_age <- cont_panel("q_age", c(18, 75)) +
 
 ```{r}
 #| label: fig-grf-combined-resp-2
-#| fig-cap: "CF estimates of the respondent-level CATE ($\\hat{\\tau}_i$) of the Muslim profile across the levels of the second half of the discrete individual-level moderators (top panel) and across age at which education stopped (q_edu_age_stop, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis is $\\hat{\\tau}_i$ on the token-allocation scale. All item scales are oriented so that higher x-axis values mean more agreement, a more positive evaluation, or more attachment, depending on the item (see @tbl-wordings). Every ribbon value is a doubly-robust subset estimate with an honest cluster-robust 95% interval, computed separately on that subset and clustered by respondent. Top: ordered numeric scales are drawn as a connecting line and interval ribbon per game. Grey bars show the per-level row count (pooled over games). Bottom: per-year estimate, interval ribbon, and connecting line per game at each integer year of education-stopping age from 15 to 30, over a grey histogram of the covariate. The y-axis is free per facet. Discrete levels comprising less than 1% of a game's sample are dropped because their estimate is too imprecise to compare."
+#| fig-cap: "CF estimates of the respondent-level CATE ($\\hat{\\tau}_i$) of the Muslim profile across the levels of the second half of the discrete individual-level moderators (top panel) and across age at which education stopped (q_edu_age_stop, bottom panel), Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. The y-axis is $\\hat{\\tau}_i$ on the token-allocation scale. All item scales are oriented so that higher x-axis values mean more agreement, a more positive evaluation, or more attachment, depending on the item (see @tbl-wordings). Every ribbon value is a doubly-robust subset estimate with an honest cluster-robust 95% interval, computed separately on that subset and clustered by respondent. Top: ordered numeric scales are drawn as a connecting line and interval ribbon per game. Grey bars show the per-level row count (pooled over games). Bottom: per-year estimate, interval ribbon, and connecting line per game at each integer year of education-stopping age from 15 to 30, over a grey histogram of the covariate. The y-axis is free per facet."
 #| dpi: 500
 #| fig-width: 11
 #| fig-height: 14
@@ -3707,8 +3750,10 @@ ggplot(blp_comb, aes(x = estimate, y = term, colour = game, shape = game)) +
 #| fig-width: 7
 #| fig-height: 9
 vi_comb <- bind_rows(
-  vi_dict_df |> mutate(moderator = as.character(moderator), game = "Dictator game"),
-  vi_trust_df |> mutate(moderator = as.character(moderator), game = "Trust game")
+  vi_dict_df |>
+    mutate(moderator = as.character(moderator), game = "Dictator game"),
+  vi_trust_df |>
+    mutate(moderator = as.character(moderator), game = "Trust game")
 ) |>
   mutate(game = factor(game, levels = c("Dictator game", "Trust game")))
 vi_ord <- vi_comb |>
