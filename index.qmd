@@ -101,8 +101,7 @@ We make two exceptions for stable demographics drawn from the post-game block, a
 
 ### Causal Estimand
 
-Our analysis builds on the conjoint survey experiment fielded by @hahm2023divided and @hahm2024divided, but our research question differs from theirs.
-The original study asks how the displayed identity attributes, religion among them, affect token allocations, and answers with the conventional conjoint estimand, the Average Marginal Component Effect [AMCE, for a definition see @hainmueller2014causal].
+The conventional estimand in conjoint experiments is the Average Marginal Component Effect [AMCE, for definition see @hainmueller2014causal].
 Because the AMCE is by definition an average, it conceals how different respondents respond to the same treatment, which is exactly what we are interested in.
 Following @robinson2024detect, we therefore adopt the idea of nested causal quantities [see also @goplerud2025estimating].
 
