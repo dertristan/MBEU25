@@ -126,9 +126,11 @@ golden_h <- function(width) width / golden
 
 The motivating descriptive: how many tokens does a profile receive when it is
 labelled Muslim versus everything else, in each game.
-We summarise this two ways — a per-game Welch two-sample t-test on the raw
-difference in means (the sample average treatment effect, SATE), and a
-slope/dumbbell figure of the two group means with 95% confidence intervals.
+We summarise this three ways — a per-game Welch two-sample t-test on the raw
+difference in means (the sample average treatment effect, SATE), a
+slope/dumbbell figure of the two group means with 95% confidence intervals, and
+a one-row-per-game summary table of the same quantities (the version embedded
+in the manuscript).
 The test is intentionally simple and descriptive: respondent clustering is left
 to the heterogeneity models that follow.
 
@@ -213,6 +215,31 @@ dim_means |>
     y = "Mean tokens allocated"
   ) +
   theme_mbeu()
+```
+
+The summary table condenses the figure into one row per game: the two group
+means with their 95% confidence intervals, the per-game SATE from `dim_tests`,
+and its 95% confidence interval.
+
+```{r}
+#| label: tbl-diff-in-means
+#| tbl-cap: "Mean tokens allocated to a profile by the Muslim label, by game. The outcome is the number of tokens the respondent allocates to the displayed profile. Profiles labelled Muslim are contrasted against all other religions pooled. The first two columns show group means with 95% confidence intervals in brackets. The SATE column reports the sample average treatment effect of the Muslim label, estimated by a per-game Welch two-sample difference-in-means t-test, with its 95% confidence interval alongside. The test is intentionally simple and descriptive. Respondent clustering is left to the heterogeneity models."
+# one row per game: group means [ci], sate, sate ci
+dim_means |>
+  mutate(
+    cell = sprintf("%.2f [%.2f, %.2f]", mean_tok, mean_tok - ci, mean_tok + ci)
+  ) |>
+  select(game, treat, cell) |>
+  pivot_wider(names_from = treat, values_from = cell) |>
+  left_join(dim_tests, by = "game") |>
+  transmute(
+    Game = game,
+    Muslim,
+    `Non-Muslim`,
+    SATE = sprintf("%.2f", diff),
+    `95% CI` = sprintf("[%.2f, %.2f]", conf_low, conf_high)
+  ) |>
+  knitr::kable()
 ```
 
 

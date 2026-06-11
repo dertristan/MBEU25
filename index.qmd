@@ -6,7 +6,7 @@ subtitle: |
 abstract: |
   Conjoint experiments across Europe consistently reveal a Muslim penalty: profiles displayed as Muslim receive systematically fewer resources than otherwise comparable profiles.
   We move beyond this average and ask who drives the penalty.
-  Reanalyzing dictator and trust games embedded in a conjoint experiment across 25 European countries, we treat the Muslim attribute as a binary treatment and estimate conditional average treatment effects with honest causal forests, using a hierarchical Bayesian causal forest as a robustness check.
+  Reanalyzing dictator and trust games embedded in a conjoint experiment across 25 European countries, we treat the Muslim attribute as a binary treatment and estimate conditional average treatment effects with Causal Forests.
   The penalty is negative in essentially every subgroup we examine.
   The other attributes of the displayed profile moderate it only weakly.
   Respondent characteristics matter more.
@@ -31,7 +31,7 @@ The more demanding questions concern who discriminates, against whom, and under 
 Against this background, this paper revisits a large-scale conjoint survey experiment conducted across 25 European Union member states by @hahm2024divided.
 Using a combination of dictator and trust games alongside a conjoint design, they estimate the relative strength of multiple social divides.
 Their main finding is the dominance of the partisan divide, but religion emerges as the second strongest divide in their analysis.
-Whenever Muslim identity is experimentally signaled, respondents’ allocation decisions reveal a systematic penalty relative to otherwise comparable non-Muslim profiles (@fig-diff-in-means).
+Whenever Muslim identity is experimentally signaled, respondents’ allocation decisions reveal a systematic penalty relative to otherwise comparable non-Muslim profiles (@tbl-diff-in-means).
 What these averages do not reveal is whether and how the magnitude of the penalty varies with the other attributes attached to Muslim profiles, with the characteristics and political orientations of respondents, or with the interaction between the two.
 
 This paper takes that heterogeneity as its central object of inquiry.
@@ -44,8 +44,8 @@ Discriminatory behavior responds to signals about a Muslim target's values and d
 And anti-Muslim bias in policy attitudes appears only among respondents holding negative or neutral prior views of Muslims, varying more with individual attitudes than with country context [@findor2025anti].
 What is missing is a systematic account of this variation within a single behavioral design.
 
-We reanalyze roughly 84,600 allocation decisions per game with honest causal forests, treating the Muslim attribute as a binary treatment and recovering conditional effects across pre-specified profile-level and respondent-level moderators.
-A hierarchical Bayesian causal forest serves as a robustness check.
+We reanalyze roughly 84,600 allocation decisions per game with Causal Forests (CF), treating the Muslim attribute as a binary treatment and recovering conditional effects across pre-specified profile-level and respondent-level moderators.
+A hierarchical Bayesian Causal Forest (BCF) serves as a robustness check.
 Three findings stand out.
 First, the penalty is negative in essentially every subgroup we examine.
 Second, the other profile attributes moderate it only weakly, with displayed partisanship the main exception.
@@ -57,7 +57,7 @@ The variation in penalties tracks the cosmopolitan–populist divide that define
 Understanding the conditions that amplify this bias is crucial for grasping the mechanisms that sustain it and the potential avenues for its mitigation.
 
 
-{{< embed code/09_additional_figs_tables.qmd#fig-diff-in-means >}}
+{{< embed code/09_additional_figs_tables.qmd#tbl-diff-in-means >}}
 
 ## Research Design {#sec-design}
 
@@ -65,7 +65,7 @@ Understanding the conditions that amplify this bias is crucial for grasping the 
 
 Our analysis reuses the conjoint survey experiment of @hahm2024divided, an online study fielded across 25 European Union member states around the 2019 European Parliament elections.
 The experiment embeds a randomized conjoint within two behavioral games.
-In each task a respondent is endowed with ten tokens and decides how many to transfer to a fictional co-player whose profile is randomly generated.
+In each task a respondent is endowed with ten tokens and decides how many to transfer to a fictional co-player whose profile is randomly generated.[^outcome-distr]
 The Dictator game records this transfer directly, whereas the Trust game adds announced reciprocity, as the experimenter triples the transferred amount and the co-player may return a share.
 Each respondent completes three rounds of each game, for six decisions in total, with a fresh profile drawn for every round.
 
@@ -77,6 +77,8 @@ This lets us recover the average effect of merely displaying a partisan affiliat
 The religion attribute, with the four levels Muslim, Catholic, Protestant, and non-religious, is shown across all four conditions, so the full set of game decisions can be used to estimate the Muslim penalty.
 
 [^example]: @fig-profile in the appendix shows an example profile.
+
+[^outcome-distr]: @fig-outcome-distr in the appendix shows the distribution of the allocated tokens by game.
 
 [^treatments]: These randomly assigned conditions are: a co-national with both EU identity and partisan affiliation, a co-national with party but not EU identity, an EU national with EU identity but not party, and a co-player of some nationality with neither.
 Partisan affiliation is displayed only for co-nationals, since assigning a national party to a co-player ineligible to vote for it would be implausible.
@@ -102,11 +104,11 @@ We make two exceptions for stable demographics drawn from the post-game block, a
 Our analysis builds on the conjoint survey experiment fielded by @hahm2023divided and @hahm2024divided, but our research question differs from theirs.
 The original study asks how the displayed identity attributes, religion among them, affect token allocations, and answers with the conventional conjoint estimand, the Average Marginal Component Effect [AMCE, for a definition see @hainmueller2014causal].
 Because the AMCE is by definition an average, it conceals how different respondents respond to the same treatment, which is exactly what we are interested in.
-Following @robinson2024detect, we therefore adopt the idea of nested causal quantities.
+Following @robinson2024detect, we therefore adopt the idea of nested causal quantities [see also @goplerud2025estimating].
 
 With the religion attribute collapsed as described above, our treatment variable is binary: $T_{ric} \in \{0,1\}$, where $T_{ric} = 1$ if the profile is displayed as Muslim and 0 otherwise.
 This shifts our estimand from the AMCE framework to a standard treatment effect logic.
-We observe only the realized outcome, which in potential outcomes notation is:
+We observe only the realized outcome [@holland1986statistics], which in potential outcomes notation [@neyman1923application; @rubin1974estimating] is:
 
 $$
 Y_{ric}^{g,\text{obs}} =
@@ -177,45 +179,39 @@ These quantities are linked through the law of iterated expectations, which ensu
 ### Estimation Strategy
 
 Estimating how a treatment effect varies across units is a different problem from predicting an outcome, and a harder one.
-The variation in the effect is usually far weaker than the variation in the outcome itself, so a method tuned to prediction spends most of its capacity on the prognostic structure and little on the effect [@imai2013estimating].
-The modern tools for this task are tree ensembles, which learn flexible response surfaces without a pre-specified functional form [@breiman2001random], adapted to treatment effects along two routes that differ mainly in where they place their corrections.
+The variation in the effect is usually far weaker than the variation in the outcome itself, so a method tuned to prediction spends most of its capacity on the prognostic structure and little on the effect [@imai2013estimating; @ratkovic2017sparse].
+The modern tools for this task are tree ensembles [@breiman2001random; @dorie2019automated], which learn flexible response surfaces without a pre-specified functional form, adapted to treatment effects along two routes that differ mainly in where they place their corrections.
 The first disciplines the ensemble with a prior: Bayesian Additive Regression Trees (BART) model the outcome as a regularized sum of trees [@chipman2006bayesian; @chipman2010bart] and were carried into causal inference by differencing predicted potential outcomes [@hill2011bayesian; @hill2020bayesian; @carnegie2019examining].
-The second corrects the data instead: causal forests learn the partition on one part of the sample and estimate the effects on another, a property called honesty that restores asymptotically valid confidence intervals [@wager2018estimation; @athey2019estimating; @jawadekar2023practical] and shares its sample-splitting logic with double machine learning [@chernozhukov2018double; @ratkovic2023relaxing].
-Generalized random forests extend this honest, orthogonalized estimation to a broad class of estimands [@athey2019generalized] and have become a workhorse for heterogeneous-effect analysis in political science [@davis2017using; @zheng2023estimating].
+The second corrects the data instead: the CF learns the partition on one part of the sample and estimates the effects on another, yielding honest confidence intervals that are asymptotically valid [@wager2018estimation; @athey2019estimating; @jawadekar2023practical] and that share their sample-splitting logic with double machine learning [@chernozhukov2018double; @ratkovic2023relaxing].
+Generalized random forests extend this orthogonalized, sample-split estimation to a broad class of estimands [@athey2019generalized] and have become a workhorse for heterogeneous-effect analysis in political science [@davis2017using; @zheng2023estimating].
 Comparing the two families, @ratkovic2021subgroup raises two concerns about the Bayesian, full-sample approach: it does not model the treatment as a function of the covariates, and it uses the same data to fit the model and to test the effects.
 The first concern bites mainly when assignment is not randomized, and under the known propensities of our conjoint it loses its force.
 The second survives randomization, since using the same data to discover an effect surface and to test it invalidates the resulting intervals regardless of how treatment was assigned.
-Bayesian Causal Forests (BCF) answer the first concern by giving the treatment surface its own prior and regularization, guarding against the regularization-induced confounding that arises when a single prior shrinks both surfaces [@hahn2020bayesian; @caron2022shrinkage; @caron2022estimating].
+The BCF answers the first concern by giving the treatment surface its own prior and regularization, guarding against the regularization-induced confounding that arises when a single prior shrinks both surfaces [@hahn2020bayesian; @caron2022shrinkage; @caron2022estimating].
 They have no analogue for the second: standard BCF, including the hierarchical variants we draw on, fits the trees and forms the posterior intervals on the full sample [@hahn2020bayesian; @thal2024aggregate].
-The honesty of the causal forest is exactly that missing device, and it is the concern our randomized design does not dissolve.
+The sample splitting behind the CF's confidence intervals is exactly that missing device, and it addresses the concern our randomized design does not dissolve.
 
 Our design follows from this comparison and from the structure of our data.
 We observe each respondent over three conjoint rounds, and respondents are themselves grouped within 25 countries, so the observations are clustered at two levels.
 Treating them as independent would understate our uncertainty.
-The causal forest (CF) accommodates this structure directly.
-We cluster the honest sampling and the variance estimation by respondent, which absorbs the within-respondent dependence across rounds, and we enter country as fixed effects in the covariate matrix, which absorbs between-country baseline variation [@athey2019generalized].
-The Bayesian branch absorbs the same structure through random intercepts and partial pooling.
-An active literature extends BCF to these hierarchical and longitudinal settings [@thal2024aggregate; @prevot2025hierarchical], and a working implementation already places a random intercept on the prognostic surface for clustered, multisite trials [@yeager2019national; @yeager2022synergistic].
-That implementation carries only a single level of random intercepts, so we extended it to the two nested levels our data require, respondent within country, under the same partial-pooling logic.[^nested-extension]
-We then checked both estimators on synthetic data built with the same two-level structure and a known, planted treatment surface.
-This was a smoke test of the machinery, not a validation against realistic confounding.
-Each estimator recovered the planted effects within sampling error, but the nested BCF did so only at small scale, and at full scale the nested fit proved computationally infeasible.[^nested-ri]
-The causal forest recovered the same quantities at a fraction of the cost, using the respondent clusters and country fixed effects described above.
-We therefore adopted the causal forest as our primary estimator, since it delivers the honest, cluster-robust intervals the comparison above favors and scales to the full sample.
-We keep the BCF as a robustness check, fit with country random intercepts only.
-Because it can no longer model the within-respondent dependence directly, we recover that uncertainty after the fact with a respondent cluster bootstrap.
+The CF accommodates this structure directly and scales to the full sample.
+We cluster the sample splitting and the variance estimation by respondent, which absorbs the within-respondent dependence across rounds, and we enter country as fixed effects in the covariate matrix, which absorbs between-country baseline variation [@athey2019generalized].
+We therefore adopt the CF as our primary estimator, since it delivers the honest, cluster-robust intervals the comparison above favors.
+We keep the BCF as a robustness check, fit with country random intercepts only.[^nested-history]
+Because the BCF does not model the within-respondent dependence directly, we recover that uncertainty after the fact with a respondent cluster bootstrap.
 The two fits therefore do not handle the clustered structure identically, a caveat we return to in @sec-limits.
 Throughout, we treat the country and respondent variation as a nuisance to absorb rather than a quantity to interpret, in keeping with our interest in heterogeneity within the sample rather than comparison across countries.
 
-[^nested-extension]: @yeager2019national fit their hierarchical BCF with the `multibart` package [@murray2021multibart], whose C++ sampler already accommodates an arbitrary random-effects design. Moving from a single level of random intercepts to nested intercepts therefore required only a minor adaptation of the high-level R helper that assembles that design, not a change to the sampler itself.
+[^nested-history]: The Bayesian branch absorbs the clustered structure through random intercepts and partial pooling, and an active literature extends BCF to such hierarchical and longitudinal settings [@thal2024aggregate; @prevot2025hierarchical; @mcjames2025bayesian].
+A working implementation places a single random intercept on the prognostic surface for clustered, multisite trials [@yeager2019national; @yeager2022synergistic], built on the `multibart` package [@murray2021multibart], whose sampler accommodates an arbitrary random-effects design.
+We extended that implementation to the two nested levels our data require, respondent within country, and checked both estimators on synthetic data with the same two-level structure and a known, planted treatment surface, a smoke test of the machinery rather than a validation against realistic confounding.
+Each estimator recovered the planted effects within sampling error, but the nested BCF did so only at small scale.
+Its sampler solves a dense random-effects precision matrix at every Gibbs sweep, a cost that grows with the cube of the number of random-effect levels, and with tens of thousands of respondent intercepts the full nested fit proved computationally infeasible.
+The CF recovered the same quantities at a fraction of the cost, while restricting the BCF random effects to countries reduces its precision block to a trivial $25 \times 25$ solve.
 
-[^nested-ri]: The sampler forms the random-effects precision matrix densely and solves it by Cholesky decomposition at every Gibbs sweep, a cost that grows with the cube of the number of random-effect levels.
-With both country and respondent intercepts that number runs into the tens of thousands, dominated by the respondent dummies, which puts the full nested fit beyond reach within the project window.
-Restricting the random effects to countries reduces that block to a trivial $25 \times 25$ solve.
-
-Before turning to heterogeneity, we confirm that the forest recovers the average effect.
-The CF estimates a SATE of $-0.56$ (SE $0.02$, 95% CI $[-0.60, -0.53]$) in the Dictator game and $-0.64$ (SE $0.02$, 95% CI $[-0.68, -0.60]$) in the Trust game.
-Both reproduce the difference in means reported above (@fig-diff-in-means), a first sign that the forest behaves as it should before we ask it about heterogeneity.[^bcf-sate]
+Before turning to heterogeneity, we confirm that the CF recovers the average effect.
+The CF estimates a SATE of $-0.56$ (95% CI $[-0.60, -0.53]$) in the Dictator game and $-0.64$ (95% CI $[-0.68, -0.60]$) in the Trust game.
+Both reproduce the difference in means reported above (@tbl-diff-in-means), a first sign that the CF behaves as it should before we ask it about heterogeneity.[^bcf-sate]
 We then test whether that heterogeneity is real with the targeting operator characteristic curve (@fig-grf-combined-toc, appendix), whose area lies well above zero in both games.
 This indicates that the variation in the Muslim penalty is targetable rather than noise, which motivates the moderator-by-moderator analysis that follows.
 
@@ -224,7 +220,7 @@ This indicates that the variation in the Muslim penalty is targetable rather tha
 We present the results in the visual grammar of @green2012modeling, plotting the estimated conditional effect as a function of each moderator [@woody2021model].
 Each panel shows the $\hat{\tau}$ on the token scale within a level or bin of one moderator, taken over the distribution of the remaining covariates, so it describes how the Muslim penalty varies with that moderator rather than a partial effect with everything else held fixed.
 For categorical moderators we plot the point estimate and an honest 95% confidence interval at each level, drawn as a shape and a line segment.
-For continuous moderators and rating scales we estimate the point and interval at each value, binning age and years of education into a pre-specified number of bins, and connect them into a line with a ribbon, which lets the forest reveal any non-linear trend.
+For continuous moderators and rating scales we estimate the point and interval at each value, binning age and years of education into a pre-specified number of bins, and connect them into a line with a ribbon, which lets the CF reveal any non-linear trend.
 Throughout, we orient every rating scale so that moving right along the x-axis denotes more agreement, a more positive evaluation, or more attachment, depending on the item, with full wordings and original codings given in @tbl-wordings.
 We overlay the two games within a single panel by color, so that any divergence between them reads directly as a game-specific difference in heterogeneity.
 
@@ -289,18 +285,18 @@ The variable-importance ranking in the appendix (@fig-grf-combined-vi) corrobora
 
 ### Robustness {#sec-robustness}
 
-The Bayesian Causal Forest reproduces the substantive findings of the primary analysis.
+The BCF reproduces the substantive findings of the primary analysis.
 For the profile-level moderators the two estimators agree closely (@fig-bcf-combined-prof).
 The Muslim penalty remains uniformly negative across attribute levels, partisanship among co-nationals attenuates it most, and nationality is again the only attribute whose moderation differs across the two games.
 
 The respondent-level picture replicates as well (@fig-bcf-combined-resp-1 and @fig-bcf-combined-resp-2).
 The penalty is robust throughout, a modest gender gap persists but narrows in the Trust game, evaluations of European integration remain the strongest source of heterogeneity, and the same populist items track differences in its magnitude.
-The continuous moderators trace smoother gradients under the BCF than under the forest, yet their direction and shape are unchanged.
+The continuous moderators trace smoother gradients under the BCF than under the CF, yet their direction and shape are unchanged.
 
 Two differences deserve comment, and both plausibly stem from the same source.
-The BCF intervals are narrower than the forest's, most visibly at sparsely populated moderator levels.
-A respondent cluster bootstrap shows that the sampling variability contributed by within-person dependence across the three rounds accounts for almost none of this narrowness, which we therefore read as a consequence of the absent honest sample splitting and the aggressive pooling of the Bayesian prior rather than as evidence of greater precision.[^bcf-clustering]
-The narrower intervals also make the BCF appear to separate the two games more cleanly than the forest does, a distinction we treat with the same caution.
+The BCF intervals are narrower than the CF's, most visibly at sparsely populated moderator levels.
+A respondent cluster bootstrap shows that the sampling variability contributed by within-person dependence across the three rounds accounts for almost none of this narrowness, which we therefore read as a consequence of the absence of sample splitting and the aggressive pooling of the Bayesian prior rather than as evidence of greater precision.[^bcf-clustering]
+The narrower intervals also make the BCF appear to separate the two games more cleanly than the CF does, a distinction we treat with the same caution.
 The one genuine disagreement concerns respondent age.
 The U-shaped pattern recovered by the CF, in which the penalty approaches zero among the youngest and oldest respondents, does not appear under the BCF, whose age gradient neither touches zero at the young end nor lifts at the old end.
 
@@ -323,11 +319,11 @@ Third, to guard against post-treatment and collider bias we condition only on pr
 Our interpretations therefore hold with respect to this covariate set, which excludes theoretically relevant measures such as general left-right placement, EU integration preferences, and nativist attitudes.
 Incorporating these in a principled way, for instance through designs that bound the trade-off between post-treatment and priming bias [@blackwell2025priming], is a natural extension.
 Fourth, we examine the moderating role of each covariate one at a time and do not characterize interactions among moderators.
-The forest accommodates high-dimensional, non-linear interactions internally, and a fuller treatment of these higher-order patterns is left to future work.
+The CF accommodates high-dimensional, non-linear interactions internally, and a fuller treatment of these higher-order patterns is left to future work.
 
 Fifth, our robustness check is not a fully independent confirmation.
-The full nested fit was computationally infeasible, so the BCF drops the respondent random effect and recovers the corresponding uncertainty through a cluster bootstrap, and it carries no honest sample-splitting step.
-The forest and the BCF therefore do not handle the clustered structure under identical assumptions, and their agreement is reassuring without being two independent verifications.
+The full nested fit was computationally infeasible, so the BCF drops the respondent random effect and recovers the corresponding uncertainty through a cluster bootstrap, and it carries no sample-splitting step.
+The CF and the BCF therefore do not handle the clustered structure under identical assumptions, and their agreement is reassuring without being two independent verifications.
 
 Sixth, the sample was recruited to be representative of national populations only in age and gender, which is why we report a sample rather than a population quantity.
 Our estimates describe the realized sample, and extrapolation to the wider European population should be made with that restriction in mind.
@@ -353,7 +349,7 @@ Respondents hostile to the European Union penalize Muslim profiles substantially
 
 These results suggest that anti-Muslim discrimination in Europe is entangled with the cosmopolitan–populist divide rather than an isolated individual disposition.
 That the penalty attenuates but nowhere disappears is the sobering counterpart: even the most pro-European respondents allocate fewer tokens to Muslim profiles.
-A natural next step is to characterize how these moderators interact, a task the forest performs internally but our one-at-a-time presentation does not yet exploit.
+A natural next step is to characterize how these moderators interact, a task the CF performs internally but our one-at-a-time presentation does not yet exploit.
 
 ## References
 
