@@ -137,7 +137,7 @@ quarto preview index.qmd
 - `code/` — numbered R analysis notebooks (`01_`, `02_`, …); `00_template.qmd` is the template for new notebooks
 - `code/helper_scripts/copy_figures.R` — post-render script that copies figures from `_freeze/` into `_manuscript/` so the HTML preview renders correctly
 - `data/` — `01_raw/` (raw source `eu25games2019.rds`), `02_processed/` (clean long-format analysis tibble `eu25_long.rds`), `03_final/` (saved fits: `grf_{dictator,trust}.rds`, `bcf_{dictator,trust}.rds`); full dataset and pre-processing pipeline available at [GitHub](https://github.com/LS-Konig/eu25games2019)
-- `literature/` — source papers (gitignored — not tracked in Git); `literature/pdf/` holds the PDFs and `literature/md/` holds converted Markdown. Each file is named by its `references.bib` citation key (e.g. `hahn2020bayesian.pdf` / `hahn2020bayesian.md`). **Do not read these files on your own — always ask first (see Workflow Constraints).**
+- `literature/` — source papers (gitignored — not tracked in Git); `literature/pdf/` holds the PDFs, named by `references.bib` citation key (e.g. `hahn2020bayesian.pdf`). Converted full text lives under `literature/output/<citation_key>/`, one folder per paper, each containing `<citation_key>.md` (converted Markdown), `<citation_key>_meta.json` (metadata), and extracted figure images (`_page_*_Figure_*.jpeg`, `_page_*_Picture_*.jpeg`). Not every PDF has been converted. **Do not read these files on your own — always ask first (see Workflow Constraints).**
 - `notes/` — working notes including `analysis_plan.md`
 - `_extensions/andrewheiss/wordcount/` — Quarto extension providing word count and custom citeproc
 
