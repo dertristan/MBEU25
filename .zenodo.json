@@ -1,0 +1,36 @@
+{
+  "upload_type": "publication",
+  "publication_type": "report",
+  "title": "Penalized for Faith: Who Drives the Muslim Penalty? Treatment-Effect Heterogeneity in European Conjoint Behavioral Games",
+  "description": "<p>Conjoint experiments across Europe consistently reveal a Muslim penalty: profiles displayed as Muslim receive systematically fewer resources than otherwise comparable profiles. We move beyond this average and ask who drives the penalty. Reanalyzing dictator and trust games embedded in a conjoint experiment across 25 European countries, we treat the Muslim attribute as a binary treatment and estimate conditional average treatment effects with Causal Forests. The penalty is negative in essentially every subgroup we examine. The other attributes of the displayed profile moderate it only weakly. Respondent characteristics matter more. Evaluations of the European Union form the strongest and most coherent gradient, yet even the most pro-European respondents retain a clear penalty. Anti-Muslim bias in Europe emerges as politically structured rather than idiosyncratic, attenuated but nowhere undone.</p>",
+  "creators": [
+    {
+      "name": "Muno, Tristan",
+      "affiliation": "University of Mannheim",
+      "orcid": "0009-0002-3078-8436"
+    },
+    {
+      "name": "Okisheva, Vera",
+      "affiliation": "University of Mannheim"
+    },
+    {
+      "name": "Klöckner, Raphael",
+      "affiliation": "University of Mannheim"
+    }
+  ],
+  "license": "cc-by-4.0",
+  "keywords": [
+    "Muslim bias",
+    "conjoint experiment",
+    "treatment effect heterogeneity",
+    "causal forests"
+  ],
+  "language": "eng",
+  "related_identifiers": [
+    {
+      "identifier": "https://dertristan.github.io/MBEU25",
+      "relation": "isVariantFormOf",
+      "resource_type": "publication-report"
+    }
+  ]
+}

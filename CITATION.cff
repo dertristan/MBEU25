@@ -1,0 +1,45 @@
+cff-version: 1.2.0
+message: "If you use this work, please cite it as below."
+title: "Penalized for Faith: Who Drives the Muslim Penalty? Treatment-Effect Heterogeneity in European Conjoint Behavioral Games"
+authors:
+  - family-names: Muno
+    given-names: Tristan
+    orcid: "https://orcid.org/0009-0002-3078-8436"
+    affiliation: "University of Mannheim"
+  - family-names: Okisheva
+    given-names: Vera
+    affiliation: "University of Mannheim"
+  - family-names: Klöckner
+    given-names: Raphael
+    affiliation: "University of Mannheim"
+repository-code: "https://github.com/dertristan/MBEU25"
+url: "https://dertristan.github.io/MBEU25"
+license: CC-BY-4.0
+version: 1.0.0
+date-released: "2026-06-12"
+keywords:
+  - "Muslim bias"
+  - "conjoint experiment"
+  - "treatment effect heterogeneity"
+  - "causal forests"
+# Cite the paper itself with the block below. Replace <<CONCEPT_DOI>> with the
+# version-agnostic Zenodo concept DOI once the first release is archived.
+preferred-citation:
+  type: report
+  title: "Penalized for Faith: Who Drives the Muslim Penalty? Treatment-Effect Heterogeneity in European Conjoint Behavioral Games"
+  authors:
+    - family-names: Muno
+      given-names: Tristan
+      orcid: "https://orcid.org/0009-0002-3078-8436"
+      affiliation: "University of Mannheim"
+    - family-names: Okisheva
+      given-names: Vera
+      affiliation: "University of Mannheim"
+    - family-names: Klöckner
+      given-names: Raphael
+      affiliation: "University of Mannheim"
+  year: 2026
+  institution:
+    name: "University of Mannheim"
+  url: "https://dertristan.github.io/MBEU25"
+  doi: "<<CONCEPT_DOI>>"  # placeholder: replace with Zenodo concept DOI
