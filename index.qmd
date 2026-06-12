@@ -1,6 +1,6 @@
 ---
 title: |
-  Penalized for Faith: Who Drives the Muslim Penalty?
+  Penalized for Faith: What Drives the Muslim Penalty?
 subtitle: |
   Treatment-Effect Heterogeneity in European Conjoint Behavioral Games
 abstract: |
