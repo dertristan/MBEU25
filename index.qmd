@@ -231,9 +231,9 @@ We overlay the two games within a single panel by color, so that any divergence 
 Across these attributes the penalty is strikingly stable, since every level carries a sizeable, clearly negative effect and no accompanying feature comes close to neutralizing it.
 The clearest moderation is partisanship.
 Among co-nationals, displaying a party affiliation reduces the penalty substantially relative to withholding it, the single largest shift in the figure, and the attenuation holds in both games.
-Nationality is the only attribute whose moderation differs across the two games.
-The penalty against non-EU national profiles is deeper in the Trust game than in the Dictator game, the two intervals being disjoint.
-Within the Dictator game non-EU nationals draw the smallest penalty while co-nationals are penalized systematically more, an informative ordering the Trust game does not reproduce.
+Nationality moderates the penalty as well.
+Profiles displayed as EU nationals draw the largest penalty and co-nationals an intermediate one, while non-EU nationals draw the smallest but on noticeably wider intervals.
+The penalty thus appears deepest not for the most distant, non-EU profile but for the fellow EU national, a contrast the imprecise non-EU estimates leave only suggestive.
 Social class moves the penalty only at its upper end, where lower- and middle-class profiles are penalized indistinguishably but upper-class profiles somewhat less.
 The remaining attributes leave the penalty essentially untouched.
 Whether a profile identifies as an EU citizen or rejects that identity makes no difference, though in the Dictator game both attract a marginally smaller penalty than the condition in which EU identity is not displayed, a gap within sampling error that does not recur in the Trust game.
@@ -281,7 +281,7 @@ The variable-importance ranking in the appendix (@fig-grf-combined-vi) corrobora
 
 The BCF reproduces the substantive findings of the primary analysis.
 For the profile-level moderators the two estimators agree closely (@fig-bcf-combined-prof).
-The Muslim penalty remains uniformly negative across attribute levels, partisanship among co-nationals attenuates it most, and nationality is again the only attribute whose moderation differs across the two games.
+The Muslim penalty remains uniformly negative across attribute levels, partisanship among co-nationals attenuates it most.
 
 The respondent-level picture replicates as well (@fig-bcf-combined-resp-1 and @fig-bcf-combined-resp-2).
 The penalty is robust throughout, a modest gender gap persists but narrows in the Trust game, evaluations of European integration remain the strongest source of heterogeneity, and the same populist items track its magnitude.
