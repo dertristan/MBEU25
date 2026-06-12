@@ -294,7 +294,7 @@ outcome_distr |>
 #| label: tbl-balance-round-mods
 #| tbl-cap: "Profile level covariates distributions by treatment. Cells show raw counts with column percentages in parentheses for categorical variables, and the median with the first and third quartiles (Q1, Q3) in parentheses for numeric variables."
 prof_mods <- c(
-  "cj_nat",
+  "cj_nationality_shown",
   "der_cj_eu_identity",
   "der_cj_partisanship",
   "cj_age",

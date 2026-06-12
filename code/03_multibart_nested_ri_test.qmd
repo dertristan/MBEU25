@@ -894,7 +894,7 @@ country_id <- factor(sub$meta_country)
 respondent_id <- factor(sub$meta_pid)
 
 # moderators: profile-level conjoint attrs + respondent-level pre-treatment items
-prof_mods <- c("cj_nat", "cj_eupos", "cj_age", "cj_sex", "cj_class")
+prof_mods <- c("cj_nationality_shown", "cj_eupos", "cj_age", "cj_sex", "cj_class")
 resp_mods <- c(
   "q_gender",
   "q_age",

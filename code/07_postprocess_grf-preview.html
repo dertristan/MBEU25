@@ -8,7 +8,7 @@
     <meta name="author" content="Tristan Muno">
     <meta name="author" content="Vera Okisheva">
     <meta name="author" content="Raphael Klöckner">
-    <meta name="dcterms.date" content="2026-06-11">
+    <meta name="dcterms.date" content="2026-06-12">
 
     <title>GRF Post-Processing</title>
     <style>
@@ -226,7 +226,7 @@
                 <div>
             <div class="quarto-title-meta-heading">Published</div>
             <div class="quarto-title-meta-contents">
-              <p class="date">June 11, 2026</p>
+              <p class="date">June 12, 2026</p>
             </div>
           </div>
           
@@ -258,7 +258,7 @@
   <li><a href="#sec-dict-vi" id="toc-sec-dict-vi" class="nav-link" data-scroll-target="#sec-dict-vi">Variable importance</a></li>
   <li><a href="#sec-dict-prof" id="toc-sec-dict-prof" class="nav-link" data-scroll-target="#sec-dict-prof">CATE by moderator — conjoint round-level</a>
   <ul class="collapse">
-  <li><a href="#sec-dict-cj-nat" id="toc-sec-dict-cj-nat" class="nav-link" data-scroll-target="#sec-dict-cj-nat">cj_nat</a></li>
+  <li><a href="#sec-dict-cj-nationality-shown" id="toc-sec-dict-cj-nationality-shown" class="nav-link" data-scroll-target="#sec-dict-cj-nationality-shown">cj_nationality_shown</a></li>
   <li><a href="#sec-dict-der-cj-eu-identity" id="toc-sec-dict-der-cj-eu-identity" class="nav-link" data-scroll-target="#sec-dict-der-cj-eu-identity">der_cj_eu_identity</a></li>
   <li><a href="#sec-dict-der-cj-partisanship" id="toc-sec-dict-der-cj-partisanship" class="nav-link" data-scroll-target="#sec-dict-der-cj-partisanship">der_cj_partisanship</a></li>
   <li><a href="#sec-dict-cj-age" id="toc-sec-dict-cj-age" class="nav-link" data-scroll-target="#sec-dict-cj-age">cj_age</a></li>
@@ -301,7 +301,7 @@
   <li><a href="#sec-trust-vi" id="toc-sec-trust-vi" class="nav-link" data-scroll-target="#sec-trust-vi">Variable importance</a></li>
   <li><a href="#sec-trust-prof" id="toc-sec-trust-prof" class="nav-link" data-scroll-target="#sec-trust-prof">CATE by moderator — conjoint round-level</a>
   <ul class="collapse">
-  <li><a href="#sec-trust-cj-nat" id="toc-sec-trust-cj-nat" class="nav-link" data-scroll-target="#sec-trust-cj-nat">cj_nat</a></li>
+  <li><a href="#sec-trust-cj-nationality-shown" id="toc-sec-trust-cj-nationality-shown" class="nav-link" data-scroll-target="#sec-trust-cj-nationality-shown">cj_nationality_shown</a></li>
   <li><a href="#sec-trust-der-cj-eu-identity" id="toc-sec-trust-der-cj-eu-identity" class="nav-link" data-scroll-target="#sec-trust-der-cj-eu-identity">der_cj_eu_identity</a></li>
   <li><a href="#sec-trust-der-cj-partisanship" id="toc-sec-trust-der-cj-partisanship" class="nav-link" data-scroll-target="#sec-trust-der-cj-partisanship">der_cj_partisanship</a></li>
   <li><a href="#sec-trust-cj-age" id="toc-sec-trust-cj-age" class="nav-link" data-scroll-target="#sec-trust-cj-age">cj_age</a></li>
@@ -464,7 +464,7 @@ Loading required package: sessioninfo</code></pre>
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb7"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb7-1"><a href="#cb7-1" aria-hidden="true" tabindex="-1"></a>prof_mods <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
-<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"cj_nat"</span>,</span>
+<span id="cb7-2"><a href="#cb7-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"cj_nationality_shown"</span>,</span>
 <span id="cb7-3"><a href="#cb7-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">"der_cj_eu_identity"</span>,</span>
 <span id="cb7-4"><a href="#cb7-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">"der_cj_partisanship"</span>,</span>
 <span id="cb7-5"><a href="#cb7-5" aria-hidden="true" tabindex="-1"></a>  <span class="st">"cj_age"</span>,</span>
@@ -555,7 +555,7 @@ Loading required package: sessioninfo</code></pre>
 <span id="cb10-8"><a href="#cb10-8" aria-hidden="true" tabindex="-1"></a>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>Dictator ATE: -0.5656  (SE 0.0190);  95% CI [-0.6028, -0.5284]</code></pre>
+<pre><code>Dictator ATE: -0.5672  (SE 0.0190);  95% CI [-0.6045, -0.5300]</code></pre>
 </div>
 </div></div>
 </section>
@@ -570,8 +570,8 @@ Loading required package: sessioninfo</code></pre>
 <span id="cb12-3"><a href="#cb12-3" aria-hidden="true" tabindex="-1"></a><span class="fu">print</span>(rate_dict)</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code> estimate    std.err             target
-  0.27015 0.01890785 priorities | AUTOC</code></pre>
+<pre><code>  estimate    std.err             target
+ 0.2753056 0.01947141 priorities | AUTOC</code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
@@ -708,12 +708,12 @@ GRF variable importance (Dictator game), aggregated to the original moderators. 
 <section id="sec-dict-prof" class="level2">
 <h2 class="anchored" data-anchor-id="sec-dict-prof">CATE by moderator — conjoint round-level</h2>
 <p>For each discrete moderator we loop over its levels, compute the subset ATE with its honest cluster-robust SE, form the 95% interval as estimate ± 1.96·SE, and plot the per-level estimate (blue) over grey per-level count bars.</p>
-<section id="sec-dict-cj-nat" class="level3">
-<h3 class="anchored" data-anchor-id="sec-dict-cj-nat">cj_nat</h3>
-<div class="cell-container code-fold"><div class="cell-decorator"><pre>In [10]:</pre></div><div id="cell-fig-grf-dict-cj-nat" class="cell">
+<section id="sec-dict-cj-nationality-shown" class="level3">
+<h3 class="anchored" data-anchor-id="sec-dict-cj-nationality-shown">cj_nationality_shown</h3>
+<div class="cell-container code-fold"><div class="cell-decorator"><pre>In [10]:</pre></div><div id="cell-fig-grf-dict-cj-nationality-shown" class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>mod <span class="ot">&lt;-</span> <span class="st">"cj_nat"</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb17"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb17-1"><a href="#cb17-1" aria-hidden="true" tabindex="-1"></a>mod <span class="ot">&lt;-</span> <span class="st">"cj_nationality_shown"</span></span>
 <span id="cb17-2"><a href="#cb17-2" aria-hidden="true" tabindex="-1"></a>levs <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">unique</span>(m_dict[[mod]]))</span>
 <span id="cb17-3"><a href="#cb17-3" aria-hidden="true" tabindex="-1"></a>rows <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
 <span id="cb17-4"><a href="#cb17-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (lev <span class="cf">in</span> levs) {</span>
@@ -751,13 +751,13 @@ GRF variable importance (Dictator game), aggregated to the original moderators. 
 <span id="cb17-36"><a href="#cb17-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">30</span>, <span class="at">hjust =</span> <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
-<div id="fig-grf-dict-cj-nat" class="quarto-float quarto-figure quarto-figure-center anchored">
+<div id="fig-grf-dict-cj-nationality-shown" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure">
-<div aria-describedby="fig-grf-dict-cj-nat-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca" class="">
-<a href="07_postprocess_grf_files/figure-html/fig-grf-dict-cj-nat-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-4" title="GRF CATE of the Muslim profile by cj_nat (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."><img src="07_postprocess_grf_files/figure-html/fig-grf-dict-cj-nat-1.png" class="img-fluid figure-img" width="3250"></a>
+<div aria-describedby="fig-grf-dict-cj-nationality-shown-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca" class="">
+<a href="07_postprocess_grf_files/figure-html/fig-grf-dict-cj-nationality-shown-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-4" title="GRF CATE of the Muslim profile by cj_nationality_shown (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."><img src="07_postprocess_grf_files/figure-html/fig-grf-dict-cj-nationality-shown-1.png" class="img-fluid figure-img" width="3250"></a>
 </div>
-<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-grf-dict-cj-nat-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-GRF CATE of the Muslim profile by cj_nat (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts.
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-grf-dict-cj-nationality-shown-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+GRF CATE of the Muslim profile by cj_nationality_shown (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts.
 </figcaption>
 </figure>
 </div>
@@ -2441,7 +2441,7 @@ GRF CATE of the Muslim profile across deciles of q_edu_age_stop (Dictator): per-
 <span id="cb49-8"><a href="#cb49-8" aria-hidden="true" tabindex="-1"></a>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>Trust ATE: -0.6432  (SE 0.0204);  95% CI [-0.6833, -0.6031]</code></pre>
+<pre><code>Trust ATE: -0.6440  (SE 0.0205);  95% CI [-0.6841, -0.6039]</code></pre>
 </div>
 </div></div>
 </section>
@@ -2456,7 +2456,7 @@ GRF CATE of the Muslim profile across deciles of q_edu_age_stop (Dictator): per-
 </details>
 <div class="cell-output cell-output-stdout">
 <pre><code>  estimate    std.err             target
- 0.2756111 0.01796879 priorities | AUTOC</code></pre>
+ 0.2709571 0.02145913 priorities | AUTOC</code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
@@ -2590,12 +2590,12 @@ GRF variable importance (Trust game), aggregated to the original moderators. Pro
 </section>
 <section id="sec-trust-prof" class="level2">
 <h2 class="anchored" data-anchor-id="sec-trust-prof">CATE by moderator — conjoint round-level</h2>
-<section id="sec-trust-cj-nat" class="level3">
-<h3 class="anchored" data-anchor-id="sec-trust-cj-nat">cj_nat</h3>
-<div class="cell-container code-fold"><div class="cell-decorator"><pre>In [46]:</pre></div><div id="cell-fig-grf-trust-cj-nat" class="cell">
+<section id="sec-trust-cj-nationality-shown" class="level3">
+<h3 class="anchored" data-anchor-id="sec-trust-cj-nationality-shown">cj_nationality_shown</h3>
+<div class="cell-container code-fold"><div class="cell-decorator"><pre>In [46]:</pre></div><div id="cell-fig-grf-trust-cj-nationality-shown" class="cell">
 <details class="code-fold">
 <summary>Code</summary>
-<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a>mod <span class="ot">&lt;-</span> <span class="st">"cj_nat"</span></span>
+<div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb56"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb56-1"><a href="#cb56-1" aria-hidden="true" tabindex="-1"></a>mod <span class="ot">&lt;-</span> <span class="st">"cj_nationality_shown"</span></span>
 <span id="cb56-2"><a href="#cb56-2" aria-hidden="true" tabindex="-1"></a>levs <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">unique</span>(m_trust[[mod]]))</span>
 <span id="cb56-3"><a href="#cb56-3" aria-hidden="true" tabindex="-1"></a>rows <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
 <span id="cb56-4"><a href="#cb56-4" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (lev <span class="cf">in</span> levs) {</span>
@@ -2633,13 +2633,13 @@ GRF variable importance (Trust game), aggregated to the original moderators. Pro
 <span id="cb56-36"><a href="#cb56-36" aria-hidden="true" tabindex="-1"></a>  <span class="fu">theme</span>(<span class="at">axis.text.x =</span> <span class="fu">element_text</span>(<span class="at">angle =</span> <span class="dv">30</span>, <span class="at">hjust =</span> <span class="dv">1</span>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output-display">
-<div id="fig-grf-trust-cj-nat" class="quarto-float quarto-figure quarto-figure-center anchored">
+<div id="fig-grf-trust-cj-nationality-shown" class="quarto-float quarto-figure quarto-figure-center anchored">
 <figure class="quarto-float quarto-float-fig figure">
-<div aria-describedby="fig-grf-trust-cj-nat-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca" class="">
-<a href="07_postprocess_grf_files/figure-html/fig-grf-trust-cj-nat-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-39" title="GRF CATE of the Muslim profile by cj_nat (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."><img src="07_postprocess_grf_files/figure-html/fig-grf-trust-cj-nat-1.png" class="img-fluid figure-img" width="3250"></a>
+<div aria-describedby="fig-grf-trust-cj-nationality-shown-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca" class="">
+<a href="07_postprocess_grf_files/figure-html/fig-grf-trust-cj-nationality-shown-1.png" class="lightbox" data-gallery="quarto-lightbox-gallery-39" title="GRF CATE of the Muslim profile by cj_nationality_shown (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."><img src="07_postprocess_grf_files/figure-html/fig-grf-trust-cj-nationality-shown-1.png" class="img-fluid figure-img" width="3250"></a>
 </div>
-<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-grf-trust-cj-nat-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
-GRF CATE of the Muslim profile by cj_nat (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts.
+<figcaption class="quarto-float-caption-bottom quarto-float-caption quarto-float-fig" id="fig-grf-trust-cj-nationality-shown-caption-0ceaefa1-69ba-4598-a22c-09a6ac19f8ca">
+GRF CATE of the Muslim profile by cj_nationality_shown (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts.
 </figcaption>
 </figure>
 </div>
@@ -4859,7 +4859,7 @@ CF variable importance aggregated to the original moderators, both games overlai
  collate  English_United States.utf8
  ctype    English_United States.utf8
  tz       Europe/Berlin
- date     2026-06-10
+ date     2026-06-12
  pandoc   3.8.3 @ c:\\Program Files\\Positron\\resources\\app\\quarto\\bin\\tools/ (via rmarkdown)
  quarto   1.9.36 @ C:\\PROGRA~1\\Quarto\\bin\\quarto.exe
 
@@ -4952,7 +4952,7 @@ CF variable importance aggregated to the original moderators, both games overlai
 <span id="cb100-7"><a href="#cb100-7" aria-hidden="true" tabindex="-1"></a>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>R code execution time: 389.62 seconds.</code></pre>
+<pre><code>R code execution time: 363.56 seconds.</code></pre>
 </div>
 </div></div>
 <!-- -->
@@ -5516,7 +5516,7 @@ CF variable importance aggregated to the original moderators, both games overlai
 <span id="cb102-110"><a href="#cb102-110" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
 <span id="cb102-111"><a href="#cb102-111" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: moderators</span></span>
 <span id="cb102-112"><a href="#cb102-112" aria-hidden="true" tabindex="-1"></a>prof_mods <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
-<span id="cb102-113"><a href="#cb102-113" aria-hidden="true" tabindex="-1"></a>  <span class="st">"cj_nat"</span>,</span>
+<span id="cb102-113"><a href="#cb102-113" aria-hidden="true" tabindex="-1"></a>  <span class="st">"cj_nationality_shown"</span>,</span>
 <span id="cb102-114"><a href="#cb102-114" aria-hidden="true" tabindex="-1"></a>  <span class="st">"der_cj_eu_identity"</span>,</span>
 <span id="cb102-115"><a href="#cb102-115" aria-hidden="true" tabindex="-1"></a>  <span class="st">"der_cj_partisanship"</span>,</span>
 <span id="cb102-116"><a href="#cb102-116" aria-hidden="true" tabindex="-1"></a>  <span class="st">"cj_age"</span>,</span>
@@ -5741,15 +5741,15 @@ CF variable importance aggregated to the original moderators, both games overlai
 <span id="cb102-347"><a href="#cb102-347" aria-hidden="true" tabindex="-1"></a>cluster-robust SE, form the 95% interval as estimate ± 1.96·SE, and plot the per-level</span>
 <span id="cb102-348"><a href="#cb102-348" aria-hidden="true" tabindex="-1"></a>estimate (blue) over grey per-level count bars.</span>
 <span id="cb102-349"><a href="#cb102-349" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb102-350"><a href="#cb102-350" aria-hidden="true" tabindex="-1"></a><span class="fu">### cj_nat {#sec-dict-cj-nat}</span></span>
+<span id="cb102-350"><a href="#cb102-350" aria-hidden="true" tabindex="-1"></a><span class="fu">### cj_nationality_shown {#sec-dict-cj-nationality-shown}</span></span>
 <span id="cb102-351"><a href="#cb102-351" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb102-354"><a href="#cb102-354" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb102-355"><a href="#cb102-355" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-grf-dict-cj-nat</span></span>
-<span id="cb102-356"><a href="#cb102-356" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "GRF CATE of the Muslim profile by cj_nat (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."</span></span>
+<span id="cb102-355"><a href="#cb102-355" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-grf-dict-cj-nationality-shown</span></span>
+<span id="cb102-356"><a href="#cb102-356" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "GRF CATE of the Muslim profile by cj_nationality_shown (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."</span></span>
 <span id="cb102-357"><a href="#cb102-357" aria-hidden="true" tabindex="-1"></a><span class="co">#| dpi: 500</span></span>
 <span id="cb102-358"><a href="#cb102-358" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-width: 6.5</span></span>
 <span id="cb102-359"><a href="#cb102-359" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-height: 4</span></span>
-<span id="cb102-360"><a href="#cb102-360" aria-hidden="true" tabindex="-1"></a>mod <span class="ot">&lt;-</span> <span class="st">"cj_nat"</span></span>
+<span id="cb102-360"><a href="#cb102-360" aria-hidden="true" tabindex="-1"></a>mod <span class="ot">&lt;-</span> <span class="st">"cj_nationality_shown"</span></span>
 <span id="cb102-361"><a href="#cb102-361" aria-hidden="true" tabindex="-1"></a>levs <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">unique</span>(m_dict[[mod]]))</span>
 <span id="cb102-362"><a href="#cb102-362" aria-hidden="true" tabindex="-1"></a>rows <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
 <span id="cb102-363"><a href="#cb102-363" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (lev <span class="cf">in</span> levs) {</span>
@@ -7262,15 +7262,15 @@ CF variable importance aggregated to the original moderators, both games overlai
 <span id="cb102-1940"><a href="#cb102-1940" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb102-1941"><a href="#cb102-1941" aria-hidden="true" tabindex="-1"></a><span class="fu">## CATE by moderator — conjoint round-level {#sec-trust-prof}</span></span>
 <span id="cb102-1942"><a href="#cb102-1942" aria-hidden="true" tabindex="-1"></a></span>
-<span id="cb102-1943"><a href="#cb102-1943" aria-hidden="true" tabindex="-1"></a><span class="fu">### cj_nat {#sec-trust-cj-nat}</span></span>
+<span id="cb102-1943"><a href="#cb102-1943" aria-hidden="true" tabindex="-1"></a><span class="fu">### cj_nationality_shown {#sec-trust-cj-nationality-shown}</span></span>
 <span id="cb102-1944"><a href="#cb102-1944" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb102-1947"><a href="#cb102-1947" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
-<span id="cb102-1948"><a href="#cb102-1948" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-grf-trust-cj-nat</span></span>
-<span id="cb102-1949"><a href="#cb102-1949" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "GRF CATE of the Muslim profile by cj_nat (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."</span></span>
+<span id="cb102-1948"><a href="#cb102-1948" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: fig-grf-trust-cj-nationality-shown</span></span>
+<span id="cb102-1949"><a href="#cb102-1949" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-cap: "GRF CATE of the Muslim profile by cj_nationality_shown (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."</span></span>
 <span id="cb102-1950"><a href="#cb102-1950" aria-hidden="true" tabindex="-1"></a><span class="co">#| dpi: 500</span></span>
 <span id="cb102-1951"><a href="#cb102-1951" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-width: 6.5</span></span>
 <span id="cb102-1952"><a href="#cb102-1952" aria-hidden="true" tabindex="-1"></a><span class="co">#| fig-height: 4</span></span>
-<span id="cb102-1953"><a href="#cb102-1953" aria-hidden="true" tabindex="-1"></a>mod <span class="ot">&lt;-</span> <span class="st">"cj_nat"</span></span>
+<span id="cb102-1953"><a href="#cb102-1953" aria-hidden="true" tabindex="-1"></a>mod <span class="ot">&lt;-</span> <span class="st">"cj_nationality_shown"</span></span>
 <span id="cb102-1954"><a href="#cb102-1954" aria-hidden="true" tabindex="-1"></a>levs <span class="ot">&lt;-</span> <span class="fu">sort</span>(<span class="fu">unique</span>(m_trust[[mod]]))</span>
 <span id="cb102-1955"><a href="#cb102-1955" aria-hidden="true" tabindex="-1"></a>rows <span class="ot">&lt;-</span> <span class="fu">list</span>()</span>
 <span id="cb102-1956"><a href="#cb102-1956" aria-hidden="true" tabindex="-1"></a><span class="cf">for</span> (lev <span class="cf">in</span> levs) {</span>

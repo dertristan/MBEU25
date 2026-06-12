@@ -8,7 +8,7 @@
     <meta name="author" content="Tristan Muno">
     <meta name="author" content="Vera Okisheva">
     <meta name="author" content="Raphael Klöckner">
-    <meta name="dcterms.date" content="2026-06-11">
+    <meta name="dcterms.date" content="2026-06-12">
 
     <title>bcf_fit</title>
     <style>
@@ -321,7 +321,7 @@ Loading required package: fastDummies</code></pre>
 <details class="code-fold">
 <summary>Code</summary>
 <div class="code-copy-outer-scaffold"><div class="sourceCode cell-code" id="cb8"><pre class="sourceCode r code-with-copy"><code class="sourceCode r"><span id="cb8-1"><a href="#cb8-1" aria-hidden="true" tabindex="-1"></a>prof_mods <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
-<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"cj_nat"</span>,</span>
+<span id="cb8-2"><a href="#cb8-2" aria-hidden="true" tabindex="-1"></a>  <span class="st">"cj_nationality_shown"</span>,</span>
 <span id="cb8-3"><a href="#cb8-3" aria-hidden="true" tabindex="-1"></a>  <span class="st">"der_cj_eu_identity"</span>,</span>
 <span id="cb8-4"><a href="#cb8-4" aria-hidden="true" tabindex="-1"></a>  <span class="st">"der_cj_partisanship"</span>,</span>
 <span id="cb8-5"><a href="#cb8-5" aria-hidden="true" tabindex="-1"></a>  <span class="st">"cj_age"</span>,</span>
@@ -468,26 +468,26 @@ Done.
 
 Beginning MCMC:
 iteration: 0 sigma/SD(Y): 1
-iteration: 100 sigma/SD(Y): 0.966037
-iteration: 200 sigma/SD(Y): 0.967704
-iteration: 300 sigma/SD(Y): 0.966999
-iteration: 400 sigma/SD(Y): 0.966842
-iteration: 500 sigma/SD(Y): 0.959621
-iteration: 600 sigma/SD(Y): 0.965178
-iteration: 700 sigma/SD(Y): 0.966481
-iteration: 800 sigma/SD(Y): 0.965413
-iteration: 900 sigma/SD(Y): 0.964956
-iteration: 1000 sigma/SD(Y): 0.960975
-iteration: 1100 sigma/SD(Y): 0.959708
-iteration: 1200 sigma/SD(Y): 0.963586
-iteration: 1300 sigma/SD(Y): 0.958342
-iteration: 1400 sigma/SD(Y): 0.960171
-iteration: 1500 sigma/SD(Y): 0.960332
-iteration: 1600 sigma/SD(Y): 0.964114
-iteration: 1700 sigma/SD(Y): 0.959317
-iteration: 1800 sigma/SD(Y): 0.960742
-iteration: 1900 sigma/SD(Y): 0.956766
-time for loop: 5736
+iteration: 100 sigma/SD(Y): 0.963919
+iteration: 200 sigma/SD(Y): 0.969957
+iteration: 300 sigma/SD(Y): 0.96461
+iteration: 400 sigma/SD(Y): 0.96468
+iteration: 500 sigma/SD(Y): 0.958094
+iteration: 600 sigma/SD(Y): 0.962373
+iteration: 700 sigma/SD(Y): 0.964664
+iteration: 800 sigma/SD(Y): 0.963847
+iteration: 900 sigma/SD(Y): 0.9622
+iteration: 1000 sigma/SD(Y): 0.962315
+iteration: 1100 sigma/SD(Y): 0.961621
+iteration: 1200 sigma/SD(Y): 0.968711
+iteration: 1300 sigma/SD(Y): 0.965078
+iteration: 1400 sigma/SD(Y): 0.963939
+iteration: 1500 sigma/SD(Y): 0.966215
+iteration: 1600 sigma/SD(Y): 0.962806
+iteration: 1700 sigma/SD(Y): 0.9613
+iteration: 1800 sigma/SD(Y): 0.959586
+iteration: 1900 sigma/SD(Y): 0.962776
+time for loop: 5603
 Saving state...
 ntrees 250
 p 55
@@ -567,26 +567,26 @@ Done.
 
 Beginning MCMC:
 iteration: 0 sigma/SD(Y): 1
-iteration: 100 sigma/SD(Y): 0.969972
-iteration: 200 sigma/SD(Y): 0.965521
-iteration: 300 sigma/SD(Y): 0.96546
-iteration: 400 sigma/SD(Y): 0.963469
-iteration: 500 sigma/SD(Y): 0.962362
-iteration: 600 sigma/SD(Y): 0.964847
-iteration: 700 sigma/SD(Y): 0.964299
-iteration: 800 sigma/SD(Y): 0.969016
-iteration: 900 sigma/SD(Y): 0.959519
-iteration: 1000 sigma/SD(Y): 0.957265
-iteration: 1100 sigma/SD(Y): 0.959537
-iteration: 1200 sigma/SD(Y): 0.961209
-iteration: 1300 sigma/SD(Y): 0.955624
-iteration: 1400 sigma/SD(Y): 0.95667
-iteration: 1500 sigma/SD(Y): 0.961229
-iteration: 1600 sigma/SD(Y): 0.960604
-iteration: 1700 sigma/SD(Y): 0.957468
-iteration: 1800 sigma/SD(Y): 0.958706
-iteration: 1900 sigma/SD(Y): 0.962745
-time for loop: 6000
+iteration: 100 sigma/SD(Y): 0.969359
+iteration: 200 sigma/SD(Y): 0.971548
+iteration: 300 sigma/SD(Y): 0.966387
+iteration: 400 sigma/SD(Y): 0.971051
+iteration: 500 sigma/SD(Y): 0.964604
+iteration: 600 sigma/SD(Y): 0.959208
+iteration: 700 sigma/SD(Y): 0.959948
+iteration: 800 sigma/SD(Y): 0.966527
+iteration: 900 sigma/SD(Y): 0.962221
+iteration: 1000 sigma/SD(Y): 0.959729
+iteration: 1100 sigma/SD(Y): 0.962476
+iteration: 1200 sigma/SD(Y): 0.963027
+iteration: 1300 sigma/SD(Y): 0.963803
+iteration: 1400 sigma/SD(Y): 0.963116
+iteration: 1500 sigma/SD(Y): 0.960237
+iteration: 1600 sigma/SD(Y): 0.957822
+iteration: 1700 sigma/SD(Y): 0.960867
+iteration: 1800 sigma/SD(Y): 0.955235
+iteration: 1900 sigma/SD(Y): 0.956125
+time for loop: 5712
 Saving state...
 ntrees 250
 p 55
@@ -645,8 +645,8 @@ done</code></pre>
  collate  English_United States.utf8
  ctype    English_United States.utf8
  tz       Europe/Berlin
- date     2026-06-10
- pandoc   3.8.3 @ C:\\Program Files\\Quarto\\bin\\tools/ (via rmarkdown)
+ date     2026-06-12
+ pandoc   3.8.3 @ c:\\Program Files\\Positron\\resources\\app\\quarto\\bin\\tools/ (via rmarkdown)
  quarto   1.9.36 @ C:\\PROGRA~1\\Quarto\\bin\\quarto.exe
 
 ─ Packages ───────────────────────────────────────────────────────────────────
@@ -726,7 +726,7 @@ done</code></pre>
 <span id="cb25-7"><a href="#cb25-7" aria-hidden="true" tabindex="-1"></a>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>R code execution time: 12500.04 seconds.</code></pre>
+<pre><code>R code execution time: 12011.93 seconds.</code></pre>
 </div>
 </div></div>
 <!-- -->
@@ -1283,7 +1283,7 @@ done</code></pre>
 <span id="cb27-105"><a href="#cb27-105" aria-hidden="true" tabindex="-1"></a><span class="in">```{r}</span></span>
 <span id="cb27-106"><a href="#cb27-106" aria-hidden="true" tabindex="-1"></a><span class="co">#| label: moderators</span></span>
 <span id="cb27-107"><a href="#cb27-107" aria-hidden="true" tabindex="-1"></a>prof_mods <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
-<span id="cb27-108"><a href="#cb27-108" aria-hidden="true" tabindex="-1"></a>  <span class="st">"cj_nat"</span>,</span>
+<span id="cb27-108"><a href="#cb27-108" aria-hidden="true" tabindex="-1"></a>  <span class="st">"cj_nationality_shown"</span>,</span>
 <span id="cb27-109"><a href="#cb27-109" aria-hidden="true" tabindex="-1"></a>  <span class="st">"der_cj_eu_identity"</span>,</span>
 <span id="cb27-110"><a href="#cb27-110" aria-hidden="true" tabindex="-1"></a>  <span class="st">"der_cj_partisanship"</span>,</span>
 <span id="cb27-111"><a href="#cb27-111" aria-hidden="true" tabindex="-1"></a>  <span class="st">"cj_age"</span>,</span>

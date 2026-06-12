@@ -104,7 +104,7 @@ The frozen moderator list, copied verbatim from `06_grf_fit.qmd`.
 ```{r}
 #| label: moderators
 prof_mods <- c(
-  "cj_nat",
+  "cj_nationality_shown",
   "der_cj_eu_identity",
   "der_cj_partisanship",
   "cj_age",
@@ -329,15 +329,15 @@ For each discrete moderator we loop over its levels, compute the subset ATE with
 cluster-robust SE, form the 95% interval as estimate ± 1.96·SE, and plot the per-level
 estimate (blue) over grey per-level count bars.
 
-### cj_nat {#sec-dict-cj-nat}
+### cj_nationality_shown {#sec-dict-cj-nationality-shown}
 
 ```{r}
-#| label: fig-grf-dict-cj-nat
-#| fig-cap: "GRF CATE of the Muslim profile by cj_nat (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| label: fig-grf-dict-cj-nationality-shown
+#| fig-cap: "GRF CATE of the Muslim profile by cj_nationality_shown (Dictator): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
 #| dpi: 500
 #| fig-width: 6.5
 #| fig-height: 4
-mod <- "cj_nat"
+mod <- "cj_nationality_shown"
 levs <- sort(unique(m_dict[[mod]]))
 rows <- list()
 for (lev in levs) {
@@ -1850,15 +1850,15 @@ ggplot(vi_trust_df, aes(x = importance, y = moderator, fill = family)) +
 
 ## CATE by moderator — conjoint round-level {#sec-trust-prof}
 
-### cj_nat {#sec-trust-cj-nat}
+### cj_nationality_shown {#sec-trust-cj-nationality-shown}
 
 ```{r}
-#| label: fig-grf-trust-cj-nat
-#| fig-cap: "GRF CATE of the Muslim profile by cj_nat (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
+#| label: fig-grf-trust-cj-nationality-shown
+#| fig-cap: "GRF CATE of the Muslim profile by cj_nationality_shown (Trust): per-level subset ATE with honest cluster-robust 95% CI (blue); grey bars show per-level counts."
 #| dpi: 500
 #| fig-width: 6.5
 #| fig-height: 4
-mod <- "cj_nat"
+mod <- "cj_nationality_shown"
 levs <- sort(unique(m_trust[[mod]]))
 rows <- list()
 for (lev in levs) {

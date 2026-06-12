@@ -127,7 +127,7 @@ reconstructed moderator design matches fit-time row order and columns exactly.
 ```{r}
 #| label: moderators
 prof_mods <- c(
-  "cj_nat",
+  "cj_nationality_shown",
   "der_cj_eu_identity",
   "der_cj_partisanship",
   "cj_age",
@@ -314,20 +314,28 @@ ate_summary <- function(tau_draws) {
 GRF's `best_linear_projection`. For each posterior draw `d`, the coefficient vector is
 $\beta_d = (X'X)^{-1} X' \tau_d$; we stack these into a posterior and summarise each term by its
 median and 95% credible interval.
-The design `sub_X` is `model.matrix(~ . - 1, ...)`, which is full rank (only the first factor is
-fully expanded; the rest are contrast-coded), so `crossprod(sub_X)` inverts directly — no added
-intercept, no ridge. It is the same column basis as GRF's `X_dict`, so the terms are comparable.
+The design `sub_X` is `model.matrix(~ . - 1, ...)`, the same column basis as GRF's `X_dict`, so the
+terms are comparable.
+The displayed-nationality and partisanship moderators are structurally collinear (partisanship is
+shown or suppressed only for conational profiles, so its dummies sum exactly to the own-country
+nationality dummy), leaving the design rank-deficient by one column.
+We therefore drop the aliased column by QR pivoting before inverting `crossprod(sub_X)` — the same
+identifiable basis grf's `best_linear_projection` uses internally — so no added intercept and no
+ridge are needed.
 The only large multiply (`tau_draws %*% sub_X`) returns a small `nsim × p` matrix, so the step is
 memory-safe.
 
 ```{r}
 #| label: proj-summary
 proj_summary <- function(tau_draws, sub_X) {
-  xtx <- crossprod(sub_X) # p x p
-  m <- tau_draws %*% sub_X # nsim x p  (= tau_d' X per draw)
+  # drop linearly dependent columns via QR pivoting (matches grf's BLP)
+  qrX <- qr(sub_X)
+  X <- sub_X[, qrX$pivot[seq_len(qrX$rank)], drop = FALSE]
+  xtx <- crossprod(X) # p x p
+  m <- tau_draws %*% X # nsim x p  (= tau_d' X per draw)
   beta <- solve(xtx, t(m)) # p x nsim  = (X'X)^{-1} X' tau_d
   tibble(
-    term = colnames(sub_X),
+    term = colnames(X),
     estimate = apply(beta, 1, median),
     lower = apply(beta, 1, quantile, 0.025),
     upper = apply(beta, 1, quantile, 0.975)

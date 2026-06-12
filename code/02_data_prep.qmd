@@ -93,6 +93,55 @@ if (download_fresh) {
 }
 ```
 
+The conjoint partner nationality is now split into the value *shown* on screen
+(`cj_<slot>_nationality_shown`) and the background lottery that was *drawn*
+(`cj_<slot>_nationality_drawn`, plus its raw string `..._drawn_raw`).
+These replace the old conflated `cj_<slot>_nat` / `cj_<slot>_nat_raw`.
+The check below confirms the rename landed across all six profile slots and that
+no game columns leak into Wave 1.
+
+```{r}
+#| label: verify-raw-rename
+slots <- c(
+  "cj_dict1",
+  "cj_dict2",
+  "cj_dict3",
+  "cj_trust1",
+  "cj_trust2",
+  "cj_trust3"
+)
+new_cols <- as.vector(outer(
+  slots,
+  c("_nationality_drawn", "_nationality_drawn_raw", "_nationality_shown"),
+  paste0
+))
+old_cols <- c(
+  paste0(slots, "_nat"),
+  paste0(slots, "_nat_raw"),
+  paste0("der_", slots, "_nationality")
+)
+
+stopifnot(
+  # dimensions roughly stable (rename is net-neutral on column count)
+  abs(nrow(eu25games2019) - 103685) < 50,
+  abs(ncol(eu25games2019) - 847) < 5,
+  # 18 new shown/drawn columns present
+  all(new_cols %in% names(eu25games2019)),
+  # no old conflated names survive
+  !any(old_cols %in% names(eu25games2019)),
+  # no dictator/trust games in wave 1: all game-slot columns NA there
+  # (the separate cj_task* / cj_rand* conjoint instrument does run in wave 1)
+  all(vapply(
+    eu25games2019[
+      eu25games2019$meta_wave == 1,
+      grepl("^cj_(dict|trust)[123]_", names(eu25games2019))
+    ],
+    \(x) all(is.na(x)),
+    logical(1)
+  ))
+)
+```
+
 
 # Filter out wave 1 only respondets
 
@@ -636,15 +685,18 @@ and 3); partisan affiliation was displayed only in conditions whose name contain
 The raw conjoint columns `cj_eupos` and `cj_party_raw` carry a behind-the-scenes value
 in *every* condition, including those where the feature was never displayed, so the
 displayed contrast has to be reconstructed from `cj_treatment`.
+The partner nationality is the displayed `cj_nationality_shown` (not the background
+`cj_nationality_drawn` lottery, which is overridden by the treatment branch in every
+condition except `4_somenat`).
 
 We therefore derive two display-aware profile covariates with the `der_cj_` prefix.
 `der_cj_eu_identity` collapses to three levels: the shown EU-citizen contrast where EU
 stance was displayed, and a single `not_displayed` level otherwise.
 `der_cj_partisanship` contrasts conational profiles where party was shown (`shown`,
 treatments 1 and 2) against the apples-to-apples conational profile where party was
-suppressed (`not_shown`, treatment 4 with the drawn nationality equal to the
-respondent's country, i.e. `cj_nat == "own_country"`); every other profile is
-`not_applicable`.
+suppressed (`not_shown`, treatment 4 with the displayed nationality equal to the
+respondent's country, i.e. `cj_nationality_shown == "own_country"`); every other profile
+is `not_applicable`.
 
 ```{r}
 #| label: display-aware-covariates
@@ -660,7 +712,8 @@ eu25_long <- eu25_long |>
     # party shown -> 1,2; conational suppressed -> 4 & own_country
     der_cj_partisanship = case_when(
       grepl("partisan", cj_treatment) ~ "shown",
-      cj_treatment == "4_somenat" & cj_nat == "own_country" ~ "not_shown",
+      cj_treatment == "4_somenat" &
+        cj_nationality_shown == "own_country" ~ "not_shown",
       .default = "not_applicable"
     )
   )
@@ -675,8 +728,10 @@ shown-party conationals from the treatment-4 suppressed conationals.
 count(eu25_long, cj_treatment, der_cj_eu_identity) |>
   kable(caption = "der_cj_eu_identity by treatment condition.")
 
-count(eu25_long, cj_treatment, cj_nat, der_cj_partisanship) |>
-  kable(caption = "der_cj_partisanship by treatment condition and drawn nationality.")
+count(eu25_long, cj_treatment, cj_nationality_shown, der_cj_partisanship) |>
+  kable(
+    caption = "der_cj_partisanship by treatment condition and shown nationality."
+  )
 ```
 
 ```{r}
@@ -698,8 +753,40 @@ stopifnot(
   # not_shown is exactly the suppressed conational counterfactual
   all(
     (eu25_long$der_cj_partisanship == "not_shown") ==
-      (eu25_long$cj_treatment == "4_somenat" & eu25_long$cj_nat == "own_country")
+      (eu25_long$cj_treatment == "4_somenat" &
+        eu25_long$cj_nationality_shown == "own_country")
   )
+)
+```
+
+The shown nationality is treatment-determined: co-national in the two conational
+conditions, EU in the EU-stance condition, and equal to the drawn lottery only in
+`4_somenat`. This is the displayed-profile contrast the moderator analyses use, in
+contrast to the flat drawn lottery.
+
+```{r}
+#| label: tbl-shown-vs-drawn-check
+count(eu25_long, cj_treatment, cj_nationality_shown) |>
+  kable(
+    caption = "Shown nationality by treatment condition (now treatment-dependent)."
+  )
+```
+
+```{r}
+#| label: verify-shown-vs-drawn
+shown <- eu25_long$cj_nationality_shown
+drawn <- eu25_long$cj_nationality_drawn
+trt <- eu25_long$cj_treatment
+
+stopifnot(
+  # conational conditions display own_country
+  all(shown[grepl("conat", trt)] == "own_country"),
+  # eu-stance-only condition displays eu
+  all(shown[trt == "3_eunat_eustance"] == "eu"),
+  # somenat passes the drawn lottery through unchanged
+  all(shown[trt == "4_somenat"] == drawn[trt == "4_somenat"]),
+  # shown is no longer the flat lottery: it varies by treatment
+  dplyr::n_distinct(shown[grepl("conat", trt)]) == 1
 )
 ```
 

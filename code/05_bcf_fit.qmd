@@ -97,7 +97,7 @@ The frozen moderator list: profile-level conjoint attributes plus respondent-lev
 ```{r}
 #| label: moderators
 prof_mods <- c(
-  "cj_nat",
+  "cj_nationality_shown",
   "der_cj_eu_identity",
   "der_cj_partisanship",
   "cj_age",

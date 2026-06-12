@@ -8,7 +8,7 @@
     <meta name="author" content="Tristan Muno">
     <meta name="author" content="Vera Okisheva">
     <meta name="author" content="Raphael Klöckner">
-    <meta name="dcterms.date" content="2026-06-11">
+    <meta name="dcterms.date" content="2026-06-12">
 
     <title>grf_nested_test</title>
     <style>
@@ -899,7 +899,7 @@ Important
 <span id="cb27-11"><a href="#cb27-11" aria-hidden="true" tabindex="-1"></a>respondent_id <span class="ot">&lt;-</span> <span class="fu">factor</span>(sub<span class="sc">$</span>meta_pid)</span>
 <span id="cb27-12"><a href="#cb27-12" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb27-13"><a href="#cb27-13" aria-hidden="true" tabindex="-1"></a><span class="co"># moderators: profile-level conjoint attrs + respondent-level pre-treatment items</span></span>
-<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>prof_mods <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"cj_nat"</span>, <span class="st">"cj_eupos"</span>, <span class="st">"cj_age"</span>, <span class="st">"cj_sex"</span>, <span class="st">"cj_class"</span>)</span>
+<span id="cb27-14"><a href="#cb27-14" aria-hidden="true" tabindex="-1"></a>prof_mods <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"cj_nationality_shown"</span>, <span class="st">"cj_eupos"</span>, <span class="st">"cj_age"</span>, <span class="st">"cj_sex"</span>, <span class="st">"cj_class"</span>)</span>
 <span id="cb27-15"><a href="#cb27-15" aria-hidden="true" tabindex="-1"></a>resp_mods <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
 <span id="cb27-16"><a href="#cb27-16" aria-hidden="true" tabindex="-1"></a>  <span class="st">"q_gender"</span>, <span class="st">"q_age"</span>, <span class="st">"q_identity_country"</span>, <span class="st">"q_identity_eu"</span>,</span>
 <span id="cb27-17"><a href="#cb27-17" aria-hidden="true" tabindex="-1"></a>  <span class="st">"q_identity_europe"</span>, <span class="st">"q_religion"</span>, <span class="st">"q_class"</span>, <span class="st">"q_eu_efficacy_understand"</span>,</span>
@@ -954,7 +954,7 @@ Important
 <span id="cb28-27"><a href="#cb28-27" aria-hidden="true" tabindex="-1"></a><span class="fu">cat</span>(<span class="fu">sprintf</span>(<span class="st">"CF subsample fit: %.1f s (n = %d).</span><span class="sc">\n</span><span class="st">"</span>, fit_secs, <span class="fu">length</span>(y)))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>CF subsample fit: 6.7 s (n = 10000).</code></pre>
+<pre><code>CF subsample fit: 6.6 s (n = 10000).</code></pre>
 </div>
 <details class="code-fold">
 <summary>Code</summary>
@@ -968,7 +968,7 @@ Important
 <span id="cb30-8"><a href="#cb30-8" aria-hidden="true" tabindex="-1"></a>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>Full dictator (n = 84603) ~57.1 s (~linear in n). grf clusters cheaply, so CF is the lighter of the two methods; the BCF nested-RE fit is the binding constraint on the project window.</code></pre>
+<pre><code>Full dictator (n = 84603) ~55.5 s (~linear in n). grf clusters cheaply, so CF is the lighter of the two methods; the BCF nested-RE fit is the binding constraint on the project window.</code></pre>
 </div>
 </div></div>
 </section>
@@ -990,8 +990,8 @@ Important
  collate  English_United States.utf8
  ctype    English_United States.utf8
  tz       Europe/Berlin
- date     2026-06-09
- pandoc   3.8.3 @ C:\\Program Files\\Quarto\\bin\\tools/ (via rmarkdown)
+ date     2026-06-12
+ pandoc   3.8.3 @ c:\\Program Files\\Positron\\resources\\app\\quarto\\bin\\tools/ (via rmarkdown)
  quarto   1.9.36 @ C:\\PROGRA~1\\Quarto\\bin\\quarto.exe
 
 ─ Packages ───────────────────────────────────────────────────────────────────
@@ -1086,7 +1086,7 @@ Important
 <span id="cb34-7"><a href="#cb34-7" aria-hidden="true" tabindex="-1"></a>))</span></code></pre></div><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></div>
 </details>
 <div class="cell-output cell-output-stdout">
-<pre><code>R code execution time: 114.83 seconds.</code></pre>
+<pre><code>R code execution time: 118.94 seconds.</code></pre>
 </div>
 </div></div>
 <!-- -->
@@ -2121,7 +2121,7 @@ Important
 <span id="cb36-601"><a href="#cb36-601" aria-hidden="true" tabindex="-1"></a>respondent_id <span class="ot">&lt;-</span> <span class="fu">factor</span>(sub<span class="sc">$</span>meta_pid)</span>
 <span id="cb36-602"><a href="#cb36-602" aria-hidden="true" tabindex="-1"></a></span>
 <span id="cb36-603"><a href="#cb36-603" aria-hidden="true" tabindex="-1"></a><span class="co"># moderators: profile-level conjoint attrs + respondent-level pre-treatment items</span></span>
-<span id="cb36-604"><a href="#cb36-604" aria-hidden="true" tabindex="-1"></a>prof_mods <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"cj_nat"</span>, <span class="st">"cj_eupos"</span>, <span class="st">"cj_age"</span>, <span class="st">"cj_sex"</span>, <span class="st">"cj_class"</span>)</span>
+<span id="cb36-604"><a href="#cb36-604" aria-hidden="true" tabindex="-1"></a>prof_mods <span class="ot">&lt;-</span> <span class="fu">c</span>(<span class="st">"cj_nationality_shown"</span>, <span class="st">"cj_eupos"</span>, <span class="st">"cj_age"</span>, <span class="st">"cj_sex"</span>, <span class="st">"cj_class"</span>)</span>
 <span id="cb36-605"><a href="#cb36-605" aria-hidden="true" tabindex="-1"></a>resp_mods <span class="ot">&lt;-</span> <span class="fu">c</span>(</span>
 <span id="cb36-606"><a href="#cb36-606" aria-hidden="true" tabindex="-1"></a>  <span class="st">"q_gender"</span>, <span class="st">"q_age"</span>, <span class="st">"q_identity_country"</span>, <span class="st">"q_identity_eu"</span>,</span>
 <span id="cb36-607"><a href="#cb36-607" aria-hidden="true" tabindex="-1"></a>  <span class="st">"q_identity_europe"</span>, <span class="st">"q_religion"</span>, <span class="st">"q_class"</span>, <span class="st">"q_eu_efficacy_understand"</span>,</span>
