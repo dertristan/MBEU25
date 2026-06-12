@@ -102,7 +102,14 @@ no game columns leak into Wave 1.
 
 ```{r}
 #| label: verify-raw-rename
-slots <- c("cj_dict1", "cj_dict2", "cj_dict3", "cj_trust1", "cj_trust2", "cj_trust3")
+slots <- c(
+  "cj_dict1",
+  "cj_dict2",
+  "cj_dict3",
+  "cj_trust1",
+  "cj_trust2",
+  "cj_trust3"
+)
 new_cols <- as.vector(outer(
   slots,
   c("_nationality_drawn", "_nationality_drawn_raw", "_nationality_shown"),
@@ -705,7 +712,8 @@ eu25_long <- eu25_long |>
     # party shown -> 1,2; conational suppressed -> 4 & own_country
     der_cj_partisanship = case_when(
       grepl("partisan", cj_treatment) ~ "shown",
-      cj_treatment == "4_somenat" & cj_nationality_shown == "own_country" ~ "not_shown",
+      cj_treatment == "4_somenat" &
+        cj_nationality_shown == "own_country" ~ "not_shown",
       .default = "not_applicable"
     )
   )
@@ -759,7 +767,9 @@ contrast to the flat drawn lottery.
 ```{r}
 #| label: tbl-shown-vs-drawn-check
 count(eu25_long, cj_treatment, cj_nationality_shown) |>
-  kable(caption = "Shown nationality by treatment condition (now treatment-dependent).")
+  kable(
+    caption = "Shown nationality by treatment condition (now treatment-dependent)."
+  )
 ```
 
 ```{r}
