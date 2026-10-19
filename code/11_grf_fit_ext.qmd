@@ -1,0 +1,275 @@
+---
+subtitle: |
+  Causal-Forest Fits, Extended Correlates (Dictator + Trust)
+date: last-modified
+date-format: MMMM D, YYYY
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    code-tools: true
+execute:
+  echo: true
+  warning: true
+  eval: true
+  message: true
+---
+
+# Purpose {#sec-purpose}
+
+This notebook fits `grf::causal_forest()` on the extended analysis tibble from `10_data_prep_ext.qmd`, for both game outcomes.
+Scope is **fitting and saving only**, as in `06_grf_fit.qmd`.
+`prep_game()` and `fit_grf()` are copied verbatim from `06_grf_fit.qmd`.
+Only the respondent-level moderator set changes: it adds the post-game correlates.
+
+Two fits per game are saved:
+
+- **Extended**: the paper's moderators plus the post-game correlates, on the extended sample. This is the fit the post-processing reads.
+- **v1.0.0 covariates on the extended sample**: the paper's moderators only. The extended sample is smaller than the paper's and leans toward politically engaged respondents (`10_data_prep_ext.qmd`, `#sec-attrition`). Comparing this fit with the paper's separates the sample shift from the added covariates.
+
+Post-game items are correlates, not moderators. Every result built on them is an exploratory addendum.
+
+# Setup {#sec-setup}
+
+```{r}
+#| label: setup
+#| include: false
+# execution time
+start_time <- Sys.time()
+# console width
+options(width = 80)
+# packages
+p_required <- c(
+  "tidyverse", # dplyr, ggplot2, tidyr
+  "here", # relative paths
+  "fastDummies", # country fixed-effect dummies
+  "grf", # causal_forest
+  "sessioninfo" # session docs
+)
+packages <- rownames(installed.packages())
+p_to_install <- p_required[!(p_required %in% packages)]
+if (length(p_to_install) > 0) {
+  install.packages(p_to_install)
+}
+sapply(p_required, require, character.only = TRUE)
+rm(p_required, p_to_install, packages)
+```
+
+# Load data {#sec-load}
+
+```{r}
+#| label: load-data
+dat <- readRDS(here::here("data", "02_processed", "eu25_long_ext.rds"))
+var_dict_ext <- readRDS(here::here("data", "02_processed", "var_dict_ext.rds"))
+```
+
+# Variable definitions {#sec-vars}
+
+`prof_mods` and `resp_mods` are the paper's frozen lists.
+`resp_mods_ext` appends the post-game correlates, read from the variable dictionary.
+
+```{r}
+#| label: moderators
+prof_mods <- c(
+  "cj_nationality_shown",
+  "der_cj_eu_identity",
+  "der_cj_partisanship",
+  "cj_age",
+  "cj_sex",
+  "cj_class"
+)
+resp_mods <- c(
+  "q_gender",
+  "q_age",
+  "q_identity_country",
+  "q_identity_eu",
+  "q_identity_europe",
+  "q_religion",
+  "q_class",
+  "q_eu_efficacy_understand",
+  "q_pop_reps",
+  "q_pop_goodevil",
+  "q_pop_compromise",
+  "q_dem_compromise",
+  "q_dem_listen",
+  "q_tech_experts",
+  "q_tech_leaders",
+  "q_party_harm",
+  "q_people_incompetent",
+  "q_eu_longterm",
+  "q_eu_responsive",
+  "q_eu_imp_nat_econ",
+  "q_eu_imp_nat_cul",
+  "q_eu_imp_nat_pol",
+  "q_eu_abolish",
+  "q_eu_satisfaction",
+  "q_rural_urban",
+  "q_edu_age_stop"
+)
+resp_mods_added <- var_dict_ext |>
+  filter(!in_v1) |>
+  pull(variable)
+resp_mods_ext <- c(resp_mods, resp_mods_added)
+
+stopifnot(
+  # dictionary covers paper set
+  all(resp_mods %in% var_dict_ext$variable),
+  all(resp_mods_ext %in% names(dat))
+)
+resp_mods_added
+```
+
+`prep_game()` assembles the design for one game.
+It takes the moderator set as an argument, so the same function builds both fits.
+
+```{r}
+#| label: prep-game
+prep_game <- function(dat, game, mods) {
+  sub <- dat |>
+    filter(cj_game_type == game) # full per-game sample (no subsampling)
+
+  y <- sub$cj_pl2
+  z <- as.integer(sub$cj_rel == "muslim") # Muslim vs all-else pooled
+  country_id <- factor(sub$meta_country)
+  respondent_id <- factor(sub$meta_pid)
+
+  mod_df <- sub |>
+    select(all_of(mods)) |>
+    mutate(across(where(is.character), factor))
+  sub_X <- model.matrix(~ . - 1, data = mod_df) # factors -> dummies
+
+  stopifnot(
+    !anyNA(sub_X),
+    all(z %in% c(0L, 1L)),
+    !anyNA(y),
+    nrow(sub_X) == length(y)
+  )
+
+  list(
+    y = y,
+    z = z,
+    sub_X = sub_X,
+    country_id = country_id,
+    respondent_id = respondent_id
+  )
+}
+```
+
+`fit_grf()` is unchanged from `06_grf_fit.qmd`: moderators plus country fixed-effect dummies in `X`, known conjoint propensity, respondent clusters, same seed.
+
+```{r}
+#| label: fit-grf
+fit_grf <- function(d) {
+  country_fe <- fastDummies::dummy_cols(
+    data.frame(country = d$country_id),
+    remove_first_dummy = TRUE,
+    remove_selected_columns = TRUE
+  ) |>
+    as.matrix()
+  X <- cbind(d$sub_X, country_fe) # numeric moderators + country FE
+
+  grf::causal_forest(
+    X = X,
+    Y = d$y,
+    W = d$z,
+    W.hat = 0.25, # known conjoint propensity
+    clusters = as.integer(d$respondent_id), # respondent-level cluster-robustness
+    num.trees = 2000,
+    seed = 20260604
+  )
+}
+```
+
+# Extended fits {#sec-ext}
+
+## Dictator game {#sec-ext-dictator}
+
+```{r}
+#| label: fit-dictator-ext
+d_dict <- prep_game(dat, "cj_dict", c(prof_mods, resp_mods_ext))
+cf_dict <- fit_grf(d_dict)
+saveRDS(
+  cf_dict,
+  here::here("data", "03_final", "grf_dictator_ext.rds"),
+  compress = "xz"
+)
+cat(sprintf(
+  "GRF dictator (extended) saved (n = %d, p = %d).\n",
+  length(d_dict$y),
+  ncol(cf_dict$X.orig)
+))
+```
+
+## Trust game {#sec-ext-trust}
+
+```{r}
+#| label: fit-trust-ext
+d_trust <- prep_game(dat, "cj_trust", c(prof_mods, resp_mods_ext))
+cf_trust <- fit_grf(d_trust)
+saveRDS(
+  cf_trust,
+  here::here("data", "03_final", "grf_trust_ext.rds"),
+  compress = "xz"
+)
+cat(sprintf(
+  "GRF trust (extended) saved (n = %d, p = %d).\n",
+  length(d_trust$y),
+  ncol(cf_trust$X.orig)
+))
+```
+
+# v1.0.0 covariates on the extended sample {#sec-v1x}
+
+## Dictator game {#sec-v1x-dictator}
+
+```{r}
+#| label: fit-dictator-v1x
+d_dict_v1x <- prep_game(dat, "cj_dict", c(prof_mods, resp_mods))
+cf_dict_v1x <- fit_grf(d_dict_v1x)
+saveRDS(
+  cf_dict_v1x,
+  here::here("data", "03_final", "grf_dictator_ext_v1x.rds"),
+  compress = "xz"
+)
+cat(sprintf("GRF dictator (v1.0.0 X) saved (n = %d).\n", length(d_dict_v1x$y)))
+```
+
+## Trust game {#sec-v1x-trust}
+
+```{r}
+#| label: fit-trust-v1x
+d_trust_v1x <- prep_game(dat, "cj_trust", c(prof_mods, resp_mods))
+cf_trust_v1x <- fit_grf(d_trust_v1x)
+saveRDS(
+  cf_trust_v1x,
+  here::here("data", "03_final", "grf_trust_ext_v1x.rds"),
+  compress = "xz"
+)
+cat(sprintf("GRF trust (v1.0.0 X) saved (n = %d).\n", length(d_trust_v1x$y)))
+```
+
+# Session Info {#sec-session-info .appendix .unnumbered}
+
+```{r}
+#| label: session-info
+#| eval: true
+#| echo: true
+session_info()
+```
+
+# Execution Time {#sec-exec-time .appendix .unnumbered}
+
+```{r}
+#| label: exec-time
+#| eval: true
+#| echo: true
+#| include: true
+end_time <- Sys.time()
+exec_time <- end_time - start_time
+cat(paste(
+  "R code execution time:",
+  round(as.numeric(exec_time, units = "secs"), 2),
+  "seconds."
+))
+```

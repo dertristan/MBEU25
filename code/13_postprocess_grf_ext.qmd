@@ -1,0 +1,673 @@
+---
+subtitle: |
+  Causal-Forest Post-Processing, Extended Correlates
+date: last-modified
+date-format: MMMM D, YYYY
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    code-tools: true
+execute:
+  echo: true
+  warning: true
+  eval: true
+  message: true
+---
+
+# Purpose {#sec-purpose}
+
+This notebook post-processes the extended causal-forest fits from `11_grf_fit_ext.qmd`.
+It gives a comprehensive overview of what correlates with the Muslim penalty, across the paper's pre-game moderators and the added post-game items.
+
+Post-game items are **correlates**, not moderators.
+Each respondent saw a random number of Muslim profiles before answering them.
+`10_data_prep_ext.qmd` (`#sec-contamination`) finds no item that responds to that exposure, but the results remain exploratory addenda, not main results.
+
+The notebook produces four outputs:
+
+1. The ATE under three fits: the paper's fit, the paper's covariates on the extended sample, and the extended fit (@sec-ate).
+2. The **correlates overview**: the standardized slope of the CATE on each numeric respondent variable (@sec-overview).
+3. Variable importance across all moderators (@sec-vi).
+4. CATE-by-level figures for the added post-game variables, in the grammar of `07_postprocess_grf.qmd` (@sec-levels).
+
+# Setup {#sec-setup}
+
+```{r}
+#| label: setup
+#| include: false
+# execution time
+start_time <- Sys.time()
+# console width
+options(width = 80)
+# packages
+p_required <- c(
+  "tidyverse", # dplyr, ggplot2, tidyr
+  "here", # relative paths
+  "grf", # causal_forest methods
+  "ggpubr", # theme_pubr()
+  "patchwork", # multi-panel figures
+  "knitr", # kable()
+  "sessioninfo" # session docs
+)
+packages <- rownames(installed.packages())
+p_to_install <- p_required[!(p_required %in% packages)]
+if (length(p_to_install) > 0) {
+  install.packages(p_to_install)
+}
+sapply(p_required, require, character.only = TRUE)
+rm(p_required, p_to_install, packages)
+```
+
+# Load data and fits {#sec-load}
+
+```{r}
+#| label: load-data
+eu25_long_ext <- readRDS(here("data", "02_processed", "eu25_long_ext.rds"))
+var_dict_ext <- readRDS(here("data", "02_processed", "var_dict_ext.rds"))
+
+# extended fits
+cf_dict <- readRDS(here("data", "03_final", "grf_dictator_ext.rds"))
+cf_trust <- readRDS(here("data", "03_final", "grf_trust_ext.rds"))
+# paper covariates, extended sample
+cf_dict_v1x <- readRDS(here("data", "03_final", "grf_dictator_ext_v1x.rds"))
+cf_trust_v1x <- readRDS(here("data", "03_final", "grf_trust_ext_v1x.rds"))
+# paper fits
+cf_dict_v1 <- readRDS(here("data", "03_final", "grf_dictator.rds"))
+cf_trust_v1 <- readRDS(here("data", "03_final", "grf_trust.rds"))
+```
+
+# Moderator designs {#sec-designs}
+
+The moderator lists are those of `11_grf_fit_ext.qmd`.
+For each game we filter the data to that game in its original order, the same order the forest was fit on.
+The `stopifnot()` confirms that the rows line up with the forest's training rows, so each τ̂ aligns with its moderator value.
+
+```{r}
+#| label: moderators
+prof_mods <- c(
+  "cj_nationality_shown",
+  "der_cj_eu_identity",
+  "der_cj_partisanship",
+  "cj_age",
+  "cj_sex",
+  "cj_class"
+)
+resp_mods <- c(
+  "q_gender",
+  "q_age",
+  "q_identity_country",
+  "q_identity_eu",
+  "q_identity_europe",
+  "q_religion",
+  "q_class",
+  "q_eu_efficacy_understand",
+  "q_pop_reps",
+  "q_pop_goodevil",
+  "q_pop_compromise",
+  "q_dem_compromise",
+  "q_dem_listen",
+  "q_tech_experts",
+  "q_tech_leaders",
+  "q_party_harm",
+  "q_people_incompetent",
+  "q_eu_longterm",
+  "q_eu_responsive",
+  "q_eu_imp_nat_econ",
+  "q_eu_imp_nat_cul",
+  "q_eu_imp_nat_pol",
+  "q_eu_abolish",
+  "q_eu_satisfaction",
+  "q_rural_urban",
+  "q_edu_age_stop"
+)
+resp_mods_added <- var_dict_ext |>
+  filter(!in_v1) |>
+  pull(variable)
+resp_mods_ext <- c(resp_mods, resp_mods_added)
+all_mods <- c(prof_mods, resp_mods_ext)
+```
+
+```{r}
+#| label: designs
+sub_dict <- eu25_long_ext |> filter(cj_game_type == "cj_dict")
+m_dict <- sub_dict |>
+  select(all_of(all_mods)) |>
+  mutate(across(where(is.character), factor))
+
+sub_trust <- eu25_long_ext |> filter(cj_game_type == "cj_trust")
+m_trust <- sub_trust |>
+  select(all_of(all_mods)) |>
+  mutate(across(where(is.character), factor))
+
+stopifnot(
+  length(cf_dict$Y.orig) == nrow(m_dict),
+  length(cf_trust$Y.orig) == nrow(m_trust),
+  all(cf_dict$Y.orig == sub_dict$cj_pl2),
+  all(cf_trust$Y.orig == sub_trust$cj_pl2),
+  all(cf_dict$W.orig == as.integer(sub_dict$cj_rel == "muslim"))
+)
+```
+
+# House style {#sec-house}
+
+The game palette, scales, and theme are copied from `07_postprocess_grf.qmd` (`#sec-combined-house`).
+The labels come from `helper_scripts/moderator_labels_ext.R`, which extends the paper's lookup with the post-game items.
+For every numeric respondent variable, the label states the direction of the raw coding, because several batteries run in reverse (e.g. 1 = "tend to trust").
+
+```{r}
+#| label: game-style
+game_labs <- c(cj_dict = "Dictator game", cj_trust = "Trust game")
+game_cols <- c("Dictator game" = "#0072B2", "Trust game" = "#D55E00")
+game_shapes <- c("Dictator game" = 16, "Trust game" = 17) # circle / triangle
+game_ltys <- c("Dictator game" = "solid", "Trust game" = "longdash")
+
+scale_colour_game <- function() {
+  scale_colour_manual(values = game_cols, name = NULL)
+}
+scale_shape_game <- function() {
+  scale_shape_manual(values = game_shapes, name = NULL)
+}
+scale_linetype_game <- function() {
+  scale_linetype_manual(values = game_ltys, name = NULL)
+}
+
+# shared labels, extended
+source(here("code", "helper_scripts", "moderator_labels_ext.R"))
+
+# direction in label
+dir_vars <- var_dict_ext |> filter(high_means != "categorical")
+mod_labels[dir_vars$variable] <- paste0(
+  mod_labels[dir_vars$variable],
+  " (high = ",
+  dir_vars$high_means,
+  ")"
+)
+stopifnot(all(resp_mods_ext %in% names(mod_labels)))
+
+theme_mbeu <- function(base_size = 11) {
+  ggpubr::theme_pubr(base_size = base_size) +
+    theme(legend.position = "top")
+}
+ref_zero <- geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60")
+dodge <- position_dodge(width = 0.5)
+yl_i <- expression(hat(tau)[ic]) # respondent-level CATE
+```
+
+# Average treatment effects {#sec-ate}
+
+The doubly-robust ATE with its cluster-robust SE under the three fits.
+The paper's fit and the paper's covariates on the extended sample differ only in the sample.
+The paper's covariates and the extended fit, both on the extended sample, differ only in `X`.
+With a randomized treatment, `X` should move the ATE very little, so the main difference to expect is the sample shift.
+
+```{r}
+#| label: tbl-ate
+ate_row <- function(cf, game, fit) {
+  a <- grf::average_treatment_effect(cf, target.sample = "all")
+  tibble(
+    game = game,
+    fit = fit,
+    n = length(cf$Y.orig),
+    estimate = a[["estimate"]],
+    std_err = a[["std.err"]],
+    lower = estimate - 1.96 * std_err,
+    upper = estimate + 1.96 * std_err
+  )
+}
+
+ate_tbl <- bind_rows(
+  ate_row(cf_dict_v1, "Dictator game", "v1.0.0 (paper)"),
+  ate_row(cf_dict_v1x, "Dictator game", "v1.0.0 X, extended sample"),
+  ate_row(cf_dict, "Dictator game", "Extended"),
+  ate_row(cf_trust_v1, "Trust game", "v1.0.0 (paper)"),
+  ate_row(cf_trust_v1x, "Trust game", "v1.0.0 X, extended sample"),
+  ate_row(cf_trust, "Trust game", "Extended")
+)
+
+ate_tbl |>
+  kable(
+    digits = 3,
+    caption = "Doubly-robust ATE of the Muslim profile with cluster-robust 95% CI, by fit."
+  )
+```
+
+# Correlates overview {#sec-overview}
+
+For each numeric respondent variable we compute its **standardized CATE slope**: the best linear projection of the CATE onto that one variable, standardized to unit variance.
+The coefficient is the change in the Muslim penalty (in tokens) per one-SD increase in the variable.
+`best_linear_projection()` uses the forest's doubly-robust scores and the respondent clusters stored on the forest, so the 95% intervals are cluster-robust.
+
+Each slope is a **marginal** association.
+It does not hold the other variables constant.
+Two correlated items, such as the four trust items, will therefore show similar slopes even if only one of them drives the penalty.
+The CATE is negative (a penalty), so a positive slope means the penalty shrinks as the variable rises.
+Categorical variables (gender, religion, class, residence type, occupation) have no slope; their per-level CATEs are in @sec-levels and in `07_postprocess_grf.qmd`.
+
+```{r}
+#| label: slopes
+slope_one <- function(cf, mm, var, game) {
+  a <- matrix(as.numeric(scale(mm[[var]])), ncol = 1, dimnames = list(NULL, var))
+  b <- grf::best_linear_projection(cf, A = a)
+  tibble(
+    variable = var,
+    game = game,
+    estimate = b[2, "Estimate"],
+    std_err = b[2, "Std. Error"]
+  )
+}
+
+slope_vars <- dir_vars$variable
+slopes <- bind_rows(
+  map(slope_vars, \(v) slope_one(cf_dict, m_dict, v, "Dictator game")),
+  map(slope_vars, \(v) slope_one(cf_trust, m_trust, v, "Trust game"))
+) |>
+  mutate(
+    lower = estimate - 1.96 * std_err,
+    upper = estimate + 1.96 * std_err
+  ) |>
+  left_join(
+    select(var_dict_ext, variable, construct, in_v1, contamination_flag),
+    by = "variable"
+  )
+
+stopifnot(!anyNA(slopes$estimate))
+cat("Contamination-flagged items in the overview:", sum(slopes$contamination_flag) / 2, "\n")
+```
+
+```{r}
+#| label: fig-grf-ext-overview
+#| fig-cap: "Correlates of the Muslim penalty: standardized CATE slope of each numeric respondent variable (CF), Dictator and Trust games overlaid and distinguished jointly by colour and shape. Each point is the best linear projection of the CATE onto that single variable, scaled to unit variance, with a cluster-robust 95% confidence interval. The x-axis is the change in the CATE (tokens) per one-SD increase in the variable. The CATE is negative, so a positive slope means a smaller penalty. Each slope is marginal: it does not hold other variables constant. Rows are grouped by construct. Constructs marked (post-game) were measured after the games and are correlates, not moderators. Labels give the direction of the raw coding."
+#| dpi: 500
+#| fig-width: 9
+#| fig-height: 13
+construct_order <- var_dict_ext |>
+  filter(variable %in% slope_vars) |>
+  distinct(construct, in_v1) |>
+  arrange(desc(in_v1)) |>
+  mutate(construct_lab = if_else(in_v1, construct, paste0(construct, " (post-game)")))
+
+slopes |>
+  left_join(construct_order, by = c("construct", "in_v1")) |>
+  mutate(
+    construct_lab = factor(construct_lab, levels = construct_order$construct_lab),
+    label = factor(mod_labels[variable], levels = rev(mod_labels[slope_vars]))
+  ) |>
+  ggplot(aes(x = estimate, y = label, colour = game, shape = game)) +
+  geom_vline(xintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(
+    aes(xmin = lower, xmax = upper),
+    position = position_dodge(width = 0.6)
+  ) +
+  geom_point(position = position_dodge(width = 0.6)) +
+  facet_grid(
+    construct_lab ~ .,
+    scales = "free_y",
+    space = "free_y",
+    labeller = labeller(construct_lab = label_wrap_gen(18))
+  ) +
+  scale_colour_game() +
+  scale_shape_game() +
+  labs(
+    title = "Correlates of the Muslim penalty (CF)",
+    x = "Change in CATE per 1 SD (tokens)",
+    y = NULL
+  ) +
+  theme_mbeu(base_size = 9) +
+  theme(strip.text.y = element_text(angle = 0, hjust = 0))
+```
+
+The table lists the same slopes, ranked by their absolute size averaged over the two games.
+
+```{r}
+#| label: tbl-slopes
+slopes |>
+  mutate(rank_key = mean(abs(estimate)), .by = variable) |>
+  arrange(desc(rank_key)) |>
+  transmute(
+    variable,
+    construct,
+    timing = if_else(in_v1, "pre-game (v1.0.0)", "post-game"),
+    game,
+    estimate,
+    ci = sprintf("[%.3f, %.3f]", lower, upper)
+  ) |>
+  kable(
+    digits = 3,
+    caption = "Standardized CATE slopes (tokens per SD), cluster-robust 95% CI, ranked by mean absolute slope."
+  )
+```
+
+# Variable importance {#sec-vi}
+
+`variable_importance()` returns one value per design column.
+Each column is mapped back to its source variable by longest-prefix match and summed, as in `07_postprocess_grf.qmd`; country fixed-effect columns match no variable and are dropped.
+Importance measures how often the forest splits on a variable.
+It is not an effect size, and correlated items share their importance.
+
+```{r}
+#| label: fig-grf-ext-vi
+#| fig-cap: "CF variable importance (depth-weighted split frequency) in the extended fits, aggregated to the original variables. Fill distinguishes profile-level attributes, pre-game respondent items (the paper's set), and post-game correlates. Country fixed-effect columns excluded."
+#| dpi: 500
+#| fig-width: 9
+#| fig-height: 11
+vi_df <- function(cf, game) {
+  tibble(
+    column = colnames(cf$X.orig),
+    importance = as.numeric(grf::variable_importance(cf))
+  ) |>
+    mutate(
+      variable = map_chr(column, function(cn) {
+        hit <- all_mods[startsWith(cn, all_mods)]
+        if (length(hit) == 0) NA_character_ else hit[which.max(nchar(hit))]
+      })
+    ) |>
+    filter(!is.na(variable)) |>
+    summarise(importance = sum(importance), .by = variable) |>
+    mutate(game = game)
+}
+
+vi <- bind_rows(
+  vi_df(cf_dict, "Dictator game"),
+  vi_df(cf_trust, "Trust game")
+) |>
+  mutate(
+    family = case_when(
+      variable %in% prof_mods ~ "Profile-level",
+      variable %in% resp_mods ~ "Respondent, pre-game (v1.0.0)",
+      .default = "Respondent, post-game"
+    ),
+    label = coalesce(unname(mod_labels[variable]), variable)
+  )
+
+stopifnot(setequal(unique(vi$variable), all_mods))
+
+vi |>
+  mutate(label = fct_reorder(label, importance, .fun = mean)) |>
+  ggplot(aes(x = importance, y = label, fill = family)) +
+  geom_col() +
+  facet_wrap(~game) +
+  scale_fill_manual(
+    values = c(
+      "Profile-level" = "#D55E00",
+      "Respondent, pre-game (v1.0.0)" = "#0072B2",
+      "Respondent, post-game" = "#009E73"
+    )
+  ) +
+  labs(
+    title = "Variable importance, extended fits (CF)",
+    x = "Importance (depth-weighted split frequency)",
+    y = NULL,
+    fill = NULL
+  ) +
+  theme_mbeu(base_size = 8)
+```
+
+# CATE by level, post-game correlates {#sec-levels}
+
+`cate_one()`, `build_comb()`, and `plot_comb()` are copied from `07_postprocess_grf.qmd` (`#sec-combined-build`).
+Each point is the doubly-robust subset ATE among respondents at that level, with an honest cluster-robust 95% interval.
+Levels comprising less than 1% of a game's sample are dropped.
+Numeric scales are drawn as a ribbon and line per game, categorical variables as dodged points.
+The paper's pre-game moderators are not repeated here; their figures are in `07_postprocess_grf.qmd`.
+Because the extended sample is smaller, they would differ slightly from the paper's.
+
+```{r}
+#| label: combined-builders
+# fixed display grids for the two genuinely continuous moderators
+cont_grids <- list(
+  q_age = seq(18, 75, length.out = 101), # 100 intervals over the full range
+  q_edu_age_stop = seq(14.5, 30.5, by = 1) # integer years 15..30
+)
+
+cate_one <- function(cf, mm, mod, game_label) {
+  v <- mm[[mod]]
+  is_num <- is.numeric(v)
+  # genuinely continuous moderators
+  if (is_num && length(unique(v)) > 12) {
+    # fixed-grid moderators: subset ATE per non-empty grid cell, plotted at the
+    # cell midpoint so the line spans the full display range
+    if (mod %in% names(cont_grids)) {
+      br <- cont_grids[[mod]]
+      cell <- cut(v, breaks = br, include.lowest = TRUE)
+      mids <- (head(br, -1) + tail(br, -1)) / 2
+      rows <- lapply(
+        which(tabulate(cell, nbins = length(mids)) > 0),
+        function(k) {
+          sel <- !is.na(cell) & as.integer(cell) == k
+          a <- grf::average_treatment_effect(cf, subset = sel)
+          tibble(
+            mod = mod,
+            level = as.character(round(mids[k])),
+            order = mids[k],
+            is_scale = TRUE,
+            game = game_label,
+            n = sum(sel),
+            estimate = a["estimate"],
+            lower = a["estimate"] - 1.96 * a["std.err"],
+            upper = a["estimate"] + 1.96 * a["std.err"]
+          )
+        }
+      )
+      return(bind_rows(rows))
+    }
+    # fallback: decile bins, integer labels
+    bin <- ntile(v, 10)
+    rows <- lapply(sort(unique(bin)), function(k) {
+      sel <- bin == k
+      a <- grf::average_treatment_effect(cf, subset = sel)
+      tibble(
+        mod = mod,
+        level = as.character(round(mean(v[sel]))),
+        order = mean(v[sel]),
+        is_scale = TRUE,
+        game = game_label,
+        n = sum(sel),
+        estimate = a["estimate"],
+        lower = a["estimate"] - 1.96 * a["std.err"],
+        upper = a["estimate"] + 1.96 * a["std.err"]
+      )
+    })
+    return(bind_rows(rows))
+  }
+  # discrete moderators: honor factor level order; drop levels below 1% of the game sample
+  levs <- if (is_num) {
+    sort(unique(v))
+  } else if (is.factor(v)) {
+    levels(droplevels(v))
+  } else {
+    sort(unique(as.character(v)))
+  }
+  rows <- lapply(seq_along(levs), function(i) {
+    lev <- levs[i]
+    sel <- if (is_num) v == lev else as.character(v) == lev
+    # drop rare levels (< 1% of the game sample): subset CATE too imprecise to compare
+    if (sum(sel) / sum(!is.na(v)) < 0.01) {
+      return(NULL)
+    }
+    a <- grf::average_treatment_effect(cf, subset = sel)
+    tibble(
+      mod = mod,
+      level = as.character(lev),
+      order = if (is_num) as.numeric(lev) else i,
+      is_scale = is_num && mod != "cj_age",
+      game = game_label,
+      n = sum(sel),
+      estimate = a["estimate"],
+      lower = a["estimate"] - 1.96 * a["std.err"],
+      upper = a["estimate"] + 1.96 * a["std.err"]
+    )
+  })
+  bind_rows(rows)
+}
+
+build_comb <- function(mods) {
+  bind_rows(
+    bind_rows(lapply(mods, \(m) cate_one(cf_dict, m_dict, m, "Dictator game"))),
+    bind_rows(lapply(mods, \(m) cate_one(cf_trust, m_trust, m, "Trust game")))
+  ) |>
+    mutate(mod = factor(mod, levels = mods))
+}
+
+plot_comb <- function(df, ncol, title, ylab = yl_i) {
+  d <- df |>
+    arrange(mod, order) |>
+    mutate(
+      key = factor(
+        paste0(mod, "@@", level),
+        levels = unique(paste0(mod, "@@", level))
+      )
+    )
+  # per-facet grey count bars (pooled over games shown)
+  band <- d |>
+    summarise(cnt = sum(n), .by = c(mod, key)) |>
+    left_join(
+      d |>
+        summarise(
+          floor_y = min(lower) - 0.12 * (max(upper) - min(lower)),
+          span = 0.20 * (max(upper) - min(lower)),
+          .by = mod
+        ),
+      by = "mod"
+    ) |>
+    mutate(bar_top = floor_y + (cnt / max(cnt)) * span, .by = mod)
+  d_scale <- dplyr::filter(d, is_scale)
+  d_cat <- dplyr::filter(d, !is_scale)
+  p <- ggplot(d, aes(x = key, y = estimate, colour = game, shape = game)) +
+    geom_segment(
+      data = band,
+      aes(x = key, xend = key, y = floor_y, yend = bar_top),
+      colour = "grey80",
+      linewidth = 3,
+      inherit.aes = FALSE
+    ) +
+    ref_zero
+  # ordered scales: overlaid ribbon + line + point (continuous-style)
+  if (nrow(d_scale) > 0) {
+    p <- p +
+      geom_ribbon(
+        data = d_scale,
+        aes(ymin = lower, ymax = upper, fill = game, group = game),
+        alpha = 0.15,
+        colour = NA
+      ) +
+      geom_line(data = d_scale, aes(group = game, linetype = game)) +
+      geom_point(data = d_scale) +
+      scale_fill_manual(values = game_cols, name = NULL)
+  }
+  # categorical: dodged linerange + point
+  if (nrow(d_cat) > 0) {
+    p <- p +
+      geom_linerange(
+        data = d_cat,
+        aes(ymin = lower, ymax = upper, linetype = game),
+        position = dodge
+      ) +
+      geom_point(data = d_cat, position = dodge)
+  }
+  p +
+    facet_wrap(
+      ~mod,
+      scales = "free",
+      ncol = ncol,
+      labeller = labeller(mod = mod_strip)
+    ) +
+    scale_colour_game() +
+    scale_shape_game() +
+    scale_linetype_game() +
+    scale_x_discrete(labels = relabel_key) +
+    labs(title = title, x = NULL, y = ylab) +
+    guides(fill = "none", linetype = "none") +
+    theme_mbeu() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 7))
+}
+```
+
+The added variables are split over two figures so the facets stay legible: occupation and the political constructs first, then the EU-institution batteries.
+
+```{r}
+#| label: levels-split
+levels_1 <- c(
+  "q_occ_current",
+  "q_lr_self",
+  "q_euint_self",
+  "q_nativ_econ",
+  "q_nativ_cult",
+  "q_nat_int",
+  "q_eu_int",
+  "der_eu_know_correct",
+  "der_eu_know_dk",
+  "q_risk_taking",
+  "q_future_discount"
+)
+levels_2 <- setdiff(resp_mods_added, levels_1)
+stopifnot(setequal(c(levels_1, levels_2), resp_mods_added))
+```
+
+```{r}
+#| label: fig-grf-ext-levels-1
+#| fig-cap: "CF estimates of the respondent-level CATE ($\\hat{\\tau}_i$) of the Muslim profile across the levels of the post-game correlates (1 of 2): occupation, ideology, nativism, political interest, EU knowledge, and risk and time preferences. Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. Each point and ribbon value is a doubly-robust subset estimate with an honest cluster-robust 95% interval. Grey bars show the per-level row count (pooled over games). Facet titles give the direction of the raw coding. The y-axis is free per facet. Levels comprising less than 1% of a game's sample are dropped. These items were measured after the games and are correlates, not moderators."
+#| dpi: 500
+#| fig-width: 11
+#| fig-height: 11
+build_comb(levels_1) |>
+  plot_comb(
+    ncol = 3,
+    title = bquote(
+      "CATE by post-game correlate, both games (1 of 2)" ~ (hat(tau)[ic])
+    )
+  )
+```
+
+```{r}
+#| label: fig-grf-ext-levels-2
+#| fig-cap: "CF estimates of the respondent-level CATE ($\\hat{\\tau}_i$) of the Muslim profile across the levels of the post-game correlates (2 of 2): feeling informed about, trusting, and evaluating EU institutions. Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. Each point and ribbon value is a doubly-robust subset estimate with an honest cluster-robust 95% interval. Grey bars show the per-level row count (pooled over games). Facet titles give the direction of the raw coding. The y-axis is free per facet. These items were measured after the games and are correlates, not moderators."
+#| dpi: 500
+#| fig-width: 11
+#| fig-height: 10
+build_comb(levels_2) |>
+  plot_comb(
+    ncol = 4,
+    title = bquote(
+      "CATE by post-game correlate, both games (2 of 2)" ~ (hat(tau)[ic])
+    )
+  )
+```
+
+# Save summaries {#sec-save}
+
+The ATE table and slopes are saved for `14_postprocess_bcf_ext.qmd`, which compares them with the BCF counterparts.
+
+```{r}
+#| label: save-summaries
+saveRDS(
+  list(ate = ate_tbl, slopes = slopes, vi = vi),
+  here("data", "03_final", "grf_ext_summaries.rds")
+)
+```
+
+# Session Info {#sec-session-info .appendix .unnumbered}
+
+```{r}
+#| label: session-info
+#| eval: true
+#| echo: true
+session_info()
+```
+
+# Execution Time {#sec-exec-time .appendix .unnumbered}
+
+```{r}
+#| label: exec-time
+#| eval: true
+#| echo: true
+#| include: true
+end_time <- Sys.time()
+exec_time <- end_time - start_time
+cat(paste(
+  "R code execution time:",
+  round(as.numeric(exec_time, units = "secs"), 2),
+  "seconds."
+))
+```

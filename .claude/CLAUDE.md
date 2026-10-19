@@ -159,6 +159,12 @@ Post-processing + figures (the planned single `07_*` was split into three notebo
 - `code/08_postprocess_bcf.qmd` — BCF counterpart, structurally parallel to `07`: ATE posterior, **posterior linear projection** (`woody2021model`, the Bayesian counterpart to GRF's BLP), and CATE-by-moderator figures with **posterior medians + 95% credible intervals** read off the τ(x) draws via `get_forest_fit()`. Combined-figure grammar (each game encoded by colour + shape + linetype together, so it survives greyscale and colourblindness). The respondent cluster bootstrap is a separate downstream step, not done here.
 - `code/09_additional_figs_tables.qmd` — manuscript-level descriptive figures and tables built from `eu25_long.rds` (not from the fits): house-style definitions (Okabe-Ito game palette, golden-ratio helpers), token-allocation difference-in-means by game (Welch t-test), outcome distributions, the covariate-balance table, and the survey-item reference table.
 
+Extended-correlates addendum (post-v1.0.0, started 2026-10-19). **Exploratory only, not main results.** Adds post-game survey items as *correlates* (not moderators) to the frozen pre-game set. Not registered in `_quarto.yml` and not embedded in `index.qmd`. Render each standalone.
+- `code/10_data_prep_ext.qmd` — reproduces `eu25_long.rds` exactly (guard), then adds post-game items with the paper's recipe (wave-1 backfill, drop items with a fielding gap >90% missing in any country-wave, pooled 25% cutoff, listwise deletion). Also contains the contamination check (items regressed on the number of Muslim profiles seen). Writes `eu25_long_ext.rds` and `var_dict_ext.rds`. EU knowledge items differ by wave, so they enter only as wave-specific scores (`der_eu_know_correct`, `der_eu_know_dk`).
+- `code/11_grf_fit_ext.qmd` / `code/12_bcf_fit_ext.qmd` — fits saved as `*_ext.rds`. GRF also saves `grf_*_ext_v1x.rds` (paper X on the extended sample) to separate the sample shift from the added covariates.
+- `code/13_postprocess_grf_ext.qmd` / `code/14_postprocess_bcf_ext.qmd` — post-processing of the extended fits.
+- `archive/v1.0.0/` — frozen gh-pages build of the submitted release (`59ff1f1`), served via `project.resources`. Never edit it.
+
 ## Workflow Notes
 
 ### Freeze / caching

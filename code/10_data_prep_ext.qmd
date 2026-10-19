@@ -1,0 +1,823 @@
+---
+title: "Data Preparation (Extended Correlates)"
+subtitle: |
+  Analysis tibble with pre- and post-game survey items
+date: last-modified
+date-format: MMMM D, YYYY
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    code-tools: true
+execute:
+  echo: true
+  warning: true
+  eval: true
+  message: true
+---
+
+# Purpose {#sec-purpose}
+
+The submitted paper (v1.0.0) conditions only on survey items asked *before* the games.
+This notebook builds the analysis tibble for an exploratory extension that adds the substantive items asked *after* the games.
+Post-game items are **correlates** of the Muslim penalty, not moderators.
+Each respondent saw a random number of Muslim profiles, and that exposure could shift how they answered later items.
+Every result built on these items is an exploratory addendum, not a main result.
+
+The pipeline repeats `02_data_prep.qmd` step by step.
+It applies the same respondent filters, the same wave-1 backfill, the same missingness rule, and the same listwise deletion.
+@sec-reproduce checks that the pipeline, run with only the v1.0.0 variables, reproduces `eu25_long.rds` exactly.
+The output is `data/02_processed/eu25_long_ext.rds` plus a variable dictionary `var_dict_ext.rds`.
+
+# Setup {#sec-setup}
+
+```{r}
+#| label: setup
+#| include: false
+# execution time
+start_time <- Sys.time()
+# console width
+options(width = 80)
+# packages
+p_required <- c(
+  "tidyverse", # dplyr, ggplot2, tidyr etc
+  "here", # to never worry about directories
+  "knitr", # for kable()
+  "broom", # tidy() model output
+  "sandwich", # clustered vcov, contamination check
+  "lmtest", # coeftest() with custom vcov
+  "sessioninfo" # session docs
+)
+packages <- rownames(installed.packages())
+p_to_install <- p_required[!(p_required %in% packages)]
+if (length(p_to_install) > 0) {
+  install.packages(p_to_install)
+}
+sapply(p_required, require, character.only = TRUE)
+rm(p_required, p_to_install, packages)
+```
+
+# Load data {#sec-load}
+
+```{r}
+#| label: load-data
+eu25games2019 <- read_rds(here("data", "01_raw", "eu25games2019.rds"))
+eu25_long_v1 <- read_rds(here("data", "02_processed", "eu25_long.rds"))
+```
+
+# Respondent filters {#sec-filters}
+
+These are the filters from `02_data_prep.qmd`, in the same order.
+The exploratory duplicate inspection there is not repeated.
+Only the steps that change the sample are kept.
+
+```{r}
+#| label: filters
+# pids who played at least one game wave
+pids_in_games <- eu25games2019 |>
+  filter(meta_wave %in% c(2, 3)) |>
+  distinct(meta_pid) |>
+  pull(meta_pid)
+
+eu25games2019_clean <- eu25games2019 |>
+  # n = 103,685 -> 70,685
+  filter(meta_wave %in% c(2, 3) | meta_pid %in% pids_in_games) |>
+  # n = 70,685 -> 41,457
+  filter(der_att_check_3)
+
+# duplicate-pid completers
+to_remove <- eu25games2019_clean |>
+  filter(!is.na(cj_dict1_pl2)) |>
+  group_by(meta_wave, meta_pid) |>
+  filter(meta_finished) |>
+  count(meta_pid, sort = T) |>
+  filter(n > 1) |>
+  pull(meta_pid)
+
+eu25games2019_clean2 <- eu25games2019_clean |>
+  # n = 41,457 -> 36,912
+  filter(meta_finished) |>
+  # n = 36,912 -> 36,881
+  filter(!(meta_pid %in% to_remove)) |>
+  # n = 36,881 -> 35,235
+  filter(meta_pid %in% meta_pid[meta_wave %in% c(2, 3)]) |>
+  # n = 35,235 -> 35,212
+  filter(!(meta_wave == 1 & meta_pid == "1078674746")) |>
+  filter(!(meta_wave == 1 & meta_pid == "1277956255")) |>
+  filter(!(meta_wave == 1 & meta_pid == "1516614375")) |>
+  filter(!(meta_wave == 1 & is.na(meta_pid)))
+
+stopifnot(nrow(eu25games2019_clean2) == 35212)
+```
+
+# Variable sets {#sec-vars}
+
+## Pre-game items (v1.0.0) {#sec-vars-pre}
+
+`vars_pre_game` and the paper's drop list are copied from `02_data_prep.qmd`.
+
+```{r}
+#| label: vars-pre-game
+vars_pre_game <- c(
+  "q_gender",
+  "q_age",
+  "q_nationality",
+  "q_identity_country",
+  "q_identity_eu",
+  "q_identity_europe",
+  "q_religion",
+  "q_class",
+  "q_euint_pos",
+  "q_eu_efficacy_understand",
+  "q_eu_efficacy_care",
+  "q_eu_efficacy_nosay",
+  "q_pop_will",
+  "q_pop_people",
+  "q_pop_citizen",
+  "q_pop_reps",
+  "q_pop_goodevil",
+  "q_pop_compromise",
+  "q_dem_compromise",
+  "q_dem_listen",
+  "q_tech_experts",
+  "q_tech_leaders",
+  "q_party_harm",
+  "q_people_incompetent",
+  "q_eu_longterm",
+  "q_eu_responsive",
+  "q_eu_imp_nat_econ",
+  "q_eu_imp_nat_cul",
+  "q_eu_imp_nat_pol",
+  "q_eu_abolish",
+  "q_eu_satisfaction",
+  "q_election_challenge_polgroups",
+  "q_election_impact_eu",
+  "q_election_importance_self"
+)
+
+# dropped in v1.0.0 (high NA, or collinear with country)
+vars_pre_dropped <- c(
+  "q_euint_pos",
+  "q_eu_efficacy_care",
+  "q_eu_efficacy_nosay",
+  "q_pop_will",
+  "q_pop_people",
+  "q_pop_citizen",
+  "q_election_challenge_polgroups",
+  "q_election_impact_eu",
+  "q_election_importance_self",
+  "q_nationality"
+)
+```
+
+## Post-game items (new) {#sec-vars-post}
+
+Candidates are the substantive items in the post-game blocks of the wave-2 and wave-3 questionnaires (`data/questionaire/W{2,3}_EU25_Survey_Ireland_basic.txt` in the [source repository](https://github.com/LS-Konig/eu25games2019)).
+In both waves the post-game blocks come after the dictator and trust games.
+
+```{r}
+#| label: vars-post-game
+vars_post_game <- c(
+  # political interest
+  "q_nat_int",
+  "q_eu_int",
+  # nativism
+  "q_nativ_econ",
+  "q_nativ_cult",
+  # informed about EU institutions
+  "q_eu_informed_com",
+  "q_eu_informed_cou",
+  "q_eu_informed_ep",
+  "q_eu_informed_cjeu",
+  # trust in EU institutions
+  "q_eu_trust_com",
+  "q_eu_trust_cou",
+  "q_eu_trust_ep",
+  "q_eu_trust_cjeu",
+  # CJEU evaluation
+  "q_cjeu_abolish",
+  "q_cjeu_satisfaction",
+  # economic evaluations
+  "q_eval_econ_eur",
+  "q_eval_econ_nat",
+  "q_eval_fin_household",
+  "q_eval_job",
+  # satisfaction with democracy
+  "q_satis_demo_nat",
+  "q_satis_demo_eu",
+  # ideology
+  "q_lr_self",
+  "q_euint_self",
+  # risk and time preferences
+  "q_risk_taking",
+  "q_future_discount",
+  # occupation
+  "q_occ_current"
+)
+
+# eu knowledge (scored, see below)
+vars_know <- paste0("q_eu_know_", 1:5)
+```
+
+Several post-game blocks are left out by design:
+
+- **Feeling thermometers** (`q_thermo_1..6`) rate political parties. Each slot is a different party in each country, so a slot is not comparable across countries.
+- **Party and institution placements** (`q_lr_party_*`, `q_euint_party_*`, `q_lr_com` etc.), **norms**, **globalization**, **national efficacy**, **news use**, and **vote ranking** items are each missing for more than 25% of game players.
+- **`*_fra` variants** duplicate answers that French wave-2 respondents also gave to the main items. They add nothing.
+- `q_region` (300 levels), `q_occ_last` (65% missing, asked only of non-workers), `q_cjeu_pos` (70% missing).
+
+**EU knowledge.** Waves 2 and 3 ask *different* true/false questions under the same names `q_eu_know_1..5`.
+The raw factors are therefore not comparable across waves, and they are not backfilled from wave 1.
+Two wave-specific scores replace them: the number of correct answers on items 1–4, and the number of "don't know" answers on items 1–5.
+Item 5 is a country-specific question about the national parliament or government, so it does not enter the correct-answer score.
+The answer key comes from the questionnaire wording, given the survey dates (April–May 2019):
+
+| Item | Wave 2 statement | Key | Wave 3 statement | Key |
+|:---|:---|:---:|:---|:---:|
+| 1 | Each Member State elects the same number of MEPs | False | The European Council is officially called the Council of the EU | False |
+| 2 | Antonio Tajani is the current President of the European Commission | False | There are 1125 members in the European Parliament | False |
+| 3 | The Council presidency is currently held by Romania | True | Vassilios Skouris is the current President of the CJEU | False |
+| 4 | Only national courts decide whether national law is compatible with EU law | False | The Euro area currently consists of 19 Member States | True |
+
+: EU knowledge answer key by wave. {#tbl-know-key}
+
+```{r}
+#| label: know-key
+know_key <- tribble(
+  ~meta_wave , ~item         , ~correct ,
+           2 , "q_eu_know_1" , "False"  ,
+           2 , "q_eu_know_2" , "False"  ,
+           2 , "q_eu_know_3" , "True"   ,
+           2 , "q_eu_know_4" , "False"  ,
+           3 , "q_eu_know_1" , "False"  ,
+           3 , "q_eu_know_2" , "False"  ,
+           3 , "q_eu_know_3" , "False"  ,
+           3 , "q_eu_know_4" , "True"
+)
+```
+
+# Wave-1 backfill {#sec-backfill}
+
+This is the backfill from `02_data_prep.qmd`, extended to the post-game items.
+A missing wave-2/3 answer is filled with the same panelist's wave-1 answer, and existing values are never overwritten.
+For post-game items a wave-1 answer is a pre-treatment measure, so the filled cells are, if anything, cleaner than the observed ones.
+Items not asked in wave 1 are unaffected, because their wave-1 values are all missing.
+
+```{r}
+#| label: backfill
+vars_backfill <- c(vars_pre_game, vars_post_game)
+
+eu25games2019_selected <- eu25games2019_clean2 |>
+  select(
+    meta_wave,
+    meta_country,
+    meta_pid,
+    all_of(vars_backfill),
+    all_of(vars_know),
+    starts_with("cj_attr"),
+    starts_with("cj_treatment"),
+    starts_with("cj_dict"),
+    starts_with("cj_trust"),
+    # postgame demographic vars only
+    q_rural_urban,
+    q_edu_age_stop
+  )
+
+# each panelist's w1 values
+w1_values <- eu25games2019_selected |>
+  filter(meta_wave == 1) |>
+  select(meta_pid, meta_country, all_of(vars_backfill))
+
+# na counts before backfill
+na_before <- eu25games2019_selected |>
+  filter(meta_wave %in% c(2, 3)) |>
+  summarise(across(all_of(vars_backfill), ~ sum(is.na(.x)))) |>
+  pivot_longer(everything(), names_to = "variable", values_to = "na_before")
+
+# backfill one variable
+backfill_w1 <- function(df, v) {
+  w1 <- paste0(v, "_w1")
+  df |>
+    mutate(
+      "filled_{v}" := meta_wave %in%
+        c(2, 3) &
+        is.na(.data[[v]]) &
+        !is.na(.data[[w1]])
+    ) |>
+    mutate("{v}" := coalesce(.data[[v]], .data[[w1]]))
+}
+
+eu25games2019_selected <- eu25games2019_selected |>
+  left_join(
+    w1_values,
+    by = c("meta_pid", "meta_country"),
+    suffix = c("", "_w1")
+  ) |>
+  reduce(vars_backfill, backfill_w1, .init = _) |>
+  select(-ends_with("_w1"))
+
+# cells filled
+n_filled <- eu25games2019_selected |>
+  filter(meta_wave %in% c(2, 3)) |>
+  summarise(across(starts_with("filled_"), ~ sum(.x))) |>
+  pivot_longer(everything(), names_to = "variable", values_to = "n_filled") |>
+  mutate(variable = str_remove(variable, "^filled_"))
+
+eu25games2019_selected <- eu25games2019_selected |>
+  select(-starts_with("filled_"))
+
+fill_audit <- na_before |>
+  left_join(n_filled, by = "variable") |>
+  filter(n_filled > 0) |>
+  arrange(desc(n_filled))
+
+fill_audit |>
+  kable(caption = "Wave-1 backfill: W2/W3 missing cells before, and cells filled.")
+```
+
+# Reproduce v1.0.0 {#sec-reproduce}
+
+`to_long()` is the reshape and the display-aware profile covariates from `02_data_prep.qmd`, wrapped in a function.
+Run on the v1.0.0 variable set, the pipeline must reproduce `eu25_long.rds` exactly.
+This guards the extended tibble against any silent drift in the shared steps.
+
+```{r}
+#| label: to-long
+to_long <- function(wide) {
+  wide |>
+    pivot_longer(
+      cols = -c(
+        starts_with("meta_"),
+        starts_with("q_"),
+        starts_with("cj_attr"),
+        starts_with("cj_treatment"),
+        starts_with("der_eu_know"),
+        contains("_instr_")
+      ),
+      names_to = c("game_type", "round", ".value"),
+      names_pattern = "^(cj_dict|cj_trust)(\\d+)_(.+)$"
+    ) |>
+    rename_with(
+      ~ paste0("cj_", .),
+      -c(
+        starts_with("meta_"),
+        starts_with("q_"),
+        starts_with("cj_attr"),
+        starts_with("cj_treatment"),
+        starts_with("der_eu_know"),
+        contains("_instr_")
+      )
+    ) |>
+    mutate(
+      # eu stance shown -> 1,3
+      der_cj_eu_identity = case_when(
+        grepl("eustance", cj_treatment) & cj_eupos == "eu_citizen" ~
+          "eu_citizen",
+        grepl("eustance", cj_treatment) & cj_eupos == "not_eu_citizen" ~
+          "not_eu_citizen",
+        !grepl("eustance", cj_treatment) ~ "not_displayed"
+      ),
+      # party shown -> 1,2; conational suppressed -> 4 & own_country
+      der_cj_partisanship = case_when(
+        grepl("partisan", cj_treatment) ~ "shown",
+        cj_treatment == "4_somenat" &
+          cj_nationality_shown == "own_country" ~ "not_shown",
+        .default = "not_applicable"
+      )
+    )
+}
+```
+
+```{r}
+#| label: reproduce-v1
+eu25_long_repro <- eu25games2019_selected |>
+  select(-all_of(c(vars_post_game, vars_know, vars_pre_dropped))) |>
+  na.omit() |>
+  to_long()
+
+stopifnot(
+  nrow(eu25_long_repro) == 169206,
+  setequal(names(eu25_long_repro), names(eu25_long_v1)),
+  isTRUE(all.equal(
+    eu25_long_repro,
+    select(eu25_long_v1, all_of(names(eu25_long_repro))),
+    check.attributes = FALSE
+  ))
+)
+cat("v1.0.0 analysis tibble reproduced exactly.\n")
+```
+
+# Recode post-game items {#sec-recode}
+
+Risk-taking and time-preference answers are stored as translated strings that start with the scale point, e.g. "(1) Completely unwilling…".
+The leading number is the 1–7 scale value.
+The two knowledge scores are computed per wave from @tbl-know-key.
+
+```{r}
+#| label: recode-post
+# leading scale point
+scale_point <- function(x) as.integer(str_extract(x, "(?<=^\\()\\d+(?=\\))"))
+
+know_scores <- eu25games2019_selected |>
+  filter(meta_wave %in% c(2, 3)) |>
+  select(meta_wave, meta_pid, all_of(vars_know)) |>
+  pivot_longer(all_of(vars_know), names_to = "item", values_to = "answer") |>
+  left_join(know_key, by = c("meta_wave", "item")) |>
+  summarise(
+    # all five answered?
+    know_complete = all(!is.na(answer)),
+    der_eu_know_correct = sum(as.character(answer) == correct, na.rm = TRUE),
+    der_eu_know_dk = sum(as.character(answer) == "Don't Know", na.rm = TRUE),
+    .by = c(meta_wave, meta_pid)
+  ) |>
+  mutate(
+    der_eu_know_correct = if_else(know_complete, der_eu_know_correct, NA),
+    der_eu_know_dk = if_else(know_complete, der_eu_know_dk, NA)
+  ) |>
+  select(-know_complete)
+
+eu25games2019_selected <- eu25games2019_selected |>
+  mutate(
+    q_risk_taking = scale_point(q_risk_taking),
+    q_future_discount = scale_point(q_future_discount)
+  ) |>
+  left_join(know_scores, by = c("meta_wave", "meta_pid")) |>
+  select(-all_of(vars_know))
+
+stopifnot(
+  # parse lost nothing
+  all(
+    is.na(eu25games2019_clean2$q_risk_taking) ==
+      is.na(eu25games2019_selected$q_risk_taking)
+  ),
+  all(
+    is.na(eu25games2019_clean2$q_future_discount) ==
+      is.na(eu25games2019_selected$q_future_discount)
+  ),
+  all(between(eu25games2019_selected$q_risk_taking, 1, 7), na.rm = TRUE),
+  all(between(eu25games2019_selected$der_eu_know_correct, 0, 4), na.rm = TRUE)
+)
+
+vars_post_final <- c(vars_post_game, "der_eu_know_correct", "der_eu_know_dk")
+```
+
+# Missingness rule {#sec-missing}
+
+The paper dropped every pre-game item with at least 26% missing values and kept everything below.
+Pooled missing shares can hide a different problem: an item that was never fielded in some country.
+The four economic-evaluation items are absent in Czechia and Italy, and satisfaction with democracy is absent in Czechia's wave 3.
+Pooled, these items are only about 5–13% missing, so a pooled cutoff alone would keep them, and listwise deletion would then remove whole countries from the sample.
+
+The post-game items therefore pass two steps, after backfill:
+
+1. **Fielding gap.** Drop an item if it is more than 90% missing in any country-wave. Missingness at that level means the item was not asked, not that respondents declined to answer.
+2. **Item nonresponse.** Apply the paper's pooled 25% cutoff to the remaining items.
+
+The two kinds of missingness separate cleanly.
+Fielding gaps are 100% missing in the affected cells.
+Ordinary item nonresponse peaks at about a third of a country-wave (left-right self-placement in Latvia's wave 3).
+Missing shares are computed among the wave-2/3 rows of respondents who played the games, because these are the rows that enter the analysis.
+The pre-game decisions are kept exactly as in the paper.
+
+```{r}
+#| label: tbl-missing
+vars_na_check <- c(
+  vars_pre_game,
+  vars_post_final,
+  "q_rural_urban",
+  "q_edu_age_stop"
+)
+game_rows <- eu25games2019_selected |>
+  filter(meta_wave %in% c(2, 3), !is.na(cj_dict1_pl2))
+
+# worst country-wave cell
+na_cell_max <- game_rows |>
+  summarise(
+    across(all_of(vars_na_check), ~ mean(is.na(.x))),
+    .by = c(meta_country, meta_wave)
+  ) |>
+  pivot_longer(all_of(vars_na_check), names_to = "variable") |>
+  summarise(
+    na_max_cell = max(value),
+    worst_cell = paste(meta_country[which.max(value)], meta_wave[which.max(value)]),
+    .by = variable
+  )
+
+na_share <- game_rows |>
+  summarise(across(all_of(vars_na_check), ~ mean(is.na(.x)))) |>
+  pivot_longer(everything(), names_to = "variable", values_to = "na_share") |>
+  left_join(na_cell_max, by = "variable") |>
+  mutate(
+    set = if_else(variable %in% vars_post_final, "post-game (new)", "v1.0.0"),
+    decision = case_when(
+      variable %in% vars_pre_dropped ~ "dropped (v1.0.0)",
+      set == "v1.0.0" ~ "kept (v1.0.0)",
+      na_max_cell > 0.9 ~ "dropped (fielding gap)",
+      na_share > 0.25 ~ "dropped (> 25% NA)",
+      .default = "kept"
+    )
+  ) |>
+  arrange(set, desc(na_max_cell))
+
+na_share |>
+  mutate(across(
+    c(na_share, na_max_cell),
+    ~ scales::percent(.x, accuracy = 0.1)
+  )) |>
+  kable(
+    caption = "Missing share after backfill among game players (pooled and worst country-wave), and decision."
+  )
+
+vars_post_kept <- na_share |>
+  filter(set == "post-game (new)", decision == "kept") |>
+  pull(variable)
+
+# sanity: paper's split reproduced
+stopifnot(
+  all(
+    na_share$na_share[na_share$decision == "kept (v1.0.0)"] <= 0.25
+  )
+)
+```
+
+# Listwise deletion and reshape {#sec-long}
+
+```{r}
+#| label: listwise
+eu25_long_ext <- eu25games2019_selected |>
+  select(-all_of(vars_pre_dropped)) |>
+  select(-all_of(setdiff(vars_post_final, vars_post_kept))) |>
+  na.omit() |>
+  to_long()
+
+# respondent-waves and persons
+n_rw_v1 <- nrow(distinct(eu25_long_v1, meta_pid, meta_wave))
+n_rw_ext <- nrow(distinct(eu25_long_ext, meta_pid, meta_wave))
+n_pid_v1 <- n_distinct(eu25_long_v1$meta_pid)
+n_pid_ext <- n_distinct(eu25_long_ext$meta_pid)
+cat(sprintf(
+  "Respondent-waves: v1.0.0 = %s, extended = %s (dropped %.1f%%).\nPersons: v1.0.0 = %s, extended = %s (dropped %.1f%%).\n",
+  format(n_rw_v1, big.mark = ","),
+  format(n_rw_ext, big.mark = ","),
+  100 * (n_rw_v1 - n_rw_ext) / n_rw_v1,
+  format(n_pid_v1, big.mark = ","),
+  format(n_pid_ext, big.mark = ","),
+  100 * (n_pid_v1 - n_pid_ext) / n_pid_v1
+))
+
+stopifnot(
+  # six rounds per respondent-wave
+  nrow(eu25_long_ext) == 6 * n_rw_ext,
+  # strict subset of v1.0.0
+  all(unique(eu25_long_ext$meta_pid) %in% unique(eu25_long_v1$meta_pid)),
+  # no country lost
+  setequal(unique(eu25_long_ext$meta_country), unique(eu25_long_v1$meta_country)),
+  !anyNA(eu25_long_ext$cj_rel),
+  !anyNA(select(eu25_long_ext, all_of(vars_post_kept)))
+)
+```
+
+## Who is dropped? {#sec-attrition}
+
+The extended sample is a subset of the v1.0.0 sample.
+The unit is the respondent-wave: a panelist who played in both waves 2 and 3 contributes two sets of six rounds.
+The table compares retained and dropped respondent-waves on the numeric pre-game items.
+Small differences mean the extended results are comparable to the paper's.
+
+The attrition is selective.
+Most dropped respondent-waves answered "don't know" on left-right self-placement (`q_lr_self`), the item with the most nonresponse that is kept.
+Dropped respondents report lower understanding of EU politics, are younger, and feel less attached to Europe and the EU.
+The extended sample therefore leans toward respondents who can place themselves politically.
+`11_grf_fit_ext.qmd` separates this sample shift from the added covariates by also fitting the paper's covariate set on the extended sample.
+
+```{r}
+#| label: tbl-attrition
+rw_ext <- distinct(eu25_long_ext, meta_pid, meta_wave) |>
+  mutate(in_ext = TRUE)
+resp_v1 <- eu25_long_v1 |>
+  distinct(meta_pid, meta_wave, .keep_all = TRUE) |>
+  left_join(rw_ext, by = c("meta_pid", "meta_wave")) |>
+  mutate(in_ext = coalesce(in_ext, FALSE))
+
+resp_v1 |>
+  select(in_ext, where(is.numeric) & starts_with("q_")) |>
+  pivot_longer(-in_ext, names_to = "variable") |>
+  summarise(mean = mean(value), sd = sd(value), .by = c(variable, in_ext)) |>
+  pivot_wider(names_from = in_ext, values_from = c(mean, sd)) |>
+  mutate(std_diff = (mean_TRUE - mean_FALSE) / sd_TRUE) |>
+  select(
+    variable,
+    mean_retained = mean_TRUE,
+    mean_dropped = mean_FALSE,
+    std_diff
+  ) |>
+  arrange(desc(abs(std_diff))) |>
+  kable(
+    digits = 2,
+    caption = "Pre-game items: retained vs. dropped v1.0.0 respondents (standardized difference)."
+  )
+
+resp_v1 |>
+  count(meta_country, in_ext) |>
+  pivot_wider(names_from = in_ext, values_from = n, names_prefix = "in_ext_") |>
+  mutate(share_retained = in_ext_TRUE / (in_ext_TRUE + in_ext_FALSE)) |>
+  arrange(share_retained) |>
+  kable(digits = 2, caption = "Share of v1.0.0 respondents retained, by country.")
+```
+
+# Contamination check {#sec-contamination}
+
+In each wave a respondent saw a random number of Muslim profiles across the six game rounds, and then answered that wave's post-game items.
+If a post-game item responds to that exposure, the experiment itself shifted it, and CATEs split by the item mix effect modification with the effect of the game.
+Exposure is randomized, so a regression of the item on the number of Muslim profiles seen identifies that shift.
+The unit is the respondent-wave.
+Each item is standardized, so the coefficient is the change in SD units per additional Muslim profile.
+Country fixed effects absorb the country-specific design.
+Standard errors are clustered by person, because some panelists appear in both waves.
+Pre-game items serve as a placebo: they were measured before the games, so their coefficients should be null.
+p-values are Holm-adjusted within each set.
+
+```{r}
+#| label: tbl-contamination
+resp_ext <- eu25_long_ext |>
+  mutate(muslim = cj_rel == "muslim") |>
+  summarise(
+    n_muslim = sum(muslim),
+    across(
+      c(meta_country, where(is.numeric) & starts_with(c("q_", "der_eu"))),
+      first
+    ),
+    .by = c(meta_pid, meta_wave)
+  )
+
+stopifnot(nrow(resp_ext) == n_rw_ext, all(between(resp_ext$n_muslim, 0, 6)))
+
+items_numeric <- resp_ext |>
+  select(where(is.numeric) & starts_with(c("q_", "der_eu"))) |>
+  names()
+
+contamination <- map(items_numeric, function(v) {
+  f <- reformulate(c("n_muslim", "meta_country"), response = "y_std")
+  m <- lm(f, data = mutate(resp_ext, y_std = as.numeric(scale(.data[[v]]))))
+  # person-clustered SE
+  vc <- sandwich::vcovCL(m, cluster = ~meta_pid)
+  lmtest::coeftest(m, vcov. = vc) |>
+    broom::tidy() |>
+    filter(term == "n_muslim") |>
+    mutate(variable = v)
+}) |>
+  list_rbind() |>
+  mutate(
+    set = if_else(variable %in% vars_post_kept, "post-game (new)", "v1.0.0")
+  ) |>
+  mutate(p_holm = p.adjust(p.value, method = "holm"), .by = set) |>
+  mutate(flag = set == "post-game (new)" & p_holm < 0.05) |>
+  select(set, variable, estimate, std.error, p.value, p_holm, flag) |>
+  arrange(set, p.value)
+
+contamination |>
+  kable(
+    digits = 3,
+    caption = "Standardized item on number of Muslim profiles seen (country FE). Holm-adjusted within set."
+  )
+
+cat("Flagged post-game items:", sum(contamination$flag), "\n")
+```
+
+# Variable dictionary {#sec-dict}
+
+One row per respondent-level variable in the extended `X`.
+`construct` groups items for construct-level summaries.
+`high_means` gives the direction of the raw coding, which several batteries reverse (e.g. 1 = "tend to trust").
+`timing` records when the item was asked relative to the games.
+`q_rural_urban` and `q_edu_age_stop` are post-game demographics that the paper already used as stable background characteristics.
+
+```{r}
+#| label: var-dict
+var_dict_ext <- tribble(
+  ~variable                  , ~construct                   , ~high_means                     ,
+  "q_gender"                 , "Demographics"               , "categorical"                   ,
+  "q_age"                    , "Demographics"               , "older"                         ,
+  "q_religion"               , "Demographics"               , "categorical"                   ,
+  "q_class"                  , "Demographics"               , "categorical"                   ,
+  "q_rural_urban"            , "Demographics"               , "categorical"                   ,
+  "q_edu_age_stop"           , "Demographics"               , "longer education"              ,
+  "q_identity_country"       , "Attachment"                 , "less attached"                 ,
+  "q_identity_eu"            , "Attachment"                 , "less attached"                 ,
+  "q_identity_europe"        , "Attachment"                 , "less attached"                 ,
+  "q_eu_efficacy_understand" , "EU efficacy"                , "more agree"                    ,
+  "q_pop_reps"               , "Populism"                   , "more agree"                    ,
+  "q_pop_goodevil"           , "Populism"                   , "more agree"                    ,
+  "q_pop_compromise"         , "Populism"                   , "more agree"                    ,
+  "q_party_harm"             , "Populism"                   , "more agree"                    ,
+  "q_people_incompetent"     , "Technocracy"                , "more agree"                    ,
+  "q_tech_experts"           , "Technocracy"                , "more agree"                    ,
+  "q_tech_leaders"           , "Technocracy"                , "more agree"                    ,
+  "q_dem_compromise"         , "Pluralism"                  , "more agree"                    ,
+  "q_dem_listen"             , "Pluralism"                  , "more agree"                    ,
+  "q_eu_longterm"            , "EU responsiveness"          , "more agree"                    ,
+  "q_eu_responsive"          , "EU responsiveness"          , "more agree"                    ,
+  "q_eu_imp_nat_econ"        , "EU evaluation"              , "more negative"                 ,
+  "q_eu_imp_nat_cul"         , "EU evaluation"              , "more negative"                 ,
+  "q_eu_imp_nat_pol"         , "EU evaluation"              , "more negative"                 ,
+  "q_eu_abolish"             , "EU evaluation"              , "more agree (abolish)"          ,
+  "q_eu_satisfaction"        , "EU evaluation"              , "more satisfied"                ,
+  "q_nat_int"                , "Political interest"         , "more interested"               ,
+  "q_eu_int"                 , "Political interest"         , "more interested"               ,
+  "q_nativ_econ"             , "Nativism"                   , "more nativist"                 ,
+  "q_nativ_cult"             , "Nativism"                   , "more nativist"                 ,
+  "q_eu_informed_com"        , "Informed about EU"          , "less informed"                 ,
+  "q_eu_informed_cou"        , "Informed about EU"          , "less informed"                 ,
+  "q_eu_informed_ep"         , "Informed about EU"          , "less informed"                 ,
+  "q_eu_informed_cjeu"       , "Informed about EU"          , "less informed"                 ,
+  "q_eu_trust_com"           , "Trust in EU institutions"   , "less trust"                    ,
+  "q_eu_trust_cou"           , "Trust in EU institutions"   , "less trust"                    ,
+  "q_eu_trust_ep"            , "Trust in EU institutions"   , "less trust"                    ,
+  "q_eu_trust_cjeu"          , "Trust in EU institutions"   , "less trust"                    ,
+  "q_cjeu_abolish"           , "CJEU evaluation"            , "more agree (abolish)"          ,
+  "q_cjeu_satisfaction"      , "CJEU evaluation"            , "more satisfied"                ,
+  "q_eval_econ_eur"          , "Economic evaluation"        , "worse"                         ,
+  "q_eval_econ_nat"          , "Economic evaluation"        , "worse"                         ,
+  "q_eval_fin_household"     , "Economic evaluation"        , "worse"                         ,
+  "q_eval_job"               , "Economic evaluation"        , "worse"                         ,
+  "q_satis_demo_nat"         , "Satisfaction with democracy", "less satisfied"                ,
+  "q_satis_demo_eu"          , "Satisfaction with democracy", "less satisfied"                ,
+  "q_lr_self"                , "Ideology"                   , "more right"                    ,
+  "q_euint_self"             , "Ideology"                   , "more pro-integration"          ,
+  "q_risk_taking"            , "Risk and time preferences"  , "more risk-taking"              ,
+  "q_future_discount"        , "Risk and time preferences"  , "more patient"                  ,
+  "q_occ_current"            , "Occupation"                 , "categorical"                   ,
+  "der_eu_know_correct"      , "EU knowledge"               , "more correct"                  ,
+  "der_eu_know_dk"           , "EU knowledge"               , "more don't know"
+) |>
+  mutate(
+    in_v1 = !(variable %in% vars_post_final),
+    timing = if_else(
+      in_v1 & !(variable %in% c("q_rural_urban", "q_edu_age_stop")),
+      "pre-game",
+      "post-game"
+    ),
+    note = case_when(
+      variable %in% c("q_cjeu_abolish", "q_cjeu_satisfaction") ~
+        "W3: asked after a randomized CJEU text experiment",
+      startsWith(variable, "der_eu_know") ~
+        "wave-specific items, scored per wave",
+      .default = NA_character_
+    )
+  ) |>
+  left_join(select(contamination, variable, p_holm, flag), by = "variable") |>
+  mutate(contamination_flag = coalesce(flag, FALSE)) |>
+  select(-flag) |>
+  # keep only variables in X
+  filter(variable %in% names(eu25_long_ext))
+
+# every respondent variable documented
+resp_vars_ext <- eu25_long_ext |>
+  select(starts_with("q_"), starts_with("der_eu_know")) |>
+  names()
+stopifnot(setequal(resp_vars_ext, var_dict_ext$variable))
+
+var_dict_ext |>
+  kable(digits = 3, caption = "Respondent-level variables in the extended analysis.")
+```
+
+# Save {#sec-save}
+
+```{r}
+#| label: save-data
+write_rds(
+  eu25_long_ext,
+  file = here("data", "02_processed", "eu25_long_ext.rds"),
+  compress = "xz"
+)
+write_rds(
+  var_dict_ext,
+  file = here("data", "02_processed", "var_dict_ext.rds")
+)
+```
+
+# Session Info {#sec-session-info .appendix .unnumbered}
+
+```{r}
+#| label: session-info
+#| eval: true
+#| echo: true
+session_info()
+```
+
+# Execution Time {#sec-exec-time .appendix .unnumbered}
+
+```{r}
+#| label: exec-time
+#| eval: true
+#| echo: true
+#| include: true
+end_time <- Sys.time()
+exec_time <- end_time - start_time
+cat(paste(
+  "R code execution time:",
+  round(as.numeric(exec_time, units = "secs"), 2),
+  "seconds."
+))
+```

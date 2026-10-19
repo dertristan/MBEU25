@@ -1,0 +1,267 @@
+---
+subtitle: |
+  Hierarchical BCF Fits, Extended Correlates (Dictator + Trust)
+date: last-modified
+date-format: MMMM D, YYYY
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    code-tools: true
+execute:
+  echo: true
+  warning: true
+  eval: true
+  message: true
+  cache: false
+---
+
+# Purpose {#sec-purpose}
+
+This notebook fits the hierarchical BCF (`multibart`, country random intercepts only) on the extended analysis tibble from `10_data_prep_ext.qmd`, for both game outcomes.
+Scope is **fitting and saving only**, as in `05_bcf_fit.qmd`.
+`prep_game()` and `fit_bcf()` are copied verbatim from `05_bcf_fit.qmd`.
+Only the respondent-level moderator set changes: it adds the post-game correlates.
+
+Post-game items are correlates, not moderators. Every result built on them is an exploratory addendum.
+
+::: callout-note
+The BCF fits are the expensive step (each game is ~72k rows with `nburn + nsim = 2000`).
+`cache: false` overrides the project-wide knitr cache: the fitted forest's `tree_samples` is a live Rcpp external pointer that does not survive cache serialize/reload.
+Quarto `freeze: auto` still caches execution at the file level.
+:::
+
+# Setup {#sec-setup}
+
+```{r}
+#| label: setup
+#| include: false
+# execution time
+start_time <- Sys.time()
+# console width
+options(width = 80)
+# packages
+p_required <- c(
+  "tidyverse", # dplyr, ggplot2, tidyr
+  "here", # relative paths
+  "sessioninfo", # session docs
+
+  # multibart dependencies -----------------------------------------------------
+  "Rcpp", # multibart Depends + LinkingTo
+  "RcppArmadillo", # multibart Depends + LinkingTo
+  "Rcereal", # multibart Depends + LinkingTo
+  "fastDummies" # multibart helper dependency
+)
+packages <- rownames(installed.packages())
+p_to_install <- p_required[!(p_required %in% packages)]
+if (length(p_to_install) > 0) {
+  install.packages(p_to_install)
+}
+sapply(p_required, require, character.only = TRUE)
+rm(p_required, p_to_install, packages)
+```
+
+## Local multibart package {#sec-multibart}
+
+```{r}
+#| label: setup-multibart
+#| include: false
+# install local source on first use
+if (!requireNamespace("multibart", quietly = TRUE)) {
+  install.packages(
+    here::here("code", "multibart"),
+    repos = NULL,
+    type = "source"
+  )
+}
+# attach installed package
+library(multibart)
+```
+
+# Load data {#sec-load}
+
+```{r}
+#| label: load-data
+dat <- readRDS(here::here("data", "02_processed", "eu25_long_ext.rds"))
+var_dict_ext <- readRDS(here::here("data", "02_processed", "var_dict_ext.rds"))
+```
+
+# Variable definitions {#sec-vars}
+
+`prof_mods` and `resp_mods` are the paper's frozen lists.
+`resp_mods_ext` appends the post-game correlates, read from the variable dictionary, exactly as in `11_grf_fit_ext.qmd`.
+
+```{r}
+#| label: moderators
+prof_mods <- c(
+  "cj_nationality_shown",
+  "der_cj_eu_identity",
+  "der_cj_partisanship",
+  "cj_age",
+  "cj_sex",
+  "cj_class"
+)
+resp_mods <- c(
+  "q_gender",
+  "q_age",
+  "q_identity_country",
+  "q_identity_eu",
+  "q_identity_europe",
+  "q_religion",
+  "q_class",
+  "q_eu_efficacy_understand",
+  "q_pop_reps",
+  "q_pop_goodevil",
+  "q_pop_compromise",
+  "q_dem_compromise",
+  "q_dem_listen",
+  "q_tech_experts",
+  "q_tech_leaders",
+  "q_party_harm",
+  "q_people_incompetent",
+  "q_eu_longterm",
+  "q_eu_responsive",
+  "q_eu_imp_nat_econ",
+  "q_eu_imp_nat_cul",
+  "q_eu_imp_nat_pol",
+  "q_eu_abolish",
+  "q_eu_satisfaction",
+  "q_rural_urban",
+  "q_edu_age_stop"
+)
+resp_mods_added <- var_dict_ext |>
+  filter(!in_v1) |>
+  pull(variable)
+resp_mods_ext <- c(resp_mods, resp_mods_added)
+
+stopifnot(
+  # dictionary covers paper set
+  all(resp_mods %in% var_dict_ext$variable),
+  all(resp_mods_ext %in% names(dat))
+)
+```
+
+`prep_game()` assembles the design for one game: outcome, treatment, IDs, and the numeric moderator matrix.
+
+```{r}
+#| label: prep-game
+prep_game <- function(dat, game) {
+  sub <- dat |>
+    filter(cj_game_type == game) # full per-game sample (no subsampling)
+
+  y <- sub$cj_pl2
+  z <- as.integer(sub$cj_rel == "muslim") # Muslim vs all-else pooled
+  country_id <- factor(sub$meta_country)
+  respondent_id <- factor(sub$meta_pid)
+
+  mod_df <- sub |>
+    select(all_of(c(prof_mods, resp_mods_ext))) |>
+    mutate(across(where(is.character), factor))
+  sub_X <- model.matrix(~ . - 1, data = mod_df) # factors -> dummies
+
+  stopifnot(
+    !anyNA(sub_X),
+    all(z %in% c(0L, 1L)),
+    !anyNA(y),
+    nrow(sub_X) == length(y)
+  )
+
+  list(
+    y = y,
+    z = z,
+    sub_X = sub_X,
+    country_id = country_id,
+    respondent_id = respondent_id
+  )
+}
+```
+
+`fit_bcf()` is unchanged from `05_bcf_fit.qmd`: country-only random intercepts, a single variance component, known conjoint propensity.
+
+```{r}
+#| label: fit-bcf
+fit_bcf <- function(d) {
+  # country-only random-intercept design, built inline
+  # (the random_intercepts() helper has a known typo bug; get_dummies() is fine)
+  country_dummies <- get_dummies(d$country_id) # n x C
+  C <- ncol(country_dummies)
+  Q_country <- matrix(1, nrow = C, ncol = 1) # single variance component
+
+  stopifnot(
+    nrow(country_dummies) == length(d$y),
+    C == nlevels(d$country_id),
+    C > 1 # else sampler disables REs
+  )
+
+  bcf_continuous_linear(
+    y = d$y,
+    z = d$z,
+    x_control = d$sub_X, # numeric model matrix of moderators
+    x_moderate = d$sub_X,
+    zhat = rep(0.25, length(d$y)), # known conjoint propensity
+    randeff_design = country_dummies,
+    randeff_variance_component_design = Q_country,
+    randeff_scales = 1, # length K = 1 (one component)
+    randeff_df = 3,
+    nburn = 1000,
+    nsim = 1000,
+    update_interval = 100
+  )
+}
+```
+
+# Dictator-game fit {#sec-dictator}
+
+```{r}
+#| label: fit-dictator
+set.seed(20260604)
+d_dict <- prep_game(dat, "cj_dict")
+fit_dict <- fit_bcf(d_dict)
+saveRDS(
+  fit_dict,
+  here::here("data", "03_final", "bcf_dictator_ext.rds"),
+  compress = "xz"
+)
+cat(sprintf("BCF dictator (extended) saved (n = %d).\n", length(d_dict$y)))
+```
+
+# Trust-game fit {#sec-trust}
+
+```{r}
+#| label: fit-trust
+set.seed(20260605)
+d_trust <- prep_game(dat, "cj_trust")
+fit_trust <- fit_bcf(d_trust)
+saveRDS(
+  fit_trust,
+  here::here("data", "03_final", "bcf_trust_ext.rds"),
+  compress = "xz"
+)
+cat(sprintf("BCF trust (extended) saved (n = %d).\n", length(d_trust$y)))
+```
+
+# Session Info {#sec-session-info .appendix .unnumbered}
+
+```{r}
+#| label: session-info
+#| eval: true
+#| echo: true
+session_info()
+```
+
+# Execution Time {#sec-exec-time .appendix .unnumbered}
+
+```{r}
+#| label: exec-time
+#| eval: true
+#| echo: true
+#| include: true
+end_time <- Sys.time()
+exec_time <- end_time - start_time
+cat(paste(
+  "R code execution time:",
+  round(as.numeric(exec_time, units = "secs"), 2),
+  "seconds."
+))
+```

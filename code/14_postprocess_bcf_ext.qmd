@@ -1,0 +1,737 @@
+---
+subtitle: |
+  Hierarchical BCF Post-Processing, Extended Correlates
+date: last-modified
+date-format: MMMM D, YYYY
+format:
+  html:
+    toc: true
+    toc-depth: 3
+    code-fold: true
+    code-tools: true
+execute:
+  echo: true
+  warning: true
+  eval: true
+  message: true
+  cache: false
+---
+
+# Purpose {#sec-purpose}
+
+This notebook post-processes the extended BCF fits from `12_bcf_fit_ext.qmd`.
+It is the Bayesian counterpart to `13_postprocess_grf_ext.qmd`, in the same way that `08_postprocess_bcf.qmd` mirrors `07_postprocess_grf.qmd`.
+The posterior machinery (`ate_summary()`, `level_keeps()`, `cate_one_bcf()`, the respondent cluster bootstrap) is copied from `08_postprocess_bcf.qmd`.
+
+Post-game items are **correlates**, not moderators.
+All results here are exploratory addenda.
+
+The notebook produces four outputs:
+
+1. The posterior ATE, compared with the GRF ATE, and a convergence check (@sec-ate).
+2. The **correlates overview**: the posterior of the standardized CATE slope on each numeric respondent variable (@sec-overview).
+3. The agreement of the GRF and BCF slopes (@sec-agreement).
+4. CATE-by-level figures for the added post-game variables (@sec-levels).
+
+::: callout-note
+`cache: false` overrides the project-wide knitr cache: the fitted forest's `tree_samples` is a live Rcpp external pointer that does not survive cache serialize/reload.
+:::
+
+# Setup {#sec-setup}
+
+```{r}
+#| label: setup
+#| include: false
+# execution time
+start_time <- Sys.time()
+# console width
+options(width = 80)
+# packages
+p_required <- c(
+  "tidyverse", # dplyr, ggplot2, tidyr
+  "here", # relative paths
+  "ggpubr", # theme_pubr()
+  "patchwork", # multi-panel figures
+  "knitr", # kable()
+  "posterior", # ess for convergence check
+  "sessioninfo", # session docs
+
+  # multibart dependencies -----------------------------------------------------
+  "Rcpp", # multibart Depends + LinkingTo
+  "RcppArmadillo", # multibart Depends + LinkingTo
+  "Rcereal", # multibart Depends + LinkingTo
+  "fastDummies" # multibart helper dependency
+)
+packages <- rownames(installed.packages())
+p_to_install <- p_required[!(p_required %in% packages)]
+if (length(p_to_install) > 0) {
+  install.packages(p_to_install)
+}
+sapply(p_required, require, character.only = TRUE)
+rm(p_required, p_to_install, packages)
+```
+
+```{r}
+#| label: setup-multibart
+#| include: false
+# install local source on first use
+if (!requireNamespace("multibart", quietly = TRUE)) {
+  install.packages(
+    here::here("code", "multibart"),
+    repos = NULL,
+    type = "source"
+  )
+}
+# attach installed package
+library(multibart)
+```
+
+# Load data and fits {#sec-load}
+
+```{r}
+#| label: load-data
+dat <- readRDS(here("data", "02_processed", "eu25_long_ext.rds"))
+var_dict_ext <- readRDS(here("data", "02_processed", "var_dict_ext.rds"))
+fit_dict <- readRDS(here("data", "03_final", "bcf_dictator_ext.rds"))
+fit_trust <- readRDS(here("data", "03_final", "bcf_trust_ext.rds"))
+grf_sum <- readRDS(here("data", "03_final", "grf_ext_summaries.rds"))
+```
+
+# Variable definitions {#sec-vars}
+
+The moderator lists and `prep_game()` are those of `12_bcf_fit_ext.qmd`, so the reconstructed design matches the fit exactly.
+
+```{r}
+#| label: moderators
+prof_mods <- c(
+  "cj_nationality_shown",
+  "der_cj_eu_identity",
+  "der_cj_partisanship",
+  "cj_age",
+  "cj_sex",
+  "cj_class"
+)
+resp_mods <- c(
+  "q_gender",
+  "q_age",
+  "q_identity_country",
+  "q_identity_eu",
+  "q_identity_europe",
+  "q_religion",
+  "q_class",
+  "q_eu_efficacy_understand",
+  "q_pop_reps",
+  "q_pop_goodevil",
+  "q_pop_compromise",
+  "q_dem_compromise",
+  "q_dem_listen",
+  "q_tech_experts",
+  "q_tech_leaders",
+  "q_party_harm",
+  "q_people_incompetent",
+  "q_eu_longterm",
+  "q_eu_responsive",
+  "q_eu_imp_nat_econ",
+  "q_eu_imp_nat_cul",
+  "q_eu_imp_nat_pol",
+  "q_eu_abolish",
+  "q_eu_satisfaction",
+  "q_rural_urban",
+  "q_edu_age_stop"
+)
+resp_mods_added <- var_dict_ext |>
+  filter(!in_v1) |>
+  pull(variable)
+resp_mods_ext <- c(resp_mods, resp_mods_added)
+```
+
+```{r}
+#| label: prep-game
+prep_game <- function(dat, game) {
+  sub <- dat |>
+    filter(cj_game_type == game) # full per-game sample (no subsampling)
+
+  y <- sub$cj_pl2
+  z <- as.integer(sub$cj_rel == "muslim") # Muslim vs all-else pooled
+  country_id <- factor(sub$meta_country)
+  respondent_id <- factor(sub$meta_pid)
+
+  mod_df <- sub |>
+    select(all_of(c(prof_mods, resp_mods_ext))) |>
+    mutate(across(where(is.character), factor))
+  sub_X <- model.matrix(~ . - 1, data = mod_df) # factors -> dummies
+
+  stopifnot(
+    !anyNA(sub_X),
+    all(z %in% c(0L, 1L)),
+    !anyNA(y),
+    nrow(sub_X) == length(y)
+  )
+
+  list(
+    y = y,
+    z = z,
+    sub_X = sub_X,
+    country_id = country_id,
+    respondent_id = respondent_id
+  )
+}
+
+game_mods <- function(dat, game) {
+  dat |>
+    filter(cj_game_type == game) |>
+    select(all_of(c(prof_mods, resp_mods_ext))) |>
+    mutate(across(where(is.character), factor))
+}
+```
+
+# House style {#sec-house}
+
+Copied from `13_postprocess_grf_ext.qmd`, including the direction-of-coding suffix on every numeric label.
+
+```{r}
+#| label: game-style
+game_labs <- c(cj_dict = "Dictator game", cj_trust = "Trust game")
+game_cols <- c("Dictator game" = "#0072B2", "Trust game" = "#D55E00")
+game_shapes <- c("Dictator game" = 16, "Trust game" = 17) # circle / triangle
+game_ltys <- c("Dictator game" = "solid", "Trust game" = "longdash")
+
+scale_colour_game <- function() {
+  scale_colour_manual(values = game_cols, name = NULL)
+}
+scale_shape_game <- function() {
+  scale_shape_manual(values = game_shapes, name = NULL)
+}
+scale_linetype_game <- function() {
+  scale_linetype_manual(values = game_ltys, name = NULL)
+}
+
+# shared labels, extended
+source(here("code", "helper_scripts", "moderator_labels_ext.R"))
+
+# direction in label
+dir_vars <- var_dict_ext |> filter(high_means != "categorical")
+mod_labels[dir_vars$variable] <- paste0(
+  mod_labels[dir_vars$variable],
+  " (high = ",
+  dir_vars$high_means,
+  ")"
+)
+
+theme_mbeu <- function(base_size = 11) {
+  ggpubr::theme_pubr(base_size = base_size) +
+    theme(legend.position = "top")
+}
+ref_zero <- geom_hline(yintercept = 0, linetype = "dashed", colour = "grey60")
+dodge <- position_dodge(width = 0.5)
+yl_i <- expression(hat(tau)[ic]) # respondent-level CATE
+boot_B <- 500L # respondent cluster bootstrap resamples
+slope_vars <- dir_vars$variable
+```
+
+# Posterior summary builders {#sec-machinery}
+
+Every quantity below is read off `tau_draws`, the `nsim × n` posterior matrix returned by `get_forest_fit()`.
+`ate_summary()`, `level_keeps()`, `cate_one_bcf()`, and the bootstrap helpers are copied from `08_postprocess_bcf.qmd` (`#sec-machinery`, `#sec-cluster-bootstrap`).
+The continuous-moderator display grid is not needed: none of the added variables has more than 12 distinct values.
+
+```{r}
+#| label: ate-summary
+ate_summary <- function(tau_draws) {
+  bd <- rowMeans(tau_draws) # posterior of the ATE
+  tibble(
+    estimate = median(bd),
+    lower = unname(quantile(bd, 0.025)),
+    upper = unname(quantile(bd, 0.975))
+  )
+}
+```
+
+`slope_summary()` is the Bayesian counterpart to the GRF standardized slope in `13_postprocess_grf_ext.qmd`.
+For each posterior draw it regresses τ on one standardized variable at a time.
+With `z` centred and scaled, the OLS slope is $\beta_d = \sum_i z_i \tau_{di} / \sum_i z_i^2$, so all variables and draws come from one matrix product.
+
+```{r}
+#| label: slope-summary
+slope_summary <- function(tau_draws, mm, vars, game_label) {
+  Z <- mm |>
+    select(all_of(vars)) |>
+    mutate(across(everything(), \(x) as.numeric(scale(x)))) |>
+    as.matrix()
+  beta <- (tau_draws %*% Z) / matrix(colSums(Z^2), nrow(tau_draws), ncol(Z), byrow = TRUE)
+  tibble(
+    variable = vars,
+    game = game_label,
+    estimate = apply(beta, 2, median),
+    lower = apply(beta, 2, quantile, 0.025),
+    upper = apply(beta, 2, quantile, 0.975)
+  )
+}
+```
+
+```{r}
+#| label: level-keeps
+level_keeps <- function(mm, mod) {
+  v <- mm[[mod]]
+  is_num <- is.numeric(v)
+  # higher-cardinality numeric -> deciles
+  if (is_num && length(unique(v)) > 12) {
+    bin <- ntile(v, 10)
+    return(lapply(sort(unique(bin)), function(k) {
+      keep <- !is.na(bin) & bin == k
+      list(
+        level = as.character(round(mean(v[keep]))),
+        order = mean(v[keep]),
+        is_scale = TRUE,
+        keep = keep
+      )
+    }))
+  }
+  # discrete moderators: honor factor order; drop levels below 1% of the game sample
+  levs <- if (is_num) {
+    sort(unique(v))
+  } else if (is.factor(v)) {
+    levels(droplevels(v))
+  } else {
+    sort(unique(as.character(v)))
+  }
+  out <- lapply(seq_along(levs), function(i) {
+    lev <- levs[i]
+    keep <- if (is_num) {
+      !is.na(v) & v == lev
+    } else {
+      !is.na(v) & as.character(v) == lev
+    }
+    if (sum(keep) / sum(!is.na(v)) < 0.01) {
+      return(NULL)
+    }
+    list(
+      level = as.character(lev),
+      order = if (is_num) as.numeric(lev) else i,
+      is_scale = is_num && mod != "cj_age",
+      keep = keep
+    )
+  })
+  out[!vapply(out, is.null, logical(1))]
+}
+
+# posterior of the bin CATE over a logical keep-vector (length n)
+.bin_post <- function(tau_draws, keep) {
+  bd <- rowMeans(tau_draws[, keep, drop = FALSE]) # posterior of bin mean
+  c(estimate = median(bd), post_sd = sd(bd))
+}
+
+cate_one_bcf <- function(tau_draws, mm, mod, game_label) {
+  ks <- level_keeps(mm, mod)
+  bind_rows(lapply(ks, function(L) {
+    p <- .bin_post(tau_draws, L$keep)
+    tibble(
+      mod = mod,
+      level = L$level,
+      order = L$order,
+      is_scale = L$is_scale,
+      game = game_label,
+      n = sum(L$keep),
+      estimate = unname(p["estimate"]),
+      post_sd = unname(p["post_sd"])
+    )
+  }))
+}
+```
+
+The respondent cluster bootstrap adds the sampling variability of each bin mean to the posterior SD, as in `08_postprocess_bcf.qmd`.
+It cannot repair the second channel of clustering: the BCF likelihood treats rows as independent given the country intercept, which can make the posterior too narrow.
+The GRF intervals in `13_postprocess_grf_ext.qmd` are the external gauge for that.
+
+```{r}
+#| label: boot-helpers
+# build the respondent x B bootstrap multiplicity matrix once per game
+make_Wb <- function(rid, B, seed) {
+  set.seed(seed)
+  rid_int <- as.integer(rid)
+  R <- max(rid_int)
+  Wb <- vapply(
+    seq_len(B),
+    function(b) tabulate(sample.int(R, R, replace = TRUE), nbins = R),
+    integer(R)
+  )
+  list(Wb = Wb, rid_int = rid_int)
+}
+
+# per-level cluster-bootstrap SD of the bin mean of tau_hat
+boot_sd_one <- function(tau_hat, rid_int, Wb, mm, mod) {
+  ks <- level_keeps(mm, mod)
+  bind_rows(lapply(ks, function(L) {
+    keep <- L$keep
+    w <- Wb[rid_int[keep], , drop = FALSE] # n_keep x B multiplicities
+    bm <- colSums(w * tau_hat[keep]) / colSums(w) # B bootstrap bin means
+    tibble(mod = mod, level = L$level, boot_sd = sd(bm))
+  }))
+}
+
+# join the bootstrap SD and form the cluster-robust interval
+finalize_ci <- function(df, boot) {
+  df |>
+    left_join(boot, by = c("mod", "level", "game")) |>
+    mutate(
+      boot_sd = coalesce(boot_sd, 0),
+      se_total = sqrt(post_sd^2 + boot_sd^2),
+      lower = estimate - 1.96 * se_total,
+      upper = estimate + 1.96 * se_total
+    )
+}
+```
+
+# Build summaries {#sec-build}
+
+`build_game()` extracts `tau_draws` for one game, builds every small summary, and frees the large matrix before the bootstrap runs.
+It also keeps the per-draw ATE for the convergence check.
+
+```{r}
+#| label: build-game
+build_game <- function(fit, game, game_label, seed) {
+  d <- prep_game(dat, game)
+  mm <- game_mods(dat, game)
+  tau <- get_forest_fit(fit$moderate_fit, d$sub_X) # nsim x n
+  stopifnot(nrow(mm) == length(d$y), ncol(tau) == length(d$y))
+
+  out <- list(
+    ate = ate_summary(tau) |> mutate(game = game_label),
+    ate_draws = rowMeans(tau),
+    slopes = slope_summary(tau, mm, slope_vars, game_label),
+    levels = bind_rows(lapply(
+      resp_mods_added,
+      \(m) cate_one_bcf(tau, mm, m, game_label)
+    ))
+  )
+  tau_hat <- colMeans(tau)
+  rm(tau)
+  invisible(gc())
+
+  # respondent cluster bootstrap
+  bw <- make_Wb(d$respondent_id, B = boot_B, seed = seed)
+  boot <- bind_rows(lapply(resp_mods_added, \(m) {
+    boot_sd_one(tau_hat, bw$rid_int, bw$Wb, mm, m)
+  })) |>
+    mutate(game = game_label)
+  out$levels <- finalize_ci(out$levels, boot)
+  out
+}
+```
+
+```{r}
+#| label: build-dictator
+bcf_dict <- build_game(fit_dict, "cj_dict", "Dictator game", seed = 1L)
+rm(fit_dict)
+invisible(gc())
+```
+
+```{r}
+#| label: build-trust
+bcf_trust <- build_game(fit_trust, "cj_trust", "Trust game", seed = 2L)
+rm(fit_trust)
+invisible(gc())
+```
+
+# Average treatment effect and convergence {#sec-ate}
+
+The posterior ATE with its 95% credible interval, next to the GRF doubly-robust ATE of the extended fit.
+
+```{r}
+#| label: tbl-ate
+bind_rows(
+  bind_rows(bcf_dict$ate, bcf_trust$ate) |> mutate(fit = "BCF (posterior median, 95% CrI)"),
+  grf_sum$ate |>
+    filter(fit == "Extended") |>
+    transmute(game, estimate, lower, upper, fit = "GRF (DR estimate, 95% CI)")
+) |>
+  select(game, fit, estimate, lower, upper) |>
+  arrange(game, fit) |>
+  kable(digits = 3, caption = "ATE of the Muslim profile, extended fits: BCF vs. GRF.")
+```
+
+`multibart` runs a single chain per call.
+The trace of the per-draw ATE and its bulk and tail effective sample sizes are the convergence check for the main functional.
+
+```{r}
+#| label: fig-bcf-ext-trace
+#| fig-cap: "Trace of the posterior ATE (per-draw mean of τ(x)) over the 1,000 retained draws of the extended BCF fits, by game. Bulk and tail ESS in the facet titles."
+#| dpi: 500
+#| fig-width: 8
+#| fig-height: 4
+trace_df <- bind_rows(
+  tibble(draw = seq_along(bcf_dict$ate_draws), ate = bcf_dict$ate_draws, game = "Dictator game"),
+  tibble(draw = seq_along(bcf_trust$ate_draws), ate = bcf_trust$ate_draws, game = "Trust game")
+) |>
+  mutate(
+    ess_bulk = posterior::ess_bulk(ate),
+    ess_tail = posterior::ess_tail(ate),
+    .by = game
+  ) |>
+  mutate(facet = sprintf("%s (bulk ESS %.0f, tail ESS %.0f)", game, ess_bulk, ess_tail))
+
+ggplot(trace_df, aes(x = draw, y = ate, colour = game)) +
+  geom_line(linewidth = 0.3) +
+  facet_wrap(~facet, scales = "free_y") +
+  scale_colour_game() +
+  guides(colour = "none") +
+  labs(title = "Posterior ATE trace (BCF, extended)", x = "Draw", y = "ATE (tokens)") +
+  theme_mbeu()
+```
+
+# Correlates overview {#sec-overview}
+
+The posterior median of each standardized CATE slope, with a 95% credible interval.
+The definitions match @sec-overview of `13_postprocess_grf_ext.qmd`: the change in the CATE (tokens) per one-SD increase in the variable, one variable at a time.
+Each slope is marginal, and a positive slope means a smaller penalty.
+
+```{r}
+#| label: fig-bcf-ext-overview
+#| fig-cap: "Correlates of the Muslim penalty: posterior standardized CATE slope of each numeric respondent variable (BCF), Dictator and Trust games overlaid and distinguished jointly by colour and shape. Each point is the posterior median of the per-draw OLS slope of τ(x) on that single variable, scaled to unit variance, with a 95% credible interval. The x-axis is the change in the CATE (tokens) per one-SD increase. The CATE is negative, so a positive slope means a smaller penalty. Each slope is marginal. Rows are grouped by construct. Constructs marked (post-game) were measured after the games and are correlates, not moderators. Labels give the direction of the raw coding."
+#| dpi: 500
+#| fig-width: 9
+#| fig-height: 13
+slopes_bcf <- bind_rows(bcf_dict$slopes, bcf_trust$slopes) |>
+  left_join(select(var_dict_ext, variable, construct, in_v1), by = "variable")
+
+construct_order <- var_dict_ext |>
+  filter(variable %in% slope_vars) |>
+  distinct(construct, in_v1) |>
+  arrange(desc(in_v1)) |>
+  mutate(construct_lab = if_else(in_v1, construct, paste0(construct, " (post-game)")))
+
+slopes_bcf |>
+  left_join(construct_order, by = c("construct", "in_v1")) |>
+  mutate(
+    construct_lab = factor(construct_lab, levels = construct_order$construct_lab),
+    label = factor(mod_labels[variable], levels = rev(mod_labels[slope_vars]))
+  ) |>
+  ggplot(aes(x = estimate, y = label, colour = game, shape = game)) +
+  geom_vline(xintercept = 0, linetype = "dashed", colour = "grey60") +
+  geom_linerange(
+    aes(xmin = lower, xmax = upper),
+    position = position_dodge(width = 0.6)
+  ) +
+  geom_point(position = position_dodge(width = 0.6)) +
+  facet_grid(
+    construct_lab ~ .,
+    scales = "free_y",
+    space = "free_y",
+    labeller = labeller(construct_lab = label_wrap_gen(18))
+  ) +
+  scale_colour_game() +
+  scale_shape_game() +
+  labs(
+    title = "Correlates of the Muslim penalty (BCF)",
+    x = "Change in CATE per 1 SD (tokens)",
+    y = NULL
+  ) +
+  theme_mbeu(base_size = 9) +
+  theme(strip.text.y = element_text(angle = 0, hjust = 0))
+```
+
+# GRF–BCF agreement {#sec-agreement}
+
+Both estimators search the same heterogeneity space with different machinery.
+The figure plots each variable's BCF slope against its GRF slope.
+Points near the 45° line mean the two estimators agree on the direction and size of the correlate.
+BCF regularizes τ(x) toward homogeneity, so its slopes are expected to be smaller in absolute size.
+
+```{r}
+#| label: fig-ext-agreement
+#| fig-cap: "Standardized CATE slopes of every numeric respondent variable: GRF (x-axis, with 95% CI) against BCF (y-axis, with 95% CrI), by game. The dashed line is the 45° identity. Filled points are post-game correlates, open points the paper's pre-game moderators."
+#| dpi: 500
+#| fig-width: 9
+#| fig-height: 4.5
+agree <- slopes_bcf |>
+  select(variable, game, in_v1, bcf = estimate, bcf_lo = lower, bcf_hi = upper) |>
+  left_join(
+    grf_sum$slopes |>
+      select(variable, game, grf = estimate, grf_lo = lower, grf_hi = upper),
+    by = c("variable", "game")
+  ) |>
+  mutate(set = if_else(in_v1, "Pre-game (v1.0.0)", "Post-game"))
+stopifnot(!anyNA(agree$grf))
+
+agree |>
+  summarise(r = cor(grf, bcf), .by = game) |>
+  kable(digits = 2, caption = "Correlation of GRF and BCF standardized slopes.")
+
+ggplot(agree, aes(x = grf, y = bcf, colour = game, shape = set)) +
+  geom_abline(linetype = "dashed", colour = "grey60") +
+  geom_hline(yintercept = 0, colour = "grey85") +
+  geom_vline(xintercept = 0, colour = "grey85") +
+  geom_linerange(aes(xmin = grf_lo, xmax = grf_hi), alpha = 0.3) +
+  geom_linerange(aes(ymin = bcf_lo, ymax = bcf_hi), alpha = 0.3) +
+  geom_point(size = 2) +
+  facet_wrap(~game) +
+  scale_colour_game() +
+  scale_shape_manual(values = c("Post-game" = 16, "Pre-game (v1.0.0)" = 1), name = NULL) +
+  guides(colour = "none") +
+  labs(
+    title = "GRF vs. BCF standardized CATE slopes",
+    x = "GRF slope (tokens per SD)",
+    y = "BCF slope (tokens per SD)"
+  ) +
+  theme_mbeu()
+```
+
+# CATE by level, post-game correlates {#sec-levels}
+
+`plot_comb()` is reused verbatim from `08_postprocess_bcf.qmd` (`#sec-plotters`).
+Points are posterior medians, and bands combine the posterior SD with the respondent cluster bootstrap SD.
+The split into two figures matches `13_postprocess_grf_ext.qmd`.
+
+```{r}
+#| label: plot-comb
+plot_comb <- function(df, ncol, title, ylab = yl_i) {
+  d <- df |>
+    arrange(mod, order) |>
+    mutate(
+      key = factor(
+        paste0(mod, "@@", level),
+        levels = unique(paste0(mod, "@@", level))
+      )
+    )
+  # per-facet grey count bars (pooled over games shown)
+  band <- d |>
+    summarise(cnt = sum(n), .by = c(mod, key)) |>
+    left_join(
+      d |>
+        summarise(
+          floor_y = min(lower) - 0.12 * (max(upper) - min(lower)),
+          span = 0.20 * (max(upper) - min(lower)),
+          .by = mod
+        ),
+      by = "mod"
+    ) |>
+    mutate(bar_top = floor_y + (cnt / max(cnt)) * span, .by = mod)
+  d_scale <- dplyr::filter(d, is_scale)
+  d_cat <- dplyr::filter(d, !is_scale)
+  p <- ggplot(d, aes(x = key, y = estimate, colour = game, shape = game)) +
+    geom_segment(
+      data = band,
+      aes(x = key, xend = key, y = floor_y, yend = bar_top),
+      colour = "grey80",
+      linewidth = 3,
+      inherit.aes = FALSE
+    ) +
+    ref_zero
+  # ordered scales: overlaid ribbon + line + point (continuous-style)
+  if (nrow(d_scale) > 0) {
+    p <- p +
+      geom_ribbon(
+        data = d_scale,
+        aes(ymin = lower, ymax = upper, fill = game, group = game),
+        alpha = 0.15,
+        colour = NA
+      ) +
+      geom_line(data = d_scale, aes(group = game, linetype = game)) +
+      geom_point(data = d_scale) +
+      scale_fill_manual(values = game_cols, name = NULL)
+  }
+  # categorical: dodged credible interval + point
+  if (nrow(d_cat) > 0) {
+    p <- p +
+      geom_linerange(
+        data = d_cat,
+        aes(ymin = lower, ymax = upper, linetype = game),
+        position = dodge
+      ) +
+      geom_point(data = d_cat, position = dodge)
+  }
+  p +
+    facet_wrap(
+      ~mod,
+      scales = "free",
+      ncol = ncol,
+      labeller = labeller(mod = mod_strip)
+    ) +
+    scale_colour_game() +
+    scale_shape_game() +
+    scale_linetype_game() +
+    scale_x_discrete(labels = relabel_key) +
+    labs(title = title, x = NULL, y = ylab) +
+    guides(fill = "none", linetype = "none") +
+    theme_mbeu() +
+    theme(axis.text.x = element_text(angle = 45, hjust = 1, size = 7))
+}
+```
+
+```{r}
+#| label: levels-split
+levels_1 <- c(
+  "q_occ_current",
+  "q_lr_self",
+  "q_euint_self",
+  "q_nativ_econ",
+  "q_nativ_cult",
+  "q_nat_int",
+  "q_eu_int",
+  "der_eu_know_correct",
+  "der_eu_know_dk",
+  "q_risk_taking",
+  "q_future_discount"
+)
+levels_2 <- setdiff(resp_mods_added, levels_1)
+levels_bcf <- bind_rows(bcf_dict$levels, bcf_trust$levels)
+```
+
+```{r}
+#| label: fig-bcf-ext-levels-1
+#| fig-cap: "BCF posterior CATE ($\\hat{\\tau}_i$) of the Muslim profile across the levels of the post-game correlates (1 of 2): occupation, ideology, nativism, political interest, EU knowledge, and risk and time preferences. Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. Points are posterior medians of the bin mean of τ(x). Bands are ±1.96 times the combined posterior and respondent-cluster-bootstrap SD. Grey bars show the per-level row count (pooled over games). Facet titles give the direction of the raw coding. The y-axis is free per facet. These items were measured after the games and are correlates, not moderators."
+#| dpi: 500
+#| fig-width: 11
+#| fig-height: 11
+levels_bcf |>
+  filter(mod %in% levels_1) |>
+  mutate(mod = factor(mod, levels = levels_1)) |>
+  plot_comb(
+    ncol = 3,
+    title = bquote(
+      "BCF CATE by post-game correlate, both games (1 of 2)" ~ (hat(tau)[ic])
+    )
+  )
+```
+
+```{r}
+#| label: fig-bcf-ext-levels-2
+#| fig-cap: "BCF posterior CATE ($\\hat{\\tau}_i$) of the Muslim profile across the levels of the post-game correlates (2 of 2): feeling informed about, trusting, and evaluating EU institutions. Dictator and Trust games overlaid and distinguished jointly by colour, shape, and linetype. Points are posterior medians of the bin mean of τ(x). Bands are ±1.96 times the combined posterior and respondent-cluster-bootstrap SD. Grey bars show the per-level row count (pooled over games). Facet titles give the direction of the raw coding. The y-axis is free per facet. These items were measured after the games and are correlates, not moderators."
+#| dpi: 500
+#| fig-width: 11
+#| fig-height: 10
+levels_bcf |>
+  filter(mod %in% levels_2) |>
+  mutate(mod = factor(mod, levels = levels_2)) |>
+  plot_comb(
+    ncol = 4,
+    title = bquote(
+      "BCF CATE by post-game correlate, both games (2 of 2)" ~ (hat(tau)[ic])
+    )
+  )
+```
+
+# Session Info {#sec-session-info .appendix .unnumbered}
+
+```{r}
+#| label: session-info
+#| eval: true
+#| echo: true
+session_info()
+```
+
+# Execution Time {#sec-exec-time .appendix .unnumbered}
+
+```{r}
+#| label: exec-time
+#| eval: true
+#| echo: true
+#| include: true
+end_time <- Sys.time()
+exec_time <- end_time - start_time
+cat(paste(
+  "R code execution time:",
+  round(as.numeric(exec_time, units = "secs"), 2),
+  "seconds."
+))
+```
