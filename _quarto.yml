@@ -72,7 +72,15 @@ citation:
   doi: "10.5281/zenodo.23470811"
   issued: 2026
   genre: "Term paper for the course Theory Building and Causal Inference (Prof. Marc Ratkovic), University of Mannheim, Spring 2026"
-  abstract: ""
+  abstract: |
+    Conjoint experiments across Europe consistently reveal a Muslim penalty: profiles displayed as Muslim receive systematically fewer resources than otherwise comparable profiles.
+    We move beyond this average and ask what drives the penalty.
+    Reanalyzing dictator and trust games embedded in a conjoint experiment across 25 European countries, we treat the Muslim attribute as a binary treatment and estimate conditional average treatment effects with Causal Forests.
+    The penalty is negative in essentially every subgroup we examine.
+    Other attributes of the displayed profile moderate it only weakly.
+    In contrast, respondent characteristics matter more.
+    Evaluations of the European Union form the strongest and most coherent gradient, yet even the most pro-European respondents retain a clear penalty.
+    Anti-Muslim bias in Europe emerges as politically structured rather than idiosyncratic, attenuated but nowhere undone.
 
 format:
   html:
