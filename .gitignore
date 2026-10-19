@@ -42,3 +42,6 @@ prompt-canvas.md
 /.quarto/
 
 data/03_final
+# --- Archived release snapshots ---
+# Frozen site builds, served as project resources
+!/archive/**
