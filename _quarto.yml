@@ -66,6 +66,13 @@ link-citations: true
 number-sections: true
 date: last-modified
 date-format: MMMM D, YYYY
+citation:
+  type: report
+  url: https://dertristan.github.io/MBEU25
+  doi: "<<CONCEPT_DOI>>"  # placeholder: replace with Zenodo concept DOI
+  issued: 2026
+  genre: "Term paper for the course Theory Building and Causal Inference (Prof. Marc Ratkovic), University of Mannheim, Spring 2026"
+  abstract: ""
 
 format:
   html:

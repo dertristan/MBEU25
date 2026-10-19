@@ -1,6 +1,6 @@
 cff-version: 1.2.0
 message: "If you use this work, please cite it as below."
-title: "Penalized for Faith: Who Drives the Muslim Penalty? Treatment-Effect Heterogeneity in European Conjoint Behavioral Games"
+title: "Penalized for Faith: What Drives the Muslim Penalty? Treatment-Effect Heterogeneity in European Conjoint Behavioral Games"
 authors:
   - family-names: Muno
     given-names: Tristan
@@ -26,7 +26,7 @@ keywords:
 # version-agnostic Zenodo concept DOI once the first release is archived.
 preferred-citation:
   type: report
-  title: "Penalized for Faith: Who Drives the Muslim Penalty? Treatment-Effect Heterogeneity in European Conjoint Behavioral Games"
+  title: "Penalized for Faith: What Drives the Muslim Penalty? Treatment-Effect Heterogeneity in European Conjoint Behavioral Games"
   authors:
     - family-names: Muno
       given-names: Tristan

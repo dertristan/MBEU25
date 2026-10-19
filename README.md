@@ -1,4 +1,4 @@
-# Penalized for Faith: Who Drives the Muslim Penalty?
+# Penalized for Faith: What Drives the Muslim Penalty?
 
 ### Treatment-Effect Heterogeneity in European Conjoint Behavioral Games
 
@@ -98,13 +98,13 @@ Quarto caches computed results in `_freeze/` (`freeze: auto`). A notebook re-exe
 
 If you use this work, please cite the manuscript. Machine-readable metadata is in [`CITATION.cff`](CITATION.cff); GitHub renders a "Cite this repository" widget from it.
 
-> Muno, T., Okisheva, V., & Klöckner, R. (2026). *Penalized for Faith: Who Drives the Muslim Penalty? Treatment-Effect Heterogeneity in European Conjoint Behavioral Games.* University of Mannheim. https://dertristan.github.io/MBEU25. https://doi.org/<<CONCEPT_DOI>>
+> Muno, T., Okisheva, V., & Klöckner, R. (2026). *Penalized for Faith: What Drives the Muslim Penalty? Treatment-Effect Heterogeneity in European Conjoint Behavioral Games.* University of Mannheim. https://dertristan.github.io/MBEU25. https://doi.org/<<CONCEPT_DOI>>
 
 BibTeX:
 
 ```bibtex
 @report{muno2026penalized,
-  title       = {Penalized for Faith: Who Drives the Muslim Penalty? Treatment-Effect Heterogeneity in European Conjoint Behavioral Games},
+  title       = {Penalized for Faith: What Drives the Muslim Penalty? Treatment-Effect Heterogeneity in European Conjoint Behavioral Games},
   author      = {Muno, Tristan and Okisheva, Vera and Kl\"ockner, Raphael},
   year        = {2026},
   institution = {University of Mannheim},
