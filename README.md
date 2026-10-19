@@ -8,6 +8,8 @@ Term paper for **Theory Building and Causal Inference** (Prof. Marc Ratkovic), U
 
 📄 **Read the rendered manuscript:** [dertristan.github.io/MBEU25](https://dertristan.github.io/MBEU25)
 
+🗄️ **Submitted version (v1.0.0, frozen):** [dertristan.github.io/MBEU25/archive/v1.0.0](https://dertristan.github.io/MBEU25/archive/v1.0.0/). This is the release archived on Zenodo. The live manuscript above may change after it.
+
 ---
 
 ## Research Summary
@@ -55,6 +57,11 @@ MBEU25/
 │   ├── 07_postprocess_grf.qmd           # GRF post-processing: ATE, CATE-by-moderator figures
 │   ├── 08_postprocess_bcf.qmd           # BCF post-processing: posterior CATE figures
 │   ├── 09_additional_figs_tables.qmd    # Descriptive figures and tables
+│   ├── 10_data_prep_ext.qmd             # Extended correlates: data prep incl. post-game items
+│   ├── 11_grf_fit_ext.qmd               # Extended correlates: grf fits
+│   ├── 12_bcf_fit_ext.qmd               # Extended correlates: BCF fits
+│   ├── 13_postprocess_grf_ext.qmd       # Extended correlates: GRF post-processing
+│   ├── 14_postprocess_bcf_ext.qmd       # Extended correlates: BCF post-processing
 │   ├── multibart/                       # Local R package: hierarchical BCF (see below)
 │   └── helper_scripts/                  # copy_figures.R, moderator_labels.R, glftrackeR.R
 │
@@ -63,6 +70,7 @@ MBEU25/
 │   ├── 02_processed/            # Clean long-format analysis tibble (eu25_long.rds)
 │   └── 03_final/                # Saved fits: grf_{dictator,trust}.rds, bcf_{dictator,trust}.rds
 │
+├── archive/v1.0.0/              # Frozen site build of the submitted release, served on the site
 ├── images/                      # University of Mannheim branding for slides (see COPYRIGHTS.md)
 └── literature/                  # Source PDFs — gitignored, not tracked
 ```
