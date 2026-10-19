@@ -1,14 +1,12 @@
+[![DOI](https://zenodo.org/badge/1208432435.svg)](https://doi.org/10.5281/zenodo.23470811)
+
 # Penalized for Faith: What Drives the Muslim Penalty?
 
 ### Treatment-Effect Heterogeneity in European Conjoint Behavioral Games
 
-[![DOI](https://zenodo.org/badge/DOI/<<CONCEPT_DOI>>.svg)](https://doi.org/<<CONCEPT_DOI>>)
-
 Term paper for **Theory Building and Causal Inference** (Prof. Marc Ratkovic), University of Mannheim, Spring 2026.
 
 📄 **Read the rendered manuscript:** [dertristan.github.io/MBEU25](https://dertristan.github.io/MBEU25)
-
-> The Zenodo badge above resolves once the first GitHub release is archived. Replace every `<<CONCEPT_DOI>>` placeholder (here, in the [How to cite](#how-to-cite) section, and in `CITATION.cff`) with the version-agnostic **concept DOI** Zenodo mints.
 
 ---
 
@@ -98,7 +96,7 @@ Quarto caches computed results in `_freeze/` (`freeze: auto`). A notebook re-exe
 
 If you use this work, please cite the manuscript. Machine-readable metadata is in [`CITATION.cff`](CITATION.cff); GitHub renders a "Cite this repository" widget from it.
 
-> Muno, T., Okisheva, V., & Klöckner, R. (2026). *Penalized for Faith: What Drives the Muslim Penalty? Treatment-Effect Heterogeneity in European Conjoint Behavioral Games.* University of Mannheim. https://dertristan.github.io/MBEU25. https://doi.org/<<CONCEPT_DOI>>
+> Muno, T., Okisheva, V., & Klöckner, R. (2026). *Penalized for Faith: What Drives the Muslim Penalty? Treatment-Effect Heterogeneity in European Conjoint Behavioral Games.* University of Mannheim. https://dertristan.github.io/MBEU25. https://doi.org/10.5281/zenodo.23470811
 
 BibTeX:
 
@@ -109,11 +107,9 @@ BibTeX:
   year        = {2026},
   institution = {University of Mannheim},
   url         = {https://dertristan.github.io/MBEU25},
-  doi         = {<<CONCEPT_DOI>>}
+  doi         = {10.5281/zenodo.23470811}
 }
 ```
-
-Replace `<<CONCEPT_DOI>>` with the Zenodo concept DOI once the first release is archived.
 
 ## License
 

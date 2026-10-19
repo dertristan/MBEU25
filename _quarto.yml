@@ -69,7 +69,7 @@ date-format: MMMM D, YYYY
 citation:
   type: report
   url: https://dertristan.github.io/MBEU25
-  doi: "<<CONCEPT_DOI>>"  # placeholder: replace with Zenodo concept DOI
+  doi: "10.5281/zenodo.23470811"
   issued: 2026
   genre: "Term paper for the course Theory Building and Causal Inference (Prof. Marc Ratkovic), University of Mannheim, Spring 2026"
   abstract: ""
