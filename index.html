@@ -2,24 +2,27 @@
 <html xmlns="http://www.w3.org/1999/xhtml" lang="en" xml:lang="en"><head>
 
 <meta charset="utf-8">
-<meta name="generator" content="quarto-1.10.11">
+<meta name="generator" content="quarto-1.11.6">
 
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
 
 <meta name="author" content="Tristan Muno">
 <meta name="author" content="Vera Okisheva">
 <meta name="author" content="Raphael Klöckner">
-<meta name="dcterms.date" content="2026-06-12">
+<meta name="dcterms.date" content="2026-10-19">
 
 <title>Penalized for Faith: What Drives the Muslim Penalty?</title>
 <style>
 /* Default styles provided by pandoc.
 ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
 */
-code{white-space: pre-wrap;}
 span.smallcaps{font-variant: small-caps;}
-div.columns{display: flex; gap: min(4vw, 1.5em);}
-div.column{flex: auto; overflow-x: auto;}
+div.columns{display: flex; gap: 1.5em;}
+div.column{flex: auto;}
+@media screen {
+div.columns{gap: min(4vw, 1.5em);}
+div.column{overflow-x: auto;}
+}
 div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
 ul.task-list{list-style: none;}
 ul.task-list li input[type="checkbox"] {
@@ -52,21 +55,22 @@ div.csl-indent {
 <script src="site_libs/clipboard/clipboard.min.js"></script>
 <script src="site_libs/quarto-html/quarto.js" type="module"></script>
 <script src="site_libs/quarto-html/tabsets/tabsets.js" type="module"></script>
+<script src="site_libs/quarto-html/scrollable-regions/scrollable-regions.js" type="module"></script>
 <script src="site_libs/quarto-html/popper.min.js"></script>
 <script src="site_libs/quarto-html/tippy.umd.min.js"></script>
 <script src="site_libs/quarto-html/anchor.min.js"></script>
 <link href="site_libs/quarto-html/tippy.css" rel="stylesheet">
-<link href="site_libs/quarto-html/quarto-syntax-highlighting-5947b73a06bce04bf1d622ae23e1ec5b.css" rel="stylesheet" id="quarto-text-highlighting-styles">
+<link href="site_libs/quarto-html/quarto-syntax-highlighting-35fc0813589bbfbfa0b8ec974497eeb2.css" rel="stylesheet" id="quarto-text-highlighting-styles">
 <script src="site_libs/bootstrap/bootstrap.min.js"></script>
 <link href="site_libs/bootstrap/bootstrap-icons.css" rel="stylesheet">
-<link href="site_libs/bootstrap/bootstrap-026b43eddac53d9c8001bc9214a409cd.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
+<link href="site_libs/bootstrap/bootstrap-deb10828e67638621ea84613cdc954fe.min.css" rel="stylesheet" append-hash="true" id="quarto-bootstrap" data-mode="light">
 <script src="site_libs/quarto-contrib/glightbox/glightbox.min.js"></script>
 <link href="site_libs/quarto-contrib/glightbox/glightbox.min.css" rel="stylesheet">
 <link href="site_libs/quarto-contrib/glightbox/lightbox.css" rel="stylesheet">
 <meta name="robots" content="noindex">
 
   <script src="https://cdnjs.cloudflare.com/polyfill/v3/polyfill.min.js?features=es6"></script>
-  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-chtml-full.js" type="text/javascript"></script>
+  <script defer="" src="https://cdn.jsdelivr.net/npm/mathjax@4/tex-chtml.js" type="text/javascript"></script>
 
 <script type="text/javascript">
 const typesetMath = (el) => {
@@ -109,10 +113,12 @@ Anti-Muslim bias in Europe emerges as politically structured rather than idiosyn
 <meta name="citation_author" content="Tristan Muno">
 <meta name="citation_author" content="Vera Okisheva">
 <meta name="citation_author" content="Raphael Klöckner">
-<meta name="citation_publication_date" content="2026-06-12">
-<meta name="citation_cover_date" content="2026-06-12">
+<meta name="citation_publication_date" content="2026">
+<meta name="citation_cover_date" content="2026">
 <meta name="citation_year" content="2026">
-<meta name="citation_online_date" content="2026-06-12">
+<meta name="citation_online_date" content="2026-10-19">
+<meta name="citation_fulltext_html_url" content="https://dertristan.github.io/MBEU25">
+<meta name="citation_doi" content="&amp;amp;lt;<CONCEPT_DOI&amp;gt;>">
 <meta name="citation_language" content="en">
 <meta name="citation_reference" content="citation_title=Divided by europe: Affective polarisation in the context of european elections;,citation_author=Hyeonho Hahm;,citation_author=David Hilpert;,citation_author=Thomas König;,citation_publication_date=2023;,citation_cover_date=2023;,citation_year=2023;,citation_issue=4;,citation_doi=10.1080/01402382.2022.2133277;,citation_volume=46;,citation_journal_title=West European Politics;,citation_publisher=Taylor &amp;amp;amp; Francis;">
 <meta name="citation_reference" content="citation_title=Divided we unite: The nature of partyism and the role of coalition partnership in europe;,citation_author=Hyeonho Hahm;,citation_author=David Hilpert;,citation_author=Thomas König;,citation_publication_date=2024;,citation_cover_date=2024;,citation_year=2024;,citation_issue=1;,citation_doi=10.1017/S0003055423000266;,citation_volume=118;,citation_journal_title=American Political Science Review;,citation_publisher=Cambridge University Press;">
@@ -165,7 +171,7 @@ Anti-Muslim bias in Europe emerges as politically structured rather than idiosyn
 <meta name="citation_reference" content="citation_title=Estimating causal moderation effects with randomized treatments and non-randomized moderators;,citation_author=Kirk Bansak;,citation_publication_date=2021;,citation_cover_date=2021;,citation_year=2021;,citation_issue=1;,citation_doi=10.1111/rssa.12614;,citation_volume=184;,citation_journal_title=Journal of the Royal Statistical Society Series A: Statistics in Society;">
 </head>
 
-<body class="quarto-light">
+<body class="quarto-light"><a id="quarto-skip-link" class="visually-hidden-focusable" href="#quarto-document-content">Skip to main content</a>
 
 <header id="title-block-header" class="quarto-title-block default toc-left page-columns page-full">
   <div class="quarto-title-banner page-columns page-full">
@@ -182,7 +188,7 @@ Anti-Muslim bias in Europe emerges as politically structured rather than idiosyn
           <div class="quarto-title-meta-heading">Affiliations</div>
           
                 <div class="quarto-title-meta-contents">
-            <p class="author">Tristan Muno <a href="mailto:tristan.muno@uni-mannheim.de" class="quarto-title-author-email"><i class="bi bi-envelope"></i></a> <a href="https://orcid.org/0009-0002-3078-8436" class="quarto-title-author-orcid"> <img src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA2ZpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo1N0NEMjA4MDI1MjA2ODExOTk0QzkzNTEzRjZEQTg1NyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDozM0NDOEJGNEZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDozM0NDOEJGM0ZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ1M1IE1hY2ludG9zaCI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkZDN0YxMTc0MDcyMDY4MTE5NUZFRDc5MUM2MUUwNEREIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjU3Q0QyMDgwMjUyMDY4MTE5OTRDOTM1MTNGNkRBODU3Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+84NovQAAAR1JREFUeNpiZEADy85ZJgCpeCB2QJM6AMQLo4yOL0AWZETSqACk1gOxAQN+cAGIA4EGPQBxmJA0nwdpjjQ8xqArmczw5tMHXAaALDgP1QMxAGqzAAPxQACqh4ER6uf5MBlkm0X4EGayMfMw/Pr7Bd2gRBZogMFBrv01hisv5jLsv9nLAPIOMnjy8RDDyYctyAbFM2EJbRQw+aAWw/LzVgx7b+cwCHKqMhjJFCBLOzAR6+lXX84xnHjYyqAo5IUizkRCwIENQQckGSDGY4TVgAPEaraQr2a4/24bSuoExcJCfAEJihXkWDj3ZAKy9EJGaEo8T0QSxkjSwORsCAuDQCD+QILmD1A9kECEZgxDaEZhICIzGcIyEyOl2RkgwAAhkmC+eAm0TAAAAABJRU5ErkJggg=="></a></p>
+            <p class="author">Tristan Muno <a href="mailto:tristan.muno@uni-mannheim.de" class="quarto-title-author-email"><i class="bi bi-envelope"></i></a> <a href="https://orcid.org/0009-0002-3078-8436" class="quarto-title-author-orcid" aria-label="ORCID profile for Tristan Muno"> <img alt="" src="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAGXRFWHRTb2Z0d2FyZQBBZG9iZSBJbWFnZVJlYWR5ccllPAAAA2ZpVFh0WE1MOmNvbS5hZG9iZS54bXAAAAAAADw/eHBhY2tldCBiZWdpbj0i77u/IiBpZD0iVzVNME1wQ2VoaUh6cmVTek5UY3prYzlkIj8+IDx4OnhtcG1ldGEgeG1sbnM6eD0iYWRvYmU6bnM6bWV0YS8iIHg6eG1wdGs9IkFkb2JlIFhNUCBDb3JlIDUuMC1jMDYwIDYxLjEzNDc3NywgMjAxMC8wMi8xMi0xNzozMjowMCAgICAgICAgIj4gPHJkZjpSREYgeG1sbnM6cmRmPSJodHRwOi8vd3d3LnczLm9yZy8xOTk5LzAyLzIyLXJkZi1zeW50YXgtbnMjIj4gPHJkZjpEZXNjcmlwdGlvbiByZGY6YWJvdXQ9IiIgeG1sbnM6eG1wTU09Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC9tbS8iIHhtbG5zOnN0UmVmPSJodHRwOi8vbnMuYWRvYmUuY29tL3hhcC8xLjAvc1R5cGUvUmVzb3VyY2VSZWYjIiB4bWxuczp4bXA9Imh0dHA6Ly9ucy5hZG9iZS5jb20veGFwLzEuMC8iIHhtcE1NOk9yaWdpbmFsRG9jdW1lbnRJRD0ieG1wLmRpZDo1N0NEMjA4MDI1MjA2ODExOTk0QzkzNTEzRjZEQTg1NyIgeG1wTU06RG9jdW1lbnRJRD0ieG1wLmRpZDozM0NDOEJGNEZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wTU06SW5zdGFuY2VJRD0ieG1wLmlpZDozM0NDOEJGM0ZGNTcxMUUxODdBOEVCODg2RjdCQ0QwOSIgeG1wOkNyZWF0b3JUb29sPSJBZG9iZSBQaG90b3Nob3AgQ1M1IE1hY2ludG9zaCI+IDx4bXBNTTpEZXJpdmVkRnJvbSBzdFJlZjppbnN0YW5jZUlEPSJ4bXAuaWlkOkZDN0YxMTc0MDcyMDY4MTE5NUZFRDc5MUM2MUUwNEREIiBzdFJlZjpkb2N1bWVudElEPSJ4bXAuZGlkOjU3Q0QyMDgwMjUyMDY4MTE5OTRDOTM1MTNGNkRBODU3Ii8+IDwvcmRmOkRlc2NyaXB0aW9uPiA8L3JkZjpSREY+IDwveDp4bXBtZXRhPiA8P3hwYWNrZXQgZW5kPSJyIj8+84NovQAAAR1JREFUeNpiZEADy85ZJgCpeCB2QJM6AMQLo4yOL0AWZETSqACk1gOxAQN+cAGIA4EGPQBxmJA0nwdpjjQ8xqArmczw5tMHXAaALDgP1QMxAGqzAAPxQACqh4ER6uf5MBlkm0X4EGayMfMw/Pr7Bd2gRBZogMFBrv01hisv5jLsv9nLAPIOMnjy8RDDyYctyAbFM2EJbRQw+aAWw/LzVgx7b+cwCHKqMhjJFCBLOzAR6+lXX84xnHjYyqAo5IUizkRCwIENQQckGSDGY4TVgAPEaraQr2a4/24bSuoExcJCfAEJihXkWDj3ZAKy9EJGaEo8T0QSxkjSwORsCAuDQCD+QILmD1A9kECEZgxDaEZhICIzGcIyEyOl2RkgwAAhkmC+eAm0TAAAAABJRU5ErkJggg=="></a></p>
           </div>
                 <div class="quarto-title-meta-contents">
                     <p class="affiliation">
@@ -213,7 +219,7 @@ Anti-Muslim bias in Europe emerges as politically structured rather than idiosyn
                 <div>
             <div class="quarto-title-meta-heading">Published</div>
             <div class="quarto-title-meta-contents">
-              <p class="date">June 12, 2026</p>
+              <p class="date">October 19, 2026</p>
             </div>
           </div>
           
@@ -236,7 +242,7 @@ Anti-Muslim bias in Europe emerges as politically structured rather than idiosyn
     <div class="quarto-other-links"><div class="quarto-title-meta-heading">Other Links</div><div class="quarto-title-meta-contents"><span style="padding-right: 0.5em;"><a href="https://github.com/dertristan/MBEU25"><i class="bi bi-github"></i>View project source</a>,</span><span style="padding-right: 0.5em;"><a href="https://github.com/dertristan/MBEU25/issues"><i class="bi bi-flag"></i>Report an issue</a>,</span><span><a href="https://github.com/ls-konig/eu25games2019"><i class="bi bi-database"></i>Dataset Repository</a></span></div></div></div>  </div>
 </header><div id="quarto-content" class="page-columns page-rows-contents page-layout-article toc-left">
 <div id="quarto-sidebar-toc-left" class="sidebar toc-left">
-  <nav id="TOC" role="doc-toc" class="toc-active">
+  <nav id="TOC" role="doc-toc" aria-labelledby="toc-title" class="toc-active">
     <h2 id="toc-title">Table of contents</h2>
    
   <ul>
@@ -266,7 +272,7 @@ Anti-Muslim bias in Europe emerges as politically structured rather than idiosyn
 </div>
 <div id="quarto-margin-sidebar" class="sidebar margin-sidebar zindex-bottom">
 </div>
-<main class="content quarto-banner-title-block" id="quarto-document-content">
+<main class="content quarto-banner-title-block" id="quarto-document-content" tabindex="-1">
 
 
 
@@ -1380,7 +1386,35 @@ Figure&nbsp;10: BCF posterior estimates of the respondent-level CATE (<span clas
 <li id="fn9"><p>The BCF posterior means for the same quantity agree with these estimates.<a href="#fnref9" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 <li id="fn10"><p>The bootstrap quantifies only one of the two channels through which the respondent structure enters. It resamples respondents and recomputes each bin’s mean of the estimated effects, capturing the design and sampling variability of the displayed point estimates, and on the real fits this component is roughly an order of magnitude below the posterior standard deviation, so it adds at most one to three percent to the bands. It cannot, however, repair the second channel. The BCF likelihood treats the roughly 84,600 rows as conditionally independent given the trees and the country random intercept, so if there is residual within-respondent correlation beyond what the country intercept absorbs, the posterior over <span class="math inline">\(\tau(x)\)</span> concentrates on too much information and the posterior standard deviation is internally deflated. An additive bootstrap term cannot detect or correct this. In the worst case of near-perfect within-respondent correlation the deflation could reach <span class="math inline">\(\sqrt{3} \approx 1.7\)</span>, which is not negligible.<a href="#fnref10" class="footnote-back" role="doc-backlink">↩︎</a></p></li>
 </ol>
-</section></div></main>
+</section><section class="quarto-appendix-contents" id="quarto-citation"><h2 class="anchored quarto-appendix-heading">Citation</h2><div><div class="quarto-appendix-secondary-label">BibTeX citation:</div><pre class="sourceCode code-with-copy quarto-appendix-bibtex"><code class="sourceCode bibtex">@report{muno2026,
+  author = {Muno, Tristan and Okisheva, Vera and Klöckner, Raphael},
+  title = {Penalized for {Faith:} {What} {Drives} the {Muslim}
+    {Penalty?}},
+  date = {2026},
+  url = {https://dertristan.github.io/MBEU25},
+  doi = {&lt;<concept_doi>&gt;},
+  langid = {en},
+  abstract = {Conjoint experiments across Europe consistently reveal a
+    Muslim penalty: profiles displayed as Muslim receive systematically
+    fewer resources than otherwise comparable profiles. We move beyond
+    this average and ask what drives the penalty. Reanalyzing dictator
+    and trust games embedded in a conjoint experiment across 25 European
+    countries, we treat the Muslim attribute as a binary treatment and
+    estimate conditional average treatment effects with Causal Forests.
+    The penalty is negative in essentially every subgroup we examine.
+    Other attributes of the displayed profile moderate it only weakly.
+    In contrast, respondent characteristics matter more. Evaluations of
+    the European Union form the strongest and most coherent gradient,
+    yet even the most pro-European respondents retain a clear penalty.
+    Anti-Muslim bias in Europe emerges as politically structured rather
+    than idiosyncratic, attenuated but nowhere undone.}
+}
+</concept_doi></code><button title="Copy to Clipboard" class="code-copy-button"><i class="bi"></i></button></pre><div class="quarto-appendix-secondary-label">For attribution, please cite this work as:</div><div id="ref-muno2026" class="csl-entry quarto-appendix-citeas" role="listitem">
+Muno, Tristan, Vera Okisheva, and Raphael Klöckner. 2026. <em>Penalized
+for Faith: What Drives the Muslim Penalty? </em>. Term paper for the
+course Theory Building and Causal Inference (Prof. Marc Ratkovic),
+University of Mannheim, Spring 2026. <a href="https://doi.org/<<CONCEPT_DOI>>">https://doi.org/&lt;&lt;CONCEPT_DOI&gt;&gt;</a>.
+</div></div></section></div></main>
 <!-- /main column -->
 <script id="quarto-html-after-body" type="application/javascript">
   window.document.addEventListener("DOMContentLoaded", function (event) {
@@ -1781,6 +1815,9 @@ Figure&nbsp;10: BCF posterior estimates of the respondent-level CATE (<span clas
       }
     }
   });
+  </script>
+  <script type="application/javascript">
+  window.quartoScrollableRegionsLabels = {"code":"Scrollable code","output":"Scrollable output"};
   </script>
 </div> <!-- /content -->
 <script>var lightboxQuarto = GLightbox({"closeEffect":"zoom","descPosition":"bottom","loop":false,"openEffect":"zoom","selector":".lightbox"});

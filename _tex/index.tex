@@ -192,6 +192,10 @@
 \usepackage{bookmark}
 \IfFileExists{xurl.sty}{\usepackage{xurl}}{} % add URL line breaks if available
 \urlstyle{same}
+% fallback for those not using the hyperref driver hyperxmp:
+\makeatletter
+\@ifundefined{xmpquote}{\newcommand{\xmpquote}[1]{#1}}{}
+\makeatother
 \hypersetup{
   pdftitle={Penalized for Faith: What Drives the Muslim Penalty?},
   pdfauthor={Tristan Muno; Vera Okisheva; Raphael Klöckner},
@@ -213,7 +217,7 @@
 \subtitle{Treatment-Effect Heterogeneity in European Conjoint Behavioral
 Games}
 \author{Tristan Muno \and Vera Okisheva \and Raphael Klöckner}
-\date{June 12, 2026}
+\date{October 19, 2026}
 \begin{document}
 \maketitle
 \begin{abstract}
@@ -314,8 +318,6 @@ disposition than a politically structured phenomenon. Understanding the
 conditions that amplify this bias is crucial for grasping the mechanisms
 that sustain it and the potential avenues for its mitigation.
 
-{
-
 \begin{longtable}[]{@{}
   >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.1795}}
   >{\raggedright\arraybackslash}p{(\linewidth - 8\tabcolsep) * \real{0.2436}}
@@ -358,8 +360,6 @@ Trust game & 2.81 {[}2.78, 2.84{]} & 3.45 {[}3.43, 3.47{]} & -0.64 &
 {[}-0.68, -0.60{]} \\
 
 \end{longtable}
-
-}
 
 \textsubscript{Source:
 \href{https://dertristan.github.io/MBEU25/code/09_additional_figs_tables-preview.html\#cell-tbl-diff-in-means}{Additional
@@ -1360,8 +1360,6 @@ Covariates}\label{distribution-of-profile-level-covariates}
 \addcontentsline{toc}{subsubsection}{Distribution of Profile-level
 Covariates}
 
-{
-
 \begin{longtable}[]{@{}
   >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.2987}}
   >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3636}}
@@ -1415,8 +1413,6 @@ upper & 42,247 (33\%) & 14,201 (33\%) \\
 
 \end{longtable}
 
-}
-
 \textsubscript{Source:
 \href{https://dertristan.github.io/MBEU25/code/09_additional_figs_tables-preview.html\#cell-tbl-balance-round-mods}{Additional
 Figures \& Tables}}
@@ -1425,8 +1421,6 @@ Figures \& Tables}}
 Covariates}\label{distribution-of-respondent-level-covariates}
 \addcontentsline{toc}{subsubsection}{Distribution of Respondent-level
 Covariates}
-
-{
 
 \begin{longtable}[]{@{}
   >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.3462}}
@@ -1508,8 +1502,6 @@ q\_edu\_age\_stop & 21.0 (18.0, 24.0) & 21.0 (18.0, 24.0) \\
 
 \end{longtable}
 
-}
-
 \textsubscript{Source:
 \href{https://dertristan.github.io/MBEU25/code/09_additional_figs_tables-preview.html\#cell-tbl-balance-resp-mods}{Additional
 Figures \& Tables}}
@@ -1517,8 +1509,6 @@ Figures \& Tables}}
 \subsubsection*{Question Wordings and
 Scales}\label{question-wordings-and-scales}
 \addcontentsline{toc}{subsubsection}{Question Wordings and Scales}
-
-{
 
 \begin{longtable}[]{@{}
   >{\raggedright\arraybackslash}p{(\linewidth - 4\tabcolsep) * \real{0.2685}}
@@ -1637,8 +1627,6 @@ agree) \\
 education? & Years \\
 
 \end{longtable}
-
-}
 
 \textsubscript{Source:
 \href{https://dertristan.github.io/MBEU25/code/09_additional_figs_tables-preview.html\#cell-tbl-wordings}{Additional
